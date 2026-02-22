@@ -1,47 +1,102 @@
-table.stack
-  thead
-    tr
-      th width="4%"
-        = t('.nr')
-      th width="5%"
-      th width="20%" Imię i Nazwisko
-      th Kategoria PP
-      th Kategoria MJS
-      th Organizacja
-      th width='14%' Płatność
-      - if can? :manage, Events::Db::SignUpRecord
-        th width='8%'
-  tbody
-    - sign_ups.each_with_index do |sign_up, index|
+- sign_ups_with_license = sign_ups.select { |su| su.participant_license_id_1.present? && su.participant_license_id_1 != 0 }
+- sign_ups_without_license = sign_ups.reject { |su| su.participant_license_id_1.present? && su.participant_license_id_1 != 0 }
+
+- if sign_ups_with_license.any?
+  h4 Trasa Pucharu Polski
+  table.stack
+    thead
       tr
-        - if @competition.close_payment.present? && @competition.close_payment > Time.zone.now
-          td = index + 1
-        - else
-          td = sign_up.start_number
-        td
-          - unless sign_up.participant_country_1 == 'other' || sign_up.participant_country_1.nil?
-            = image_tag("#{sign_up.participant_country_1}.png")
-        td = sign_up.participant_name
-        td = sign_up.sport_category_1
-        td = [(sign_up.rescuer? ? "Ratownik" : nil), (sign_up.package_type_1_membership? ? "KW Kraków" : nil)].compact.join(', ')
-        td = sign_up.participant_team_1
-        td.text-center
-          - if sign_up.payment.paid?
-            .label.success = t("prepaid")
-          -else
-            .label.warning = t("#{sign_up.payment.state}")
+        th width="4%"
+          = t('.nr')
+        th width="5%"
+        th width="20%" Imię i Nazwisko
+        th Kategoria PP
+        th Kategoria MJS
+        th Organizacja
+        th width='14%' Płatność
         - if can? :manage, Events::Db::SignUpRecord
+          th width='8%'
+    tbody
+      - sign_ups_with_license.each_with_index do |sign_up, index|
+        tr
+          - if @competition.close_payment.present? && @competition.close_payment > Time.zone.now
+            td = index + 1
+          - else
+            td = sign_up.start_number
           td
-            .icon-bar.five-up
-              = link_to send_email_competition_sign_up_path(competition_id: @competition, id: sign_up), method: :put, class: 'item', style: 'margin: 5px' do
-                - if sign_up.sent_at
-                  - if sign_up.emails.any? && sign_up.emails.all?(&:delivered?)
-                    i.fi-mail style='color: green'
+            - unless sign_up.participant_country_1 == 'other' || sign_up.participant_country_1.nil?
+              = image_tag("#{sign_up.participant_country_1}.png")
+          td = sign_up.participant_name
+          td = sign_up.sport_category_1
+          td = [(sign_up.rescuer? ? "Ratownik" : nil), (sign_up.package_type_1_membership? ? "KW Kraków" : nil)].compact.join(', ')
+          td = sign_up.participant_team_1
+          td.text-center
+            - if sign_up.payment.paid?
+              .label.success = t("prepaid")
+            -else
+              .label.warning = t("#{sign_up.payment.state}")
+          - if can? :manage, Events::Db::SignUpRecord
+            td
+              .icon-bar.five-up
+                = link_to send_email_competition_sign_up_path(competition_id: @competition, id: sign_up), method: :put, class: 'item', style: 'margin: 5px' do
+                  - if sign_up.sent_at
+                    - if sign_up.emails.any? && sign_up.emails.all?(&:delivered?)
+                      i.fi-mail style='color: green'
+                    - else
+                      i.fi-mail style='color: red'
                   - else
-                    i.fi-mail style='color: red'
-                - else
-                  i.fi-mail
-              = link_to edit_competition_sign_up_path(competition_id: @competition, id: sign_up), class: 'item', style: 'margin: 5px' do
-                i.fi-page-edit
-              = link_to competition_sign_up_path(competition_id: @competition, id: sign_up), method: :delete, class: 'item', data: { confirm: 'Napewno chcesz usunąć?' } do
-                i.fi-trash
+                    i.fi-mail
+                = link_to edit_competition_sign_up_path(competition_id: @competition, id: sign_up), class: 'item', style: 'margin: 5px' do
+                  i.fi-page-edit
+                = link_to competition_sign_up_path(competition_id: @competition, id: sign_up), method: :delete, class: 'item', data: { confirm: 'Napewno chcesz usunąć?' } do
+                  i.fi-trash
+
+- if sign_ups_without_license.any?
+  h4 Trasa amatorska
+  table.stack
+    thead
+      tr
+        th width="4%"
+          = t('.nr')
+        th width="5%"
+        th width="20%" Imię i Nazwisko
+        th Kategoria PP
+        th Kategoria MJS
+        th Organizacja
+        th width='14%' Płatność
+        - if can? :manage, Events::Db::SignUpRecord
+          th width='8%'
+    tbody
+      - sign_ups_without_license.each_with_index do |sign_up, index|
+        tr
+          - if @competition.close_payment.present? && @competition.close_payment > Time.zone.now
+            td = index + 1
+          - else
+            td = sign_up.start_number
+          td
+            - unless sign_up.participant_country_1 == 'other' || sign_up.participant_country_1.nil?
+              = image_tag("#{sign_up.participant_country_1}.png")
+          td = sign_up.participant_name
+          td = sign_up.sport_category_1
+          td = [(sign_up.rescuer? ? "Ratownik" : nil), (sign_up.package_type_1_membership? ? "KW Kraków" : nil)].compact.join(', ')
+          td = sign_up.participant_team_1
+          td.text-center
+            - if sign_up.payment.paid?
+              .label.success = t("prepaid")
+            -else
+              .label.warning = t("#{sign_up.payment.state}")
+          - if can? :manage, Events::Db::SignUpRecord
+            td
+              .icon-bar.five-up
+                = link_to send_email_competition_sign_up_path(competition_id: @competition, id: sign_up), method: :put, class: 'item', style: 'margin: 5px' do
+                  - if sign_up.sent_at
+                    - if sign_up.emails.any? && sign_up.emails.all?(&:delivered?)
+                      i.fi-mail style='color: green'
+                    - else
+                      i.fi-mail style='color: red'
+                  - else
+                    i.fi-mail
+                = link_to edit_competition_sign_up_path(competition_id: @competition, id: sign_up), class: 'item', style: 'margin: 5px' do
+                  i.fi-page-edit
+                = link_to competition_sign_up_path(competition_id: @competition, id: sign_up), method: :delete, class: 'item', data: { confirm: 'Napewno chcesz usunąć?' } do
+                  i.fi-trash

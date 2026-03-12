@@ -30,39 +30,44 @@
     h4 = "Liga Tradowa #{params.fetch(:year)}"
     .row
       .large-12.columns
-        table.stack
+        table style="width: 100%; border-collapse: collapse;"
           thead
-            tr
-              th.text-center
-              th.text-center width="25%" kto?
-              th.text-center width='35%' ostatnia droga
-              th.text-center width='15%' punktów
-              th.text-center width='15%' dróg
-              th.text-center width='15%' bicków
+            tr style="background: #f5f5f5; border-bottom: 2px solid #e0e0e0;"
+              th.text-center style="width: 2.5rem; padding: 0.75rem 0.5rem;" #
+              th style="width: 3rem; padding: 0.75rem 0.5rem;"
+              th style="width: 20%; padding: 0.75rem 0.5rem;" kto?
+              th style="width: 25%; padding: 0.75rem 0.5rem;" ostatnia droga
+              th style="width: 7rem; padding: 0.75rem 0.5rem;"
+              th.text-center style="width: 5.5rem; padding: 0.75rem 0.5rem;" punktów
+              th.text-center.hide-for-small-only style="width: 4.5rem; padding: 0.75rem 0.5rem;" dróg
+              th.text-center.hide-for-small-only style="width: 4.5rem; padding: 0.75rem 0.5rem;" bicków
           tbody
-            - @season_leaders.each do |user|
-              tr
-                td.text-center.hide-for-small-only
+            - @season_leaders.each_with_index do |user, index|
+              - last_route = user.mountain_routes.where(route_type: 'trad_climbing').where.not(kurtyka_difficulty: nil).order(climbing_date: :desc).first
+              - route_photo = last_route&.photos&.first
+              tr style="border-bottom: 1px solid #efefef; #{index.even? ? '' : 'background: #fafafa;'}"
+                td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; color: #888; font-size: 1.1rem;"
+                  = index + 1
+                td style="padding: 0.5rem 0.25rem 0.5rem 0.5rem;"
                   = link_to user_path(kw_id: user.kw_id) do
                     - if user.avatar.present?
-                      = image_tag(user.avatar.url, class: 'topbar-avatar-image')
+                      = image_tag(user.avatar.url, style: 'width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
                     - else
-                      = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                td.text-center
+                      = image_tag('default-avatar.png', style: 'width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
+                td style="padding: 0.75rem 0.5rem; font-weight: 500;"
                   = link_to user.display_name, user_path(kw_id: user.kw_id)
-                td.text-center
-                  - last_route = user.mountain_routes.where(route_type: 'trad_climbing').where.not(kurtyka_difficulty: nil).order(climbing_date: :desc).first
+                td style="padding: 0.75rem 0.5rem; vertical-align: middle;"
                   - if last_route
-                    = link_to last_route.name, "/przejscia/#{last_route.slug}"
-                td.text-center
-                  .show-for-small-only
-                    b Punkty
+                    = link_to last_route.name, "/przejscia/#{last_route.slug}", style: 'color: #1a73e8; font-weight: 500;'
+                  - else
+                    span style="color: #aaa;" —
+                td style="padding: 0.5rem 1.25rem; vertical-align: middle;"
+                  - if route_photo && route_photo.file.present? && route_photo.file.thumb.present?
+                    = link_to "/przejscia/#{last_route.slug}" do
+                      = image_tag(route_photo.file.thumb.url, style: 'width: 72px; height: 72px; object-fit: cover; border-radius: 6px; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
+                td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 1.1rem;"
                   = TradLeague::UserSeasonScoresPresenter.new(user: user, year: params[:year]).points
-                td.text-center
-                  .show-for-small-only
-                    b Drogi
+                td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
                   = TradLeague::UserSeasonScoresPresenter.new(user: user, year: params[:year]).routes_count
-                td.text-center
-                  .show-for-small-only
-                    b Bicki
+                td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
                   = TradLeague::UserSeasonScoresPresenter.new(user: user, year: params[:year]).hearts_count

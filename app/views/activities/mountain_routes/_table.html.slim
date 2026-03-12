@@ -11,15 +11,31 @@ table.stack
         th width='12%'
         th.text-right width='7%' = sort_link(@q, :hearts_count, 'bicków', default_order: :desc)
     - else
+      - rs = params[:route_sort]
+      - rd = params[:route_dir]
+      - sort_th = ->(col, label, w) do
+        - is_active = rs == col
+        - next_dir = (is_active && rd == 'desc') ? 'asc' : 'desc'
+        - arrow = is_active ? (rd == 'desc' ? ' ▼' : ' ▲') : ' ⇅'
+        - link_url = user_path(kw_id: @user.kw_id, route_sort: col, route_dir: next_dir, route_type: params[:route_type], anchor: 'routes')
       tr
         th width='5%'
-        th width='10%' kiedy?
+        th width='10%'
+          = link_to user_path(kw_id: @user.kw_id, route_sort: 'climbing_date', route_dir: ((rs == 'climbing_date' && rd == 'desc') ? 'asc' : 'desc'), route_type: params[:route_type], anchor: 'routes'), style: "text-decoration: none; color: #{rs == 'climbing_date' ? '#1a73e8' : 'inherit'}; white-space: nowrap;" do
+            | kiedy?
+            span style="font-size: 0.75rem; opacity: 0.7;" = rs == 'climbing_date' ? (rd == 'desc' ? ' ▼' : ' ▲') : ' ⇅'
         th width='20%' nazwa przejścia
-        th width='2%' wycena
+        th width='2%'
+          = link_to user_path(kw_id: @user.kw_id, route_sort: 'difficulty', route_dir: ((rs == 'difficulty' && rd == 'desc') ? 'asc' : 'desc'), route_type: params[:route_type], anchor: 'routes'), style: "text-decoration: none; color: #{rs == 'difficulty' ? '#1a73e8' : 'inherit'}; white-space: nowrap;" do
+            | wycena
+            span style="font-size: 0.75rem; opacity: 0.7;" = rs == 'difficulty' ? (rd == 'desc' ? ' ▼' : ' ▲') : ' ⇅'
         - if user_signed_in?
           th width='17%' skład zespołu
         th width='10%'
-        th.text-center width='4%' bicki
+        th.text-center width='4%'
+          = link_to user_path(kw_id: @user.kw_id, route_sort: 'hearts_count', route_dir: ((rs == 'hearts_count' && rd == 'desc') ? 'asc' : 'desc'), route_type: params[:route_type], anchor: 'routes'), style: "text-decoration: none; color: #{rs == 'hearts_count' ? '#1a73e8' : 'inherit'}; white-space: nowrap;" do
+            | bicki
+            span style="font-size: 0.75rem; opacity: 0.7;" = rs == 'hearts_count' ? (rd == 'desc' ? ' ▼' : ' ▲') : ' ⇅'
 
   tbody
     - routes.each do |route|

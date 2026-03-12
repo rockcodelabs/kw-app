@@ -90,7 +90,7 @@
 
               .row
                 .large-12.columns
-                  = paginate @my_routes, param_name: :route_page, params: { anchor: 'routes', route_type: @route_type_filter }
+                  = paginate @my_routes, param_name: :route_page, params: { anchor: 'routes', route_type: @route_type_filter, route_sort: @route_sort, route_dir: @route_dir }
             - else
               .row
                 .large-12.columns

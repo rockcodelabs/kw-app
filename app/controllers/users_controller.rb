@@ -12,7 +12,10 @@ class UsersController < ApplicationController
     return redirect_to root_path, alert: 'Użytkownik o podanym numerze nie posiada konta w systemie' unless Db::User.exists?(kw_id: params[:kw_id])
 
     @user = Db::User.find_by(kw_id: params[:kw_id])
-    @my_routes = Kaminari.paginate_array(repository.fetch_mountain_routes(@user)).page(params[:route_page]).per(5)
+    @route_type_filter = params[:route_type].presence
+    all_routes = repository.fetch_mountain_routes(@user)
+    all_routes = all_routes.select { |r| r.route_type == @route_type_filter } if @route_type_filter
+    @my_routes = Kaminari.paginate_array(all_routes).page(params[:route_page]).per(5)
     @my_courses = Kaminari.paginate_array(repository.fetch_courses(@user)).page(params[:course_page]).per(5)
     @my_projects = Kaminari.paginate_array(repository.fetch_projects(@user)).page(params[:project_page]).per(5)
     @my_training_contracts = @user.training_user_contracts.page(params[:training_contract_page]).per(5)

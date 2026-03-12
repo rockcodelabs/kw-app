@@ -72,15 +72,29 @@
             a data-tabs-target="training_contracts" href="#training_contracts" Kontrakty
 
       .tabs-content data-tabs-content="user_card-tabs"
-        - if @my_routes.any?
+        - if @my_routes.any? || @route_type_filter
           #routes.tabs-panel.is-active
             .row
-              .large-12.columns
-                = render 'activities/mountain_routes/table', routes: @my_routes
+              .large-12.columns style="margin-bottom: 0.75rem;"
+                - active_style = ->(type) { "margin: 0 0.25rem 0.25rem 0; #{@route_type_filter == type ? 'font-weight: bold;' : 'opacity: 0.65;'}" }
+                = link_to 'Wszystkie', user_path(kw_id: @user.kw_id, anchor: 'routes'), class: "button small #{@route_type_filter.nil? ? 'primary' : 'secondary'}", style: "margin: 0 0.25rem 0.25rem 0;"
+                = link_to 'Narty', user_path(kw_id: @user.kw_id, route_type: 'ski', anchor: 'routes'), class: "button small #{@route_type_filter == 'ski' ? 'primary' : 'secondary'}", style: active_style.call('ski')
+                = link_to 'Wspinaczka klasyczna', user_path(kw_id: @user.kw_id, route_type: 'regular_climbing', anchor: 'routes'), class: "button small #{@route_type_filter == 'regular_climbing' ? 'primary' : 'secondary'}", style: active_style.call('regular_climbing')
+                = link_to 'Wspinaczka sportowa', user_path(kw_id: @user.kw_id, route_type: 'sport_climbing', anchor: 'routes'), class: "button small #{@route_type_filter == 'sport_climbing' ? 'primary' : 'secondary'}", style: active_style.call('sport_climbing')
+                = link_to 'Trad', user_path(kw_id: @user.kw_id, route_type: 'trad_climbing', anchor: 'routes'), class: "button small #{@route_type_filter == 'trad_climbing' ? 'primary' : 'secondary'}", style: active_style.call('trad_climbing')
 
-            .row
-              .large-12.columns
-                = paginate @my_routes, param_name: :route_page, params: { anchor: 'routes' }
+            - if @my_routes.any?
+              .row
+                .large-12.columns
+                  = render 'activities/mountain_routes/table', routes: @my_routes
+
+              .row
+                .large-12.columns
+                  = paginate @my_routes, param_name: :route_page, params: { anchor: 'routes', route_type: @route_type_filter }
+            - else
+              .row
+                .large-12.columns
+                  p style="color: #888; padding: 1rem 0;" Brak przejść dla wybranego typu.
 
         - if @my_courses.any?
           #courses.tabs-panel

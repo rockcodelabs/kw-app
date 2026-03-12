@@ -7,8 +7,24 @@ module Activities
       authorize! :see_dziki, ::Db::Activities::MountainRoute
 
       year = Date.new(params.fetch(:year, Date.current.year).to_i, 1, 1)
+      @sort = params.fetch(:sort, 'points')
+      @sort_dir = params.fetch(:dir, 'desc')
 
-      @season_leaders = Db::User.includes(:mountain_routes).where.not(mountain_routes: { kurtyka_difficulty: nil }).where(mountain_routes: { route_type: 'trad_climbing', climbing_date: year.beginning_of_year..year.end_of_year }).sort_by { |user| -TradLeague::UserSeasonCalculator.new(user: user, year: year.year).call }
+      leaders = Db::User.includes(mountain_routes: :photos).where.not(mountain_routes: { kurtyka_difficulty: nil }).where(mountain_routes: { route_type: 'trad_climbing', climbing_date: year.beginning_of_year..year.end_of_year })
+
+      @season_leaders = leaders.map do |user|
+        presenter = TradLeague::UserSeasonScoresPresenter.new(user: user, year: year.year.to_s)
+        last_route = user.mountain_routes.select { |r| r.route_type == 'trad_climbing' && r.kurtyka_difficulty.present? }.max_by(&:climbing_date)
+        { user: user, points: presenter.points, routes: presenter.routes_count, likes: presenter.hearts_count, last_route: last_route }
+      end
+
+      @season_leaders = case @sort
+        when 'routes' then @season_leaders.sort_by { |r| r[:routes] }
+        when 'likes'  then @season_leaders.sort_by { |r| r[:likes] }
+        else               @season_leaders.sort_by { |r| r[:points] }
+      end
+
+      @season_leaders = @season_leaders.reverse if @sort_dir == 'desc'
     end
 
     def gorskie_dziki

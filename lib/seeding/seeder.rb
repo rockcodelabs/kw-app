@@ -223,6 +223,41 @@ module Seeding
             training: Faker::Boolean.boolean(true_ratio: 0.3)
           )
         end
+
+        trad_route_names = [
+          'Filar Północny', 'Droga Klasyczna', 'Rysa Zachodnia', 'Komin Południkowy',
+          'Ściana Wschodnia', 'Grań Orła', 'Filar Kozicy', 'Kominek Sokoli',
+          'Zachodnia Galeria', 'Droga przez Płytę', 'Rysa Centralna', 'Żebro Główne',
+          'Komin Taternika', 'Filaret Turni', 'Wielka Rysa', 'Direttissima',
+          'Filar Południa', 'Droga Zimowa', 'Komin Wiatrów', 'Ściana Ciszy',
+          'Żebro Wschodnie', 'Galeria nad Przepaścią', 'Wąski Komin', 'Turnia Ptaków'
+        ]
+        trad_areas = ['Tatry Wysokie', 'Tatry Zachodnie', 'Jura Krakowsko-Częstochowska', 'Góry Sokole', 'Rudawy Janowickie']
+        kurtyka_grades = ['III', 'IV', 'IV+', 'V', 'V+', 'VI', 'VI+', 'VI.1', 'VI.1+', 'VI.2']
+        users = Db::User.all.to_a
+
+        users.each do |user|
+          rand(2..6).times do
+            Db::Activities::MountainRoute.create(
+              user: user,
+              name: trad_route_names.sample,
+              description: Faker::Lorem.paragraph,
+              peak: Faker::Mountain.name,
+              area: trad_areas.sample,
+              mountains: trad_areas.sample,
+              colleagues: users.sample(rand(0..2)),
+              difficulty: kurtyka_grades.sample,
+              kurtyka_difficulty: kurtyka_grades.sample,
+              partners: [Faker::Name.name, Faker::Name.name].sample(rand(0..2)).to_sentence,
+              rating: [1, 2, 3].sample,
+              climbing_date: Faker::Date.between(from: Date.new(2026, 1, 1), to: [Date.today, Date.new(2026, 12, 31)].min),
+              route_type: :trad_climbing,
+              length: Faker::Number.within(range: 10..400),
+              hidden: false,
+              training: false
+            )
+          end
+        end
         Management::News::InformationRecord.destroy_all
         45.times do
           Management::News::InformationRecord.create(

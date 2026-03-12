@@ -14,8 +14,10 @@ module Activities
 
       @season_leaders = leaders.map do |user|
         presenter = TradLeague::UserSeasonScoresPresenter.new(user: user, year: year.year.to_s)
-        last_route = user.mountain_routes.select { |r| r.route_type == 'trad_climbing' && r.kurtyka_difficulty.present? }.max_by(&:climbing_date)
-        { user: user, points: presenter.points, routes: presenter.routes_count, likes: presenter.hearts_count, last_route: last_route }
+        season_routes = user.mountain_routes.select { |r| r.route_type == 'trad_climbing' && r.kurtyka_difficulty.present? && r.climbing_date >= year.beginning_of_year && r.climbing_date <= year.end_of_year }.sort_by(&:climbing_date).reverse
+        last_route = season_routes.first
+        season_photos = season_routes.flat_map { |r| r.photos.select { |p| p.file.present? && p.file.thumb.present? } }.first(5)
+        { user: user, points: presenter.points, routes: presenter.routes_count, likes: presenter.hearts_count, last_route: last_route, season_routes: season_routes, season_photos: season_photos }
       end
 
       @season_leaders = case @sort

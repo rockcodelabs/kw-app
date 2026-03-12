@@ -1,3 +1,40 @@
+javascript:
+  document.addEventListener('DOMContentLoaded', function() {
+    // Row expand toggle
+    document.querySelectorAll('.liga-trad-row').forEach(function(row) {
+      row.addEventListener('click', function() {
+        var target = document.getElementById(this.dataset.toggleTarget);
+        if (target) {
+          var isHidden = target.style.display === 'none' || target.style.display === '';
+          target.style.display = isHidden ? 'table-row' : 'none';
+          this.style.background = isHidden ? '#e8eeff' : '';
+        }
+      });
+    });
+
+    // Lightbox
+    var overlay = document.getElementById('liga-trad-lightbox');
+    var overlayImg = document.getElementById('liga-trad-lightbox-img');
+    overlay.addEventListener('click', function() {
+      overlay.style.display = 'none';
+      overlayImg.src = '';
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { overlay.style.display = 'none'; overlayImg.src = ''; }
+    });
+  });
+
+  function ligaTradOpenPhoto(url, e) {
+    e.stopPropagation();
+    var overlay = document.getElementById('liga-trad-lightbox');
+    var overlayImg = document.getElementById('liga-trad-lightbox-img');
+    overlayImg.src = url;
+    overlay.style.display = 'flex';
+  }
+
+#liga-trad-lightbox style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; cursor:pointer;"
+  img#liga-trad-lightbox-img src="" style="max-width:90vw; max-height:90vh; border-radius:6px; box-shadow:0 4px 32px rgba(0,0,0,0.7);"
+
 .row
   .large-6.columns
     = link_to 'Regulamin tradowych dzików', liga_tradowa_regulamin_path, class: 'button warning large expanded'
@@ -35,9 +72,9 @@
             tr style="background: #f5f5f5; border-bottom: 2px solid #e0e0e0;"
               th.text-center style="width: 2.5rem; padding: 0.75rem 0.5rem;" #
               th style="width: 3rem; padding: 0.75rem 0.5rem;"
-              th style="width: 20%; padding: 0.75rem 0.5rem;" kto?
-              th style="width: 25%; padding: 0.75rem 0.5rem;" ostatnia droga
-              th style="width: 7rem; padding: 0.75rem 0.5rem;"
+              th style="width: 18%; padding: 0.75rem 0.5rem;" kto?
+              th style="width: 18%; padding: 0.75rem 0.5rem;" ostatnia droga
+              th style="width: 14rem; padding: 0.75rem 0.5rem;"
               th.text-center style="width: 5.5rem; padding: 0.75rem 0.5rem; cursor: pointer;"
                 = sort_link_for('points', 'punktów', @sort, @sort_dir, params[:year])
               th.text-center.hide-for-small-only style="width: 4.5rem; padding: 0.75rem 0.5rem; cursor: pointer;"
@@ -48,31 +85,73 @@
             - @season_leaders.each_with_index do |row, index|
               - user = row[:user]
               - last_route = row[:last_route]
-              - route_photos = last_route&.photos&.select { |p| p.file.present? && p.file.thumb.present? }&.first(3) || []
-              tr style="border-bottom: 1px solid #efefef; #{index.even? ? '' : 'background: #fafafa;'}"
+              - season_routes = row[:season_routes]
+              - season_photos = row[:season_photos]
+              - row_id = "user-routes-#{user.id}"
+              - gallery_id = "gallery-#{user.id}"
+              tr.liga-trad-row style="border-bottom: 1px solid #efefef; #{index.even? ? '' : 'background: #fafafa;'} cursor: pointer;" data-toggle-target=row_id
                 td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; color: #888; font-size: 1.1rem;"
                   = index + 1
                 td style="padding: 0.5rem 0.25rem 0.5rem 0.5rem;"
-                  = link_to user_path(kw_id: user.kw_id) do
+                  = link_to user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();' do
                     - if user.avatar.present?
                       = image_tag(user.avatar.url, style: 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
                     - else
                       = image_tag('default-avatar.png', style: 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
                 td style="padding: 0.75rem 0.5rem; font-weight: 500;"
-                  = link_to user.display_name, user_path(kw_id: user.kw_id)
+                  = link_to user.display_name, user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();'
                 td style="padding: 0.75rem 0.5rem; vertical-align: middle;"
                   - if last_route
-                    = link_to last_route.name, "/przejscia/#{last_route.slug}", style: 'color: #1a73e8; font-weight: 500;'
+                    = link_to last_route.name, "/przejscia/#{last_route.slug}", style: 'color: #1a73e8; font-weight: 500;', onclick: 'event.stopPropagation();'
                   - else
                     span style="color: #aaa;" —
-                td style="padding: 0.5rem 0.75rem; vertical-align: middle;"
-                  - if route_photos.any?
-                    = link_to "/przejscia/#{last_route.slug}", style: 'display: flex; gap: 0.3rem; align-items: center;' do
-                      - route_photos.each do |photo|
-                        = image_tag(photo.file.thumb.url, style: 'width: 40px; height: 40px; object-fit: cover; border-radius: 4px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
+                td style="padding: 0.5rem 0.75rem; vertical-align: middle; text-align: center;"
+                  - if season_photos.any?
+                    div style="display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: nowrap;"
+                      - season_photos.each do |photo|
+                        = image_tag(photo.file.medium.url, style: 'width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25); display: block; cursor: pointer;', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
                 td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 1.1rem;"
                   = row[:points]
                 td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
                   = row[:routes]
                 td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
                   = row[:likes]
+              tr id=row_id style="display: none; background: #f0f4ff;"
+                td colspan="8" style="padding: 0; border-bottom: 2px solid #c5d0e8;"
+                  table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed;"
+                    colgroup
+                      col style="width: 7rem;"
+                      col style="width: 22%;"
+                      col style="width: 5rem;"
+                      col
+                      col style="width: 5.5rem;"
+                      col style="width: 9rem;"
+                    thead
+                      tr style="background: #dce4f5;"
+                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" data
+                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" droga
+                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" trudność
+                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" rejon
+                        th.text-center style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" punkty
+                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" zdjęcia
+                    tbody
+                      - season_routes.each_with_index do |route, ri|
+                        - route_pts = TradLeague::PointsCalculator.new(route: route).call
+                        - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
+                        - sub_row_bg = ri.even? ? '#ffffff' : '#eef2fb'
+                        tr style="border-top: 1px solid #cdd6ed; background: #{sub_row_bg}; height: 58px;"
+                          td style="padding: 0.5rem 0.75rem; color: #666; white-space: nowrap; font-size: 0.85rem; vertical-align: middle;"
+                            = route.climbing_date.strftime('%Y-%m-%d')
+                          td style="padding: 0.5rem 0.75rem; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                            = link_to route.name, "/przejscia/#{route.slug}", style: 'color: #1a73e8; font-weight: 500;'
+                          td style="padding: 0.5rem 0.75rem; color: #555; font-size: 0.85rem; vertical-align: middle;"
+                            = route.kurtyka_difficulty
+                          td style="padding: 0.5rem 0.75rem; color: #555; font-size: 0.85rem; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                            = route.area
+                          td.text-center style="padding: 0.5rem 0.75rem; color: #333; font-weight: 600; vertical-align: middle;"
+                            = route_pts.to_i > 0 ? route_pts : '—'
+                          td style="padding: 0.5rem 0.75rem; vertical-align: middle;"
+                            - if route_photos.any?
+                              div style="display: flex; gap: 0.3rem; align-items: center; justify-content: flex-start;"
+                                - route_photos.each do |photo|
+                                  = image_tag(photo.file.large.url, style: 'width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; display: block; flex-shrink: 0;', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")

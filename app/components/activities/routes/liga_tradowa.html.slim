@@ -4,6 +4,27 @@
   .large-6.columns
     = link_to 'Dodaj przejście tradowe', new_trad_route_path, class: 'button success large expanded'
 
+.row style="margin-bottom: 1rem; margin-top: 1rem;"
+  .large-12.columns
+    nav.text-center aria-label="Wybierz rok"
+      - current_year = params.fetch(:year).to_i
+      - first_year = 2018
+      - last_year = Date.current.year
+      - prev_year = current_year - 1
+      - next_year = current_year + 1
+      - visible_years = ([current_year - 1, current_year, current_year + 1] & (first_year..last_year).to_a)
+      - if prev_year >= first_year
+        = link_to "‹", liga_tradowa_path(year: prev_year), class: "button secondary", style: "margin: 0 0.25rem; min-width: 2.5rem;"
+      - else
+        = content_tag :span, "‹", class: "button secondary disabled", style: "margin: 0 0.25rem; min-width: 2.5rem; opacity: 0.3; cursor: default;"
+      - visible_years.each do |y|
+        - is_current = (y == current_year)
+        = link_to y.to_s, liga_tradowa_path(year: y), class: "button #{is_current ? 'primary' : 'secondary'}", style: "margin: 0 0.25rem; min-width: 5rem; #{is_current ? 'font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.25);' : 'opacity: 0.7;'}"
+      - if next_year <= last_year
+        = link_to "›", liga_tradowa_path(year: next_year), class: "button secondary", style: "margin: 0 0.25rem; min-width: 2.5rem;"
+      - else
+        = content_tag :span, "›", class: "button secondary disabled", style: "margin: 0 0.25rem; min-width: 2.5rem; opacity: 0.3; cursor: default;"
+
 .row style="margin-bottom: 1rem;"
   .large-12.columns
     h4 = "Liga Tradowa #{params.fetch(:year)}"

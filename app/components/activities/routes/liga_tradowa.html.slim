@@ -1,157 +1,332 @@
+css:
+  .liga-trad-wrap { max-width: 900px; margin: 0 auto; padding: 0 0.5rem; }
+
+  .liga-trad-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .liga-trad-actions a { flex: 1; }
+
+  .liga-trad-year-nav { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .liga-trad-year-nav .button { margin: 0; }
+
+  .liga-trad-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem; color: #333; }
+
+  /* ── Desktop table ── */
+  .liga-trad-table { width: 100%; border-collapse: collapse; }
+  .liga-trad-table thead tr { background: #f5f5f5; border-bottom: 2px solid #e0e0e0; }
+  .liga-trad-table th { padding: 0.75rem 0.5rem; font-size: 0.85rem; color: #555; }
+  .liga-trad-table th.sortable { cursor: pointer; }
+  .liga-trad-table tbody tr.main-row { border-bottom: 1px solid #efefef; cursor: pointer; transition: background 0.15s; }
+  .liga-trad-table tbody tr.main-row:hover { background: #f0f4ff !important; }
+  .liga-trad-table td { padding: 0.6rem 0.5rem; vertical-align: middle; }
+
+  .liga-trad-table tr.detail-row { display: none; background: #f0f4ff; }
+  .liga-trad-table tr.detail-row.open { display: table-row; }
+  .liga-trad-table tr.detail-row > td { padding: 0; border-bottom: 2px solid #c5d0e8; }
+
+  .sub-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .sub-table thead tr { background: #dce4f5; }
+  .sub-table th { padding: 0.5rem 0.75rem; color: #555; font-weight: 600; }
+  .sub-table td { padding: 0.45rem 0.75rem; vertical-align: middle; }
+  .sub-table tr.sub-even { background: #ffffff; }
+  .sub-table tr.sub-odd  { background: #eef2fb; }
+  .sub-table td.no-wrap  { white-space: nowrap; }
+  .sub-table td.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
+
+  .avatar-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .thumb-img  { width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25); display: block; cursor: pointer; }
+  .thumb-row  { display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: nowrap; }
+  .rank-num   { font-weight: bold; color: #888; font-size: 1.1rem; }
+  .pts-val    { font-weight: bold; font-size: 1.1rem; }
+  .muted      { color: #aaa; }
+
+  /* ── Mobile cards (≤ 640px) ── */
+  @media screen and (max-width: 640px) {
+    .liga-trad-actions { flex-direction: column; }
+
+    .liga-trad-table-wrap { display: none; }
+
+    .liga-trad-cards { display: block; }
+
+    .liga-card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      margin-bottom: 0.6rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .liga-card.open { border-color: #a0b0e0; box-shadow: 0 2px 10px rgba(80,110,200,0.13); }
+
+    .liga-card-main {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 0.75rem;
+    }
+    .liga-card-rank {
+      font-weight: 700;
+      color: #999;
+      font-size: 1rem;
+      min-width: 1.4rem;
+      text-align: center;
+    }
+    .liga-card-avatar { flex-shrink: 0; }
+    .liga-card-body   { flex: 1; min-width: 0; }
+    .liga-card-name   { font-weight: 600; font-size: 0.95rem; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .liga-card-last   { font-size: 0.78rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
+    .liga-card-right  { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
+    .liga-card-pts    { font-weight: 700; font-size: 1.15rem; color: #333; }
+    .liga-card-meta   { font-size: 0.72rem; color: #888; }
+
+    .liga-card-photos {
+      display: flex;
+      gap: 0.3rem;
+      padding: 0 0.75rem 0.55rem 0.75rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .liga-card-detail { display: none; border-top: 1px solid #dce4f5; background: #f4f7ff; }
+    .liga-card.open .liga-card-detail { display: block; }
+
+    .liga-sub-item {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid #e0e8f8;
+      font-size: 0.82rem;
+    }
+    .liga-sub-item:last-child { border-bottom: none; }
+    .liga-sub-item-header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem; }
+    .liga-sub-item-name   { font-weight: 600; color: #1a73e8; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .liga-sub-item-pts    { font-weight: 700; color: #333; flex-shrink: 0; }
+    .liga-sub-item-meta   { color: #888; font-size: 0.76rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .liga-sub-item-photos { display: flex; gap: 0.3rem; margin-top: 0.35rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  }
+
+  /* ── Hide cards on desktop ── */
+  @media screen and (min-width: 641px) {
+    .liga-trad-cards { display: none; }
+    .liga-trad-table-wrap { display: block; }
+  }
+
+  /* ── Lightbox ── */
+  #liga-trad-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; cursor: pointer; }
+  #liga-trad-lightbox.open { display: flex; }
+  #liga-trad-lightbox-img { max-width: 90vw; max-height: 90vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.7); }
+
 javascript:
   document.addEventListener('DOMContentLoaded', function() {
-    // Row expand toggle
+
+    // ── Desktop row expand ──
     document.querySelectorAll('.liga-trad-row').forEach(function(row) {
       row.addEventListener('click', function() {
         var target = document.getElementById(this.dataset.toggleTarget);
-        if (target) {
-          var isHidden = target.style.display === 'none' || target.style.display === '';
-          target.style.display = isHidden ? 'table-row' : 'none';
-          this.style.background = isHidden ? '#e8eeff' : '';
-        }
+        if (!target) return;
+        var open = target.classList.toggle('open');
+        this.style.background = open ? '#e8eeff' : '';
       });
     });
 
-    // Lightbox
-    var overlay = document.getElementById('liga-trad-lightbox');
+    // ── Mobile card expand ──
+    document.querySelectorAll('.liga-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
+        this.classList.toggle('open');
+      });
+    });
+
+    // ── Lightbox ──
+    var overlay   = document.getElementById('liga-trad-lightbox');
     var overlayImg = document.getElementById('liga-trad-lightbox-img');
     overlay.addEventListener('click', function() {
-      overlay.style.display = 'none';
+      overlay.classList.remove('open');
       overlayImg.src = '';
     });
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { overlay.style.display = 'none'; overlayImg.src = ''; }
+      if (e.key === 'Escape') { overlay.classList.remove('open'); overlayImg.src = ''; }
     });
   });
 
   function ligaTradOpenPhoto(url, e) {
     e.stopPropagation();
-    var overlay = document.getElementById('liga-trad-lightbox');
+    var overlay    = document.getElementById('liga-trad-lightbox');
     var overlayImg = document.getElementById('liga-trad-lightbox-img');
     overlayImg.src = url;
-    overlay.style.display = 'flex';
+    overlay.classList.add('open');
   }
 
-#liga-trad-lightbox style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; cursor:pointer;"
-  img#liga-trad-lightbox-img src="" style="max-width:90vw; max-height:90vh; border-radius:6px; box-shadow:0 4px 32px rgba(0,0,0,0.7);"
+#liga-trad-lightbox
+  img#liga-trad-lightbox-img src=""
 
-.row
-  .large-6.columns
+.liga-trad-wrap
+
+  .liga-trad-actions
     = link_to 'Regulamin tradowych dzików', liga_tradowa_regulamin_path, class: 'button warning large expanded'
-  .large-6.columns
-    = link_to 'Dodaj przejście tradowe', new_trad_route_path, class: 'button success large expanded'
+    = link_to 'Dodaj przejście tradowe',     new_trad_route_path,         class: 'button success large expanded'
 
-.row style="margin-bottom: 1rem; margin-top: 1rem;"
-  .large-12.columns
-    nav.text-center aria-label="Wybierz rok"
-      - current_year = params.fetch(:year).to_i
-      - first_year = 2018
-      - last_year = Date.current.year
-      - prev_year = current_year - 1
-      - next_year = current_year + 1
-      - visible_years = ([current_year - 1, current_year, current_year + 1] & (first_year..last_year).to_a)
-      - if prev_year >= first_year
-        = link_to "‹", liga_tradowa_path(year: prev_year), class: "button secondary", style: "margin: 0 0.25rem; min-width: 2.5rem;"
-      - else
-        = content_tag :span, "‹", class: "button secondary disabled", style: "margin: 0 0.25rem; min-width: 2.5rem; opacity: 0.3; cursor: default;"
-      - visible_years.each do |y|
-        - is_current = (y == current_year)
-        = link_to y.to_s, liga_tradowa_path(year: y), class: "button #{is_current ? 'primary' : 'secondary'}", style: "margin: 0 0.25rem; min-width: 5rem; #{is_current ? 'font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.25);' : 'opacity: 0.7;'}"
-      - if next_year <= last_year
-        = link_to "›", liga_tradowa_path(year: next_year), class: "button secondary", style: "margin: 0 0.25rem; min-width: 2.5rem;"
-      - else
-        = content_tag :span, "›", class: "button secondary disabled", style: "margin: 0 0.25rem; min-width: 2.5rem; opacity: 0.3; cursor: default;"
+  .liga-trad-year-nav
+    - current_year = params.fetch(:year).to_i
+    - first_year   = 2018
+    - last_year    = Date.current.year
+    - prev_year    = current_year - 1
+    - next_year    = current_year + 1
+    - visible_years = ([current_year - 1, current_year, current_year + 1] & (first_year..last_year).to_a)
+    - if prev_year >= first_year
+      = link_to "‹", liga_tradowa_path(year: prev_year), class: "button secondary", style: "min-width:2.5rem;"
+    - else
+      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ‹
+    - visible_years.each do |y|
+      - is_current = (y == current_year)
+      = link_to y.to_s, liga_tradowa_path(year: y), class: "button #{is_current ? 'primary' : 'secondary'}", style: "min-width:4.5rem; #{is_current ? 'font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.25);' : 'opacity:0.7;'}"
+    - if next_year <= last_year
+      = link_to "›", liga_tradowa_path(year: next_year), class: "button secondary", style: "min-width:2.5rem;"
+    - else
+      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ›
 
-.row style="margin-bottom: 1rem;"
-  .large-12.columns
-    h4 = "Liga Tradowa #{params.fetch(:year)}"
-    .row
-      .large-12.columns
-        table style="width: 100%; border-collapse: collapse;"
-          thead
-            tr style="background: #f5f5f5; border-bottom: 2px solid #e0e0e0;"
-              th.text-center style="width: 2.5rem; padding: 0.75rem 0.5rem;" #
-              th style="width: 3rem; padding: 0.75rem 0.5rem;"
-              th style="width: 18%; padding: 0.75rem 0.5rem;" kto?
-              th style="width: 18%; padding: 0.75rem 0.5rem;" ostatnia droga
-              th style="width: 14rem; padding: 0.75rem 0.5rem;"
-              th.text-center style="width: 5.5rem; padding: 0.75rem 0.5rem; cursor: pointer;"
-                = sort_link_for('points', 'punktów', @sort, @sort_dir, params[:year])
-              th.text-center.hide-for-small-only style="width: 4.5rem; padding: 0.75rem 0.5rem; cursor: pointer;"
-                = sort_link_for('routes', 'dróg', @sort, @sort_dir, params[:year])
-              th.text-center.hide-for-small-only style="width: 4.5rem; padding: 0.75rem 0.5rem; cursor: pointer;"
-                = sort_link_for('likes', 'bicków', @sort, @sort_dir, params[:year])
-          tbody
-            - @season_leaders.each_with_index do |row, index|
-              - user = row[:user]
-              - last_route = row[:last_route]
-              - season_routes = row[:season_routes]
-              - season_photos = row[:season_photos]
-              - row_id = "user-routes-#{user.id}"
-              - gallery_id = "gallery-#{user.id}"
-              tr.liga-trad-row style="border-bottom: 1px solid #efefef; #{index.even? ? '' : 'background: #fafafa;'} cursor: pointer;" data-toggle-target=row_id
-                td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; color: #888; font-size: 1.1rem;"
-                  = index + 1
-                td style="padding: 0.5rem 0.25rem 0.5rem 0.5rem;"
-                  = link_to user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();' do
-                    - if user.avatar.present?
-                      = image_tag(user.avatar.url, style: 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
-                    - else
-                      = image_tag('default-avatar.png', style: 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2);')
-                td style="padding: 0.75rem 0.5rem; font-weight: 500;"
-                  = link_to user.display_name, user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();'
-                td style="padding: 0.75rem 0.5rem; vertical-align: middle;"
-                  - if last_route
-                    = link_to last_route.name, "/przejscia/#{last_route.slug}", style: 'color: #1a73e8; font-weight: 500;', onclick: 'event.stopPropagation();'
-                  - else
-                    span style="color: #aaa;" —
-                td style="padding: 0.5rem 0.75rem; vertical-align: middle; text-align: center;"
-                  - if season_photos.any?
-                    div style="display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: nowrap;"
-                      - season_photos.each do |photo|
-                        = image_tag(photo.file.medium.url, style: 'width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25); display: block; cursor: pointer;', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
-                td.text-center style="padding: 0.75rem 0.5rem; font-weight: bold; font-size: 1.1rem;"
-                  = row[:points]
-                td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
-                  = row[:routes]
-                td.text-center.hide-for-small-only style="padding: 0.75rem 0.5rem; color: #555;"
-                  = row[:likes]
-              tr id=row_id style="display: none; background: #f0f4ff;"
-                td colspan="8" style="padding: 0; border-bottom: 2px solid #c5d0e8;"
-                  table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; table-layout: fixed;"
-                    colgroup
-                      col style="width: 7rem;"
-                      col style="width: 22%;"
-                      col style="width: 5rem;"
-                      col
-                      col style="width: 5.5rem;"
-                      col style="width: 9rem;"
-                    thead
-                      tr style="background: #dce4f5;"
-                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" data
-                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" droga
-                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" trudność
-                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" rejon
-                        th.text-center style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" punkty
-                        th style="padding: 0.5rem 0.75rem; color: #555; font-weight: 600;" zdjęcia
-                    tbody
-                      - season_routes.each_with_index do |route, ri|
-                        - route_pts = TradLeague::PointsCalculator.new(route: route).call
-                        - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
-                        - sub_row_bg = ri.even? ? '#ffffff' : '#eef2fb'
-                        tr style="border-top: 1px solid #cdd6ed; background: #{sub_row_bg}; height: 58px;"
-                          td style="padding: 0.5rem 0.75rem; color: #666; white-space: nowrap; font-size: 0.85rem; vertical-align: middle;"
-                            = route.climbing_date.strftime('%Y-%m-%d')
-                          td style="padding: 0.5rem 0.75rem; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                            = link_to route.name, "/przejscia/#{route.slug}", style: 'color: #1a73e8; font-weight: 500;'
-                          td style="padding: 0.5rem 0.75rem; color: #555; font-size: 0.85rem; vertical-align: middle;"
-                            = route.kurtyka_difficulty
-                          td style="padding: 0.5rem 0.75rem; color: #555; font-size: 0.85rem; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                            = route.area
-                          td.text-center style="padding: 0.5rem 0.75rem; color: #333; font-weight: 600; vertical-align: middle;"
-                            = route_pts.to_i > 0 ? route_pts : '—'
-                          td style="padding: 0.5rem 0.75rem; vertical-align: middle;"
-                            - if route_photos.any?
-                              div style="display: flex; gap: 0.3rem; align-items: center; justify-content: flex-start;"
-                                - route_photos.each do |photo|
-                                  = image_tag(photo.file.large.url, style: 'width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer; display: block; flex-shrink: 0;', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
+  .liga-trad-title = "Liga Tradowa #{params.fetch(:year)}"
+
+  / ════════════════════════════════
+  / Desktop table
+  / ════════════════════════════════
+  .liga-trad-table-wrap
+    table.liga-trad-table
+      thead
+        tr
+          th.text-center style="width:2.5rem;" #
+          th style="width:2.75rem;"
+          th style="width:18%;" kto?
+          th style="width:18%;" ostatnia droga
+          th
+          th.text-center.sortable style="width:5.5rem;"
+            = sort_link_for('points', 'punktów', @sort, @sort_dir, params[:year])
+          th.text-center.sortable style="width:4.5rem;"
+            = sort_link_for('routes', 'dróg', @sort, @sort_dir, params[:year])
+          th.text-center.sortable style="width:4.5rem;"
+            = sort_link_for('likes', 'bicków', @sort, @sort_dir, params[:year])
+      tbody
+        - @season_leaders.each_with_index do |row, index|
+          - user         = row[:user]
+          - last_route   = row[:last_route]
+          - season_routes = row[:season_routes]
+          - season_photos = row[:season_photos]
+          - row_id       = "user-routes-#{user.id}"
+          tr.liga-trad-row.main-row style="#{index.odd? ? 'background:#fafafa;' : ''}" data-toggle-target=row_id
+            td.text-center
+              span.rank-num = index + 1
+            td style="padding:0.5rem 0.25rem 0.5rem 0.5rem;"
+              = link_to user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();' do
+                - if user.avatar.present?
+                  = image_tag(user.avatar.url, class: 'avatar-img')
+                - else
+                  = image_tag('default-avatar.png', class: 'avatar-img')
+            td style="font-weight:500;"
+              = link_to user.display_name, user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();'
+            td
+              - if last_route
+                = link_to last_route.name, "/przejscia/#{last_route.slug}", style: 'color:#1a73e8; font-weight:500;', onclick: 'event.stopPropagation();'
+              - else
+                span.muted —
+            td style="text-align:center;"
+              - if season_photos.any?
+                span.thumb-row
+                  - season_photos.each do |photo|
+                    = image_tag(photo.file.medium.url, class: 'thumb-img', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
+            td.text-center
+              span.pts-val = row[:points]
+            td.text-center style="color:#555;"
+              = row[:routes]
+            td.text-center style="color:#555;"
+              = row[:likes]
+          tr.detail-row id=row_id
+            td colspan="8"
+              table.sub-table
+                colgroup
+                  col style="width:7rem;"
+                  col style="width:22%;"
+                  col style="width:5rem;"
+                  col
+                  col style="width:5.5rem;"
+                  col style="width:9rem;"
+                thead
+                  tr
+                    th data
+                    th droga
+                    th trudność
+                    th rejon
+                    th.text-center punkty
+                    th zdjęcia
+                tbody
+                  - season_routes.each_with_index do |route, ri|
+                    - route_pts    = TradLeague::PointsCalculator.new(route: route).call
+                    - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
+                    tr class="#{ri.even? ? 'sub-even' : 'sub-odd'}"
+                      td.no-wrap style="color:#666; font-size:0.83rem;"
+                        = route.climbing_date.strftime('%Y-%m-%d')
+                      td.truncate
+                        = link_to route.name, "/przejscia/#{route.slug}", style: 'color:#1a73e8; font-weight:500;'
+                      td style="color:#555;"
+                        = route.kurtyka_difficulty
+                      td.truncate style="color:#555;"
+                        = route.area
+                      td.text-center style="font-weight:600;"
+                        = route_pts.to_i > 0 ? route_pts : '—'
+                      td
+                        - if route_photos.any?
+                          span.thumb-row
+                            - route_photos.each do |photo|
+                              = image_tag(photo.file.large.url, class: 'thumb-img', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
+
+  / ════════════════════════════════
+  / Mobile cards
+  / ════════════════════════════════
+  .liga-trad-cards
+    - @season_leaders.each_with_index do |row, index|
+      - user          = row[:user]
+      - last_route    = row[:last_route]
+      - season_routes = row[:season_routes]
+      - season_photos = row[:season_photos]
+
+      .liga-card
+        .liga-card-main
+          .liga-card-rank = index + 1
+          .liga-card-avatar
+            = link_to user_path(kw_id: user.kw_id) do
+              - if user.avatar.present?
+                = image_tag(user.avatar.url, class: 'avatar-img')
+              - else
+                = image_tag('default-avatar.png', class: 'avatar-img')
+          .liga-card-body
+            .liga-card-name
+              = link_to user.display_name, user_path(kw_id: user.kw_id), style: 'color:inherit; text-decoration:none;'
+            .liga-card-last
+              - if last_route
+                | #{last_route.name}
+              - else
+                span.muted —
+          .liga-card-right
+            .liga-card-pts = row[:points]
+            .liga-card-meta = "#{row[:routes]} dróg · #{row[:likes]} bicków"
+
+        - if season_photos.any?
+          .liga-card-photos
+            - season_photos.each do |photo|
+              = image_tag(photo.file.medium.url, class: 'thumb-img', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")
+
+        .liga-card-detail
+          - season_routes.each do |route|
+            - route_pts    = TradLeague::PointsCalculator.new(route: route).call
+            - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
+            .liga-sub-item
+              .liga-sub-item-header
+                .liga-sub-item-name
+                  = link_to route.name, "/przejscia/#{route.slug}"
+                .liga-sub-item-pts = route_pts.to_i > 0 ? "#{route_pts} pkt" : '—'
+              .liga-sub-item-meta
+                span = route.climbing_date.strftime('%Y-%m-%d')
+                - if route.kurtyka_difficulty.present?
+                  span = route.kurtyka_difficulty
+                - if route.area.present?
+                  span = route.area
+              - if route_photos.any?
+                .liga-sub-item-photos
+                  - route_photos.each do |photo|
+                    = image_tag(photo.file.large.url, class: 'thumb-img', onclick: "ligaTradOpenPhoto('#{photo.file.url}', event)")

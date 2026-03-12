@@ -116,10 +116,10 @@
             ul.menu.vertical
               - if [12, 1, 2, 3, 4, 5].include?(Date.today.month)
                 li= link_to 'Narciarskie Dziki', narciarskie_dziki_path
-                li= link_to 'Tradowe Dziki', '/liga-tradowa/2025'
+                li= link_to 'Tradowe Dziki', '/liga-tradowa/2026'
               - else
                 li= link_to 'Górskie Dziki', gorskie_dziki_path
-                li= link_to 'Tradowe Dziki', "/liga-tradowa/2025"
+                li= link_to 'Tradowe Dziki', "/liga-tradowa/2026"
               - if user_signed_in?
                 li= link_to 'Klubowa Ósemka', '/osemka/2025'
                 li= link_to 'Konkurs Fotograficzny', '/konkurs/kasprzyk_2025/glosowanie'

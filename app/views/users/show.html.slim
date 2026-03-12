@@ -62,9 +62,9 @@
           - active_style = ->(type) { "margin: 0 0.25rem 0.25rem 0; #{@route_type_filter == type ? 'font-weight: bold;' : 'opacity: 0.65;'}" }
           = link_to 'Wszystkie', user_path(kw_id: @user.kw_id), class: "button small #{@route_type_filter.nil? ? 'primary' : 'secondary'}", style: "margin: 0 0.25rem 0.25rem 0;"
           = link_to 'Narty', user_path(kw_id: @user.kw_id, route_type: 'ski'), class: "button small #{@route_type_filter == 'ski' ? 'primary' : 'secondary'}", style: active_style.call('ski')
-          = link_to 'Wspinaczka klasyczna', user_path(kw_id: @user.kw_id, route_type: 'regular_climbing'), class: "button small #{@route_type_filter == 'regular_climbing' ? 'primary' : 'secondary'}", style: active_style.call('regular_climbing')
-          = link_to 'Wspinaczka sportowa', user_path(kw_id: @user.kw_id, route_type: 'sport_climbing'), class: "button small #{@route_type_filter == 'sport_climbing' ? 'primary' : 'secondary'}", style: active_style.call('sport_climbing')
-          = link_to 'Trad', user_path(kw_id: @user.kw_id, route_type: 'trad_climbing'), class: "button small #{@route_type_filter == 'trad_climbing' ? 'primary' : 'secondary'}", style: active_style.call('trad_climbing')
+          = link_to 'Wspinanie górskie', user_path(kw_id: @user.kw_id, route_type: 'regular_climbing'), class: "button small #{@route_type_filter == 'regular_climbing' ? 'primary' : 'secondary'}", style: active_style.call('regular_climbing')
+          = link_to 'Wspinanie sportowe', user_path(kw_id: @user.kw_id, route_type: 'sport_climbing'), class: "button small #{@route_type_filter == 'sport_climbing' ? 'primary' : 'secondary'}", style: active_style.call('sport_climbing')
+          = link_to 'Wspinanie tradowe', user_path(kw_id: @user.kw_id, route_type: 'trad_climbing'), class: "button small #{@route_type_filter == 'trad_climbing' ? 'primary' : 'secondary'}", style: active_style.call('trad_climbing')
 
       - if @my_routes.any?
         .row

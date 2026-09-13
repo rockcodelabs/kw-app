@@ -95,8 +95,36 @@ css:
   #gd-lightbox-img { max-width: 92vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 6px 40px rgba(0,0,0,0.7); }
 
   @media screen and (max-width: 640px) {
+    .gd-wrap { font-size: 0.95rem; }
+    .gd-header h2 { font-size: 1.4rem; }
+    .gd-header .gd-sub { font-size: 0.9rem; }
+
     .gd-controls { justify-content: center; }
-    .gd-mosaic { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); grid-auto-rows: 90px; }
+    .gd-controls .button-group { flex-wrap: wrap; justify-content: center; }
+
+    /* Zakladki na telefonie: mniejsze, zawijane, regulamin pod spodem */
+    .gd-tabs-bar { flex-direction: column; align-items: stretch; }
+    .gd-tabs-bar .tabs { display: flex; flex-wrap: wrap; }
+    .gd-tabs-bar .tabs-title { flex: 1 0 auto; }
+    .gd-tabs-bar .tabs-title > a { padding: 0.5rem 0.6rem; font-size: 0.85rem; text-align: center; }
+    .gd-reg-btn { width: 100%; margin-top: 0.4rem; }
+
+    /* Tabela rankingu: chowamy kolumny opcjonalne (widoczne po rozwinieciu wiersza) */
+    .gd-col-route, .gd-col-photos { display: none; }
+    .gd-rank-table { table-layout: auto; }
+    .gd-rank-table td, .gd-rank-table th { font-size: 0.9rem; }
+    .gd-person-name { font-size: 0.95rem; }
+    .gd-badges { margin-left: 2.6rem; }
+    .gd-badges .label { font-size: 0.6rem; padding: 0.1rem 0.3rem; }
+    .gd-avatar { width: 32px; height: 32px; }
+
+    .gd-mosaic { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); grid-auto-rows: 90px; gap: 0.3rem; }
+    .gd-tile-info { opacity: 1; padding: 0.8rem 0.4rem 0.35rem; }
+    .gd-tile-title { font-size: 0.72rem; }
+    .gd-tile-sub { font-size: 0.64rem; }
+
+    .gd-bar-name { width: 40%; font-size: 0.85rem; }
+    .gd-bar-val { width: 5.5rem; font-size: 0.8rem; }
   }
 
 .gd-wrap
@@ -216,7 +244,7 @@ css:
         .gd-mosaic
           - @gallery.each_with_index do |item, gi|
             - tile_class = [nil, nil, 'gd-tile-big', nil, 'gd-tile-tall', nil, 'gd-tile-wide', nil][gi % 8]
-            a class="gd-tile #{tile_class}" href="#" onclick="gdOpenPhoto('#{item[:photo].file.large.url}', event); return false;"
+            a class="gd-tile #{tile_class}" href="#" onclick="gdOpenPhoto('#{item[:photo].file.url}', event); return false;"
               = image_tag(item[:photo].file.large.url, class: 'gd-tile-img', loading: 'lazy')
               .gd-tile-info
                 .gd-tile-title = item[:route].name

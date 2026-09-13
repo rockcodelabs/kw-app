@@ -7,8 +7,8 @@
       tr
         th.text-center style="width:3rem;" #
         th kto?
-        th style="width:14rem;" ostatnie przejście
-        th.text-center style="width:7rem;" zdjęcia
+        th.gd-col-route style="width:14rem;" ostatnie przejście
+        th.gd-col-photos.text-center style="width:7rem;" zdjęcia
         th.text-right style="width:5rem;" metrów
         th.text-right style="width:3.5rem;" dróg
         th.text-right style="width:3.5rem;" bicków
@@ -30,16 +30,16 @@
               .gd-badges
                 - row[:badges].each do |badge|
                   span.label.secondary title=badge[:title] = "#{badge[:icon]} #{badge[:label]}"
-          td.gd-last-route
+          td.gd-last-route.gd-col-route
             - if row[:last_route]
               = link_to row[:last_route].name, activities_mountain_route_path(row[:last_route].slug), onclick: 'event.stopPropagation();'
             - else
               span.gd-num —
-          td.text-center
+          td.gd-col-photos.text-center
             - if row[:photos].any?
               .gd-photo-row
                 - row[:photos].first(3).each do |photo|
-                  = image_tag(photo.file.medium.url, class: 'gd-thumb-sm', onclick: "gdOpenPhoto('#{photo.file.large.url}', event)")
+                  = image_tag(photo.file.medium.url, class: 'gd-thumb-sm', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
           td.text-right
             strong = row[:meters]
           td.text-right.gd-num = row[:routes_count]
@@ -63,4 +63,4 @@
                   - if photos.any?
                     .gd-sub-photos
                       - photos.each do |photo|
-                        = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.large.url}', event)")
+                        = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")

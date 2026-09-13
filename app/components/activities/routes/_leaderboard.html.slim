@@ -1,0 +1,66 @@
+- scope = local_assigns.fetch(:scope, 'x')
+- if rows.empty?
+  .callout.secondary.text-center Brak przejść w tym okresie.
+- else
+  table.hover.gd-rank-table
+    thead
+      tr
+        th.text-center style="width:3rem;" #
+        th kto?
+        th style="width:14rem;" ostatnie przejście
+        th.text-center style="width:7rem;" zdjęcia
+        th.text-right style="width:5rem;" metrów
+        th.text-right style="width:3.5rem;" dróg
+        th.text-right style="width:3.5rem;" bicków
+    tbody
+      - rows.each_with_index do |row, index|
+        - user = row[:user]
+        - row_id = "gd-#{scope}-#{user.id}"
+        tr.gd-row data-gd-target=row_id
+          td.text-center.gd-rank-cell
+            - if index <= 2
+              span.gd-medal = ['🥇', '🥈', '🥉'][index]
+            - else
+              span.gd-rank = index + 1
+          td
+            = link_to gorskie_dziki_profile_path(kw_id: user.kw_id, year: year), class: 'gd-person', onclick: 'event.stopPropagation();' do
+              = image_tag(user.avatar.present? ? user.avatar.url : 'default-avatar.png', class: 'gd-avatar')
+              span.gd-person-name = user.display_name
+            - if row[:badges].any?
+              .gd-badges
+                - row[:badges].each do |badge|
+                  span.label.secondary title=badge[:title] = "#{badge[:icon]} #{badge[:label]}"
+          td.gd-last-route
+            - if row[:last_route]
+              = link_to row[:last_route].name, activities_mountain_route_path(row[:last_route].slug), onclick: 'event.stopPropagation();'
+            - else
+              span.gd-num —
+          td.text-center
+            - if row[:photos].any?
+              .gd-photo-row
+                - row[:photos].first(3).each do |photo|
+                  = image_tag(photo.file.medium.url, class: 'gd-thumb-sm', onclick: "gdOpenPhoto('#{photo.file.large.url}', event)")
+          td.text-right
+            strong = row[:meters]
+          td.text-right.gd-num = row[:routes_count]
+          td.text-right.gd-num = row[:hearts]
+        tr.gd-detail-row id=row_id
+          td colspan="7" style="padding:0;"
+            .gd-sub-wrap
+              - row[:routes].each do |route|
+                .gd-sub-item
+                  .gd-sub-line
+                    span.gd-sub-date = route.climbing_date.strftime('%d.%m.%Y')
+                    = link_to route.name, activities_mountain_route_path(route.slug), class: 'gd-sub-name', onclick: 'event.stopPropagation();'
+                  .gd-sub-meta
+                    - if route.difficulty.present?
+                      span.label = route.difficulty
+                    span = "#{route.length} m"
+                    span ❤ #{route.hearts_count}
+                    - if route.area.present?
+                      span.gd-sub-area = route.area
+                  - photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(4)
+                  - if photos.any?
+                    .gd-sub-photos
+                      - photos.each do |photo|
+                        = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.large.url}', event)")

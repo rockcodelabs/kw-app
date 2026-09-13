@@ -1,354 +1,360 @@
 css:
-  .gd-wrap { max-width: 900px; margin: 0 auto; padding: 0 0.5rem; }
+  .gd-wrap { max-width: 1000px; margin: 0 auto; }
+  .gd-header { text-align: center; margin-bottom: 1rem; }
+  .gd-header h2 { font-weight: 800; margin-bottom: 0.1rem; }
+  .gd-header .gd-sub { color: #8a8a8a; font-size: 1.05rem; }
 
-  .gd-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-  .gd-actions a { flex: 1; }
+  .gd-nav { text-align: center; margin-bottom: 0.75rem; }
+  .gd-nav .button-group { margin-bottom: 0.35rem; justify-content: center; display: inline-flex; flex-wrap: wrap; }
 
-  .gd-nav { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-  .gd-nav .button { margin: 0; }
+  .gd-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .gd-controls .button-group { margin-bottom: 0; }
+  .gd-controls .button { margin-bottom: 0; }
 
-  .gd-months { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
-  .gd-months .button { margin: 0; }
+  .gd-col-title { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8a8a8a; font-weight: 700; margin-bottom: 0.4rem; }
+  .gd-col-title.gd-mt { margin-top: 2rem; }
 
-  .gd-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.2rem; color: #333; }
-  .gd-subtitle { font-size: 0.95rem; color: #777; margin-bottom: 0.75rem; }
-  .gd-empty { padding: 1.5rem; text-align: center; color: #999; background: #fafafa; border: 1px dashed #e0e0e0; border-radius: 8px; }
+  .gd-wrap table { font-size: 1rem; }
+  .gd-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.2); flex-shrink: 0; }
+  .gd-person { display: inline-flex; align-items: center; gap: 0.6rem; color: #0a0a0a; max-width: 100%; min-width: 0; }
+  .gd-person-name { font-weight: 600; font-size: 1.05rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .gd-medal { font-size: 1.4rem; }
+  .gd-rank { color: #8a8a8a; font-weight: 700; font-size: 1.05rem; }
+  .gd-num { color: #8a8a8a; }
+  .gd-badges { margin-top: 0.3rem; margin-left: 2.975rem; display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  .gd-badges .label { margin: 0; font-size: 0.68rem; padding: 0.15rem 0.4rem; }
+  .gd-rank-table { margin-bottom: 0; table-layout: fixed; }
+  .gd-rank-table td { vertical-align: middle; font-size: 1rem; }
+  .gd-rank-table th:first-child, .gd-rank-table td:first-child { padding-left: 0.75rem; }
+  .gd-rank-table th:last-child, .gd-rank-table td:last-child { padding-right: 1rem; }
+  .gd-rank-cell { white-space: nowrap; }
+  .gd-row { cursor: pointer; }
+  .gd-row:hover { background: #f4f8fc; }
 
-  /* Desktop table */
-  .gd-table { width: 100%; border-collapse: collapse; }
-  .gd-table thead tr { background: #f5f5f5; border-bottom: 2px solid #e0e0e0; }
-  .gd-table th { padding: 0.75rem 0.5rem; font-size: 0.85rem; color: #555; }
-  .gd-table tbody tr.main-row { border-bottom: 1px solid #efefef; cursor: pointer; transition: background 0.15s; }
-  .gd-table tbody tr.main-row:hover { background: #f0f4ff !important; }
-  .gd-table td { padding: 0.6rem 0.5rem; vertical-align: middle; }
+  .gd-detail-row { display: none; }
+  .gd-detail-row.open { display: table-row; }
+  .gd-detail-row > td { border-top: 0 !important; }
+  .gd-sub-wrap { background: #f7f9fc; border-left: 3px solid #1779ba; padding: 0.5rem 0.75rem; }
+  .gd-sub-item { padding: 0.5rem 0; border-bottom: 1px solid #e6e9ef; }
+  .gd-sub-item:last-child { border-bottom: 0; }
+  .gd-sub-line { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .gd-sub-date { color: #8a8a8a; font-size: 0.85rem; white-space: nowrap; }
+  .gd-sub-name { font-weight: 600; color: #1779ba; }
+  .gd-sub-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.2rem; color: #666; font-size: 0.85rem; }
+  .gd-sub-meta .label { font-size: 0.7rem; }
+  .gd-sub-area { color: #8a8a8a; }
+  .gd-sub-photos { display: flex; gap: 0.35rem; margin-top: 0.4rem; flex-wrap: wrap; }
+  .gd-thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 4px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.1s; }
+  .gd-thumb:hover { transform: scale(1.05); }
+  .gd-last-route { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 16rem; }
+  .gd-last-route a { color: #1779ba; }
+  .gd-photo-row { display: flex; gap: 0.2rem; justify-content: center; }
+  .gd-thumb-sm { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .gd-thumb-sm:hover { transform: scale(1.08); }
 
-  .gd-table tr.detail-row { display: none; background: #f0f4ff; }
-  .gd-table tr.detail-row.open { display: table-row; }
-  .gd-table tr.detail-row > td { padding: 0; border-bottom: 2px solid #c5d0e8; }
+  .gd-record-value { font-size: 1.8rem; font-weight: 800; color: #1779ba; line-height: 1; }
+  .gd-record-people { margin-top: 0.5rem; }
+  .gd-record-people img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; margin-right: 0.15rem; }
 
-  .gd-sub-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .gd-sub-table thead tr { background: #dce4f5; }
-  .gd-sub-table th { padding: 0.5rem 0.75rem; color: #555; font-weight: 600; }
-  .gd-sub-table td { padding: 0.45rem 0.75rem; vertical-align: middle; }
-  .gd-sub-table tr.sub-even { background: #ffffff; }
-  .gd-sub-table tr.sub-odd  { background: #eef2fb; }
-  .gd-sub-table td.no-wrap  { white-space: nowrap; }
-  .gd-sub-table td.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
+  .gd-bar { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .gd-bar-name { width: 34%; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gd-bar .progress { flex: 1; margin-bottom: 0; background: #eef0f4; height: 18px; border-radius: 999px; }
+  .gd-bar .progress-meter { border-radius: 999px; }
+  .gd-bar-val { width: 7rem; text-align: right; font-size: 0.95rem; color: #666; font-weight: 600; }
 
-  .gd-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-  .gd-thumb  { width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25); display: block; cursor: pointer; }
-  .gd-thumb-row { display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: nowrap; }
-  .gd-rank   { font-weight: bold; color: #888; font-size: 1.1rem; }
-  .gd-meters { font-weight: bold; font-size: 1.1rem; }
-  .gd-muted  { color: #aaa; }
+  .gd-hof { display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.4rem; -webkit-overflow-scrolling: touch; }
+  .gd-hof-card { flex: 0 0 auto; width: 145px; text-align: center; text-decoration: none; }
+  .gd-hof-card .card { margin-bottom: 0; padding: 0.5rem; }
+  .gd-hof-year { font-weight: 800; color: #b8901f; font-size: 1rem; }
+  .gd-hof-avatar { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin: 0.35rem auto; display: block; border: 2px solid #f0d98a; }
+  .gd-hof-name { font-size: 0.95rem; font-weight: 600; color: #0a0a0a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gd-hof-meters { font-size: 0.9rem; color: #8a8a8a; }
 
-  /* Mobile cards */
-  @media screen and (max-width: 640px) {
-    .gd-actions { flex-direction: column; }
-    .gd-table-wrap { display: none; }
-    .gd-cards { display: block; }
+  .gd-regulamin { text-align: center; margin: 2.5rem 0 1rem; }
+  .gd-tabs-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+  .gd-tabs-bar .tabs { flex: 1 1 auto; }
+  .gd-reg-btn { margin: 0; white-space: nowrap; }
 
-    .gd-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 0.6rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden; cursor: pointer; }
-    .gd-card.open { border-color: #a0b0e0; box-shadow: 0 2px 10px rgba(80,110,200,0.13); }
-    .gd-card-main { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; }
-    .gd-card-rank { font-weight: 700; color: #999; font-size: 1rem; min-width: 1.4rem; text-align: center; }
-    .gd-card-avatar { flex-shrink: 0; }
-    .gd-card-body { flex: 1; min-width: 0; }
-    .gd-card-name { font-weight: 600; font-size: 0.95rem; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .gd-card-last { font-size: 0.78rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
-    .gd-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
-    .gd-card-meters { font-weight: 700; font-size: 1.15rem; color: #333; }
-    .gd-card-meta { font-size: 0.72rem; color: #888; }
-    .gd-card-photos { display: flex; gap: 0.3rem; padding: 0 0.75rem 0.55rem 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: center; }
-    .gd-card-detail { display: none; border-top: 1px solid #dce4f5; background: #f4f7ff; }
-    .gd-card.open .gd-card-detail { display: block; }
-    .gd-sub-item { padding: 0.55rem 0.75rem; border-bottom: 1px solid #e0e8f8; font-size: 0.82rem; }
-    .gd-sub-item:last-child { border-bottom: none; }
-    .gd-sub-item-header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem; }
-    .gd-sub-item-name { font-weight: 600; color: #1a73e8; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .gd-sub-item-pts { font-weight: 700; color: #333; flex-shrink: 0; }
-    .gd-sub-item-meta { color: #888; font-size: 0.76rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    .gd-sub-item-photos { display: flex; gap: 0.3rem; margin-top: 0.35rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  }
-
-  @media screen and (min-width: 641px) {
-    .gd-cards { display: none; }
-    .gd-table-wrap { display: block; }
-  }
+  /* Galeria - mozaika (witraz) */
+  .gd-mosaic { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); grid-auto-rows: 115px; grid-auto-flow: dense; gap: 0.4rem; }
+  .gd-tile { position: relative; display: block; overflow: hidden; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.25); text-decoration: none; }
+  .gd-tile.gd-tile-wide { grid-column: span 2; }
+  .gd-tile.gd-tile-tall { grid-row: span 2; }
+  .gd-tile.gd-tile-big { grid-column: span 2; grid-row: span 2; }
+  .gd-tile-img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s ease; }
+  .gd-tile:hover .gd-tile-img { transform: scale(1.06); }
+  .gd-tile-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.4rem 0.6rem 0.5rem; color: #fff; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.75) 100%); opacity: 0; transition: opacity 0.2s ease; }
+  .gd-tile:hover .gd-tile-info { opacity: 1; }
+  .gd-tile-title { font-weight: 700; font-size: 0.9rem; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gd-tile-sub { font-size: 0.78rem; opacity: 0.9; display: flex; justify-content: space-between; gap: 0.4rem; }
+  .gd-tile-hearts { white-space: nowrap; }
 
   /* Lightbox */
-  #gd-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; cursor: pointer; }
+  #gd-lightbox { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 9999; background: rgba(0,0,0,0.85); align-items: center; justify-content: center; cursor: zoom-out; }
   #gd-lightbox.open { display: flex; }
-  #gd-lightbox-img { max-width: 90vw; max-height: 90vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.7); }
+  #gd-lightbox-img { max-width: 92vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 6px 40px rgba(0,0,0,0.7); }
 
-javascript:
-  document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.gd-row').forEach(function(row) {
-      row.addEventListener('click', function() {
-        var target = document.getElementById(this.dataset.toggleTarget);
-        if (!target) return;
-        var open = target.classList.toggle('open');
-        this.style.background = open ? '#e8eeff' : '';
-      });
-    });
-
-    document.querySelectorAll('.gd-card').forEach(function(card) {
-      card.addEventListener('click', function(e) {
-        if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
-        this.classList.toggle('open');
-      });
-    });
-
-    var overlay    = document.getElementById('gd-lightbox');
-    var overlayImg = document.getElementById('gd-lightbox-img');
-    overlay.addEventListener('click', function() {
-      overlay.classList.remove('open');
-      overlayImg.src = '';
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { overlay.classList.remove('open'); overlayImg.src = ''; }
-    });
-  });
-
-  function gdOpenPhoto(url, e) {
-    e.stopPropagation();
-    var overlay    = document.getElementById('gd-lightbox');
-    var overlayImg = document.getElementById('gd-lightbox-img');
-    overlayImg.src = url;
-    overlay.classList.add('open');
+  @media screen and (max-width: 640px) {
+    .gd-controls { justify-content: center; }
+    .gd-mosaic { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); grid-auto-rows: 90px; }
   }
-
-#gd-lightbox
-  img#gd-lightbox-img src=""
 
 .gd-wrap
 
-  .gd-actions
-    = link_to 'Regulamin górskich dzików', gorskie_dziki_regulamin_path, class: 'button warning large expanded'
+  .gd-header
+    h2 = "Górskie Dziki #{@year}"
+    .gd-sub = "sezon #{I18n.t('date.month_names')[6]}–#{I18n.t('date.month_names')[11]} #{@year}"
 
-  / ── Nawigacja po latach (historia sezonów) ──
+  / ── Nawigacja po latach (tylko lata z przejściami) ──
   .gd-nav
-    - prev_year = @year - 1
-    - next_year = @year + 1
-    - visible_years = ([@year - 1, @year, @year + 1] & (@first_year..@last_year).to_a)
-    - if prev_year >= @first_year
-      = link_to "‹", gorskie_dziki_path(year: prev_year, month: @month), class: "button secondary", style: "min-width:2.5rem;"
-    - else
-      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ‹
-    - visible_years.each do |y|
-      - is_current = (y == @year)
-      = link_to y.to_s, gorskie_dziki_path(year: y, month: @month), class: "button #{is_current ? 'primary' : 'secondary'}", style: "min-width:4.5rem; #{is_current ? 'font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.25);' : 'opacity:0.7;'}"
-    - if next_year <= @last_year
-      = link_to "›", gorskie_dziki_path(year: next_year, month: @month), class: "button secondary", style: "min-width:2.5rem;"
-    - else
-      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ›
+    .button-group.small
+      - idx = @available_years.index(@year)
+      - prev_year = (idx && idx > 0) ? @available_years[idx - 1] : nil
+      - if prev_year
+        = link_to "‹", gorskie_dziki_path(year: prev_year, month: @month, sort: @sort, gender: @gender), class: "button secondary"
+      - else
+        span.button.secondary.disabled ‹
+      - @available_years.reverse.each do |y|
+        = link_to y.to_s, gorskie_dziki_path(year: y, month: @month, sort: @sort, gender: @gender), class: "button #{y == @year ? 'primary' : 'secondary'}"
+      - next_year = (idx && idx < @available_years.size - 1) ? @available_years[idx + 1] : nil
+      - if next_year
+        = link_to "›", gorskie_dziki_path(year: next_year, month: @month, sort: @sort, gender: @gender), class: "button secondary"
+      - else
+        span.button.secondary.disabled ›
 
-  / ── Nawigacja po miesiącach sezonu ──
-  .gd-months
-    = link_to "Cały sezon", gorskie_dziki_path(year: @year), class: "button #{@month.nil? ? 'primary' : 'secondary'}", style: "#{@month.nil? ? 'font-weight:bold;' : 'opacity:0.7;'}"
-    - @visible_months.each do |m|
-      - is_active = (m == @month)
-      = link_to I18n.t('date.month_names')[m], gorskie_dziki_path(year: @year, month: m), class: "button #{is_active ? 'primary' : 'secondary'}", style: "#{is_active ? 'font-weight:bold;' : 'opacity:0.7;'}"
-
-  .gd-title = "Górskie Dziki #{@year}"
-  .gd-subtitle
-    - if @month
-      = "#{I18n.t('date.month_names')[@month]} #{@year} · przewspinane metry"
-    - else
-      = "cały sezon (#{I18n.t('date.month_names')[6]}–#{I18n.t('date.month_names')[11]}) · przewspinane metry"
-
-  - if @leaders.empty?
-    .gd-empty Brak przejść w tym okresie.
-  - else
-    / ════════════════════════════════
-    / Desktop table
-    / ════════════════════════════════
-    .gd-table-wrap
-      table.gd-table
-        thead
-          tr
-            th.text-center style="width:2.5rem;" #
-            th style="width:2.75rem;"
-            th style="width:20%;" kto?
-            th style="width:20%;" ostatnia droga
-            th
-            th.text-center style="width:5.5rem;" metrów
-            th.text-center style="width:4.5rem;" dróg
-            th.text-center style="width:4.5rem;" bicków
-        tbody
-          - @leaders.each_with_index do |row, index|
-            - user   = row[:user]
-            - row_id = "user-routes-#{user.id}"
-            tr.gd-row.main-row style="#{index.odd? ? 'background:#fafafa;' : ''}" data-toggle-target=row_id
-              td.text-center
-                span.gd-rank = index + 1
-              td style="padding:0.5rem 0.25rem 0.5rem 0.5rem;"
-                = link_to user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();' do
-                  - if user.avatar.present?
-                    = image_tag(user.avatar.url, class: 'gd-avatar')
-                  - else
-                    = image_tag('default-avatar.png', class: 'gd-avatar')
-              td style="font-weight:500;"
-                = link_to user.display_name, user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();'
-              td
-                - if row[:last_route]
-                  = link_to row[:last_route].name, activities_mountain_route_path(row[:last_route].slug), style: 'color:#1a73e8; font-weight:500;', onclick: 'event.stopPropagation();'
-                - else
-                  span.gd-muted —
-              td.text-center
-                - if row[:photos].any?
-                  span.gd-thumb-row
-                    - row[:photos].each do |photo|
-                      = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
-              td.text-center
-                span.gd-meters = row[:meters]
-              td.text-center style="color:#555;"
-                = row[:routes_count]
-              td.text-center style="color:#555;"
-                = row[:hearts]
-            tr.detail-row id=row_id
-              td colspan="8"
-                table.gd-sub-table
-                  thead
-                    tr
-                      th data
-                      th droga
-                      th trudność
-                      th.text-center długość
-                      th.text-center bicki
-                      th zdjęcia
-                  tbody
-                    - row[:routes].each_with_index do |route, ri|
-                      - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
-                      tr class="#{ri.even? ? 'sub-even' : 'sub-odd'}"
-                        td.no-wrap style="color:#666; font-size:0.83rem;"
-                          = route.climbing_date.strftime('%Y-%m-%d')
-                        td.truncate
-                          = link_to route.name, activities_mountain_route_path(route.slug), style: 'color:#1a73e8; font-weight:500;'
-                        td style="color:#555;"
-                          = route.difficulty
-                        td.text-center style="color:#555;"
-                          = "#{route.length} m"
-                        td.text-center style="font-weight:600;"
-                          = route.hearts_count
-                        td
-                          - if route_photos.any?
-                            span.gd-thumb-row
-                              - route_photos.each do |photo|
-                                = image_tag(photo.file.large.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
-
-    / ════════════════════════════════
-    / Mobile cards
-    / ════════════════════════════════
-    .gd-cards
-      - @leaders.each_with_index do |row, index|
-        - user = row[:user]
-        .gd-card
-          .gd-card-main
-            .gd-card-rank = index + 1
-            .gd-card-avatar
-              = link_to user_path(kw_id: user.kw_id) do
-                - if user.avatar.present?
-                  = image_tag(user.avatar.url, class: 'gd-avatar')
-                - else
-                  = image_tag('default-avatar.png', class: 'gd-avatar')
-            .gd-card-body
-              .gd-card-name
-                = link_to user.display_name, user_path(kw_id: user.kw_id), style: 'color:inherit; text-decoration:none;'
-              .gd-card-last
-                - if row[:last_route]
-                  | #{row[:last_route].name}
-                - else
-                  span.gd-muted —
-            .gd-card-right
-              .gd-card-meters = "#{row[:meters]} m"
-              .gd-card-meta = "#{row[:routes_count]} dróg · #{row[:hearts]} bicków"
-
-          - if row[:photos].any?
-            .gd-card-photos
-              - row[:photos].each do |photo|
-                = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
-
-          .gd-card-detail
-            - row[:routes].each do |route|
-              - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
-              .gd-sub-item
-                .gd-sub-item-header
-                  .gd-sub-item-name
-                    = link_to route.name, activities_mountain_route_path(route.slug)
-                  .gd-sub-item-pts = "#{route.length} m"
-                .gd-sub-item-meta
-                  span = route.climbing_date.strftime('%Y-%m-%d')
-                  - if route.difficulty.present?
-                    span = route.difficulty
-                  span = "#{route.hearts_count} bicków"
-                - if route_photos.any?
-                  .gd-sub-item-photos
-                    - route_photos.each do |photo|
-                      = image_tag(photo.file.large.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
+  / ── Sterowanie: płeć + sortowanie ──
+  .gd-controls
+    .button-group.small
+      = link_to "Wszyscy", gorskie_dziki_path(year: @year, month: @month, sort: @sort), class: "button secondary #{'hollow' unless @gender.nil?}"
+      = link_to "Kobiety", gorskie_dziki_path(year: @year, month: @month, sort: @sort, gender: 'female'), class: "button secondary #{'hollow' unless @gender == 'female'}"
+      = link_to "Mężczyźni", gorskie_dziki_path(year: @year, month: @month, sort: @sort, gender: 'male'), class: "button secondary #{'hollow' unless @gender == 'male'}"
+    .button-group.small
+      span.button.clear.disabled style="color:#8a8a8a; cursor:default;" sortuj:
+      = link_to "metry", gorskie_dziki_path(year: @year, month: @month, gender: @gender, sort: 'meters'), class: "button #{@sort == 'meters' ? 'primary' : 'secondary hollow'}"
+      = link_to "drogi", gorskie_dziki_path(year: @year, month: @month, gender: @gender, sort: 'routes'), class: "button #{@sort == 'routes' ? 'primary' : 'secondary hollow'}"
+      = link_to "bicki", gorskie_dziki_path(year: @year, month: @month, gender: @gender, sort: 'hearts'), class: "button #{@sort == 'hearts' ? 'primary' : 'secondary hollow'}"
 
   / ════════════════════════════════
-  / Pozostałe klasyfikacje sezonu
+  / Zakładki: ranking (miesiąc+sezon) + pozostałe funkcje
   / ════════════════════════════════
-  h4 style="margin-top:2rem;" Pozostałe klasyfikacje sezonu #{@year}
-  .callout.secondary
-    .row
-      .large-4.columns
-        h5 najlepsze przejścia sezonu
-        table.stack
-          thead
-            tr
-              th
-              th kto?
-              th width='15%' bicków
-          tbody
-            - @best_of_season.first(5).each do |user|
-              tr
-                td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                  - if user.avatar.present?
-                    = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                  - else
-                    = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                td.text-center = user.total_mountain_routes_hearts_count
+  .gd-tabs-bar
+    ul.tabs data-tabs="" id="gd-tabs"
+      li.tabs-title.is-active
+        a href="#gd-tab-ranking" aria-selected="true" 🏆 Ranking
+      li.tabs-title
+        a href="#gd-tab-klasyfikacje" 📋 Klasyfikacje
+      li.tabs-title
+        a href="#gd-tab-rekordy" 🏅 Rekordy
+      li.tabs-title
+        a href="#gd-tab-galeria" 🖼️ Galeria
+      li.tabs-title
+        a href="#gd-tab-zespoly" 🤝 Zespoły
+      li.tabs-title
+        a href="#gd-tab-rejony" 🗺️ Rejony
+      li.tabs-title
+        a href="#gd-tab-hala" 👑 Hala sław
+    = link_to '📜 Regulamin', gorskie_dziki_regulamin_path, class: 'button hollow secondary gd-reg-btn'
 
-      .large-4.columns
-        h5 najlepsze przejście sezonu
-        table.stack
+  .tabs-content data-tabs-content="gd-tabs"
+
+    / ── Ranking: wybrany miesiąc + sezon (jedna kolumna) ──
+    .tabs-panel.is-active id="gd-tab-ranking"
+      - if @month
+        .gd-col-title
+          = I18n.t('date.month_names')[@month]
+          - if @visible_months.many?
+            .button-group.small style="float:right; margin-bottom:0;"
+              - @visible_months.each do |m|
+                = link_to I18n.t('date.abbr_month_names')[m], gorskie_dziki_path(year: @year, month: m, sort: @sort, gender: @gender), class: "button #{m == @month ? 'primary' : 'secondary hollow'}"
+        == render 'leaderboard', rows: @month_leaders, year: @year, scope: 'month'
+      .gd-col-title class=("gd-mt" if @month) Cały sezon
+      == render 'leaderboard', rows: @season_leaders, year: @year, scope: 'season'
+
+    / ── Rekordy ──
+    .tabs-panel id="gd-tab-rekordy"
+      - if @records
+        - longest = @records[:longest]
+        - liked = @records[:most_liked]
+        - best_day = @records[:best_day]
+        .row.small-up-1.medium-up-3
+          .column
+            .card
+              .card-section
+                p.gd-col-title Najdłuższe przejście
+                .gd-record-value = "#{longest.length} m"
+                p = link_to longest.name, activities_mountain_route_path(longest.slug)
+                p.help-text = longest.area.presence || longest.difficulty.presence || '—'
+                .gd-record-people
+                  - longest.colleagues.select(&:climbing_boars).first(4).each do |u|
+                    = link_to gorskie_dziki_profile_path(kw_id: u.kw_id, year: @year) do
+                      = image_tag(u.avatar.present? ? u.avatar.url : 'default-avatar.png')
+          .column
+            .card
+              .card-section
+                p.gd-col-title Najbardziej lajkowane
+                .gd-record-value = "#{liked.hearts_count} ❤"
+                p = link_to liked.name, activities_mountain_route_path(liked.slug)
+                p.help-text = liked.area.presence || liked.difficulty.presence || '—'
+                .gd-record-people
+                  - liked.colleagues.select(&:climbing_boars).first(4).each do |u|
+                    = link_to gorskie_dziki_profile_path(kw_id: u.kw_id, year: @year) do
+                      = image_tag(u.avatar.present? ? u.avatar.url : 'default-avatar.png')
+          - if best_day
+            .column
+              .card
+                .card-section
+                  p.gd-col-title Najlepszy dzień
+                  .gd-record-value = "#{best_day[:meters]} m"
+                  p = link_to best_day[:user].display_name, gorskie_dziki_profile_path(kw_id: best_day[:user].kw_id, year: @year)
+                  p.help-text = "#{best_day[:date].strftime('%Y-%m-%d')} · #{best_day[:count]} dróg"
+      - else
+        .callout.secondary.text-center Brak danych.
+
+    / ── Galeria (witraż) ──
+    .tabs-panel id="gd-tab-galeria"
+      - if @gallery.any?
+        .gd-mosaic
+          - @gallery.each_with_index do |item, gi|
+            - tile_class = [nil, nil, 'gd-tile-big', nil, 'gd-tile-tall', nil, 'gd-tile-wide', nil][gi % 8]
+            a class="gd-tile #{tile_class}" href="#" onclick="gdOpenPhoto('#{item[:photo].file.large.url}', event); return false;"
+              = image_tag(item[:photo].file.large.url, class: 'gd-tile-img', loading: 'lazy')
+              .gd-tile-info
+                .gd-tile-title = item[:route].name
+                .gd-tile-sub
+                  = item[:user].display_name
+                  - if item[:route].hearts_count.to_i > 0
+                    span.gd-tile-hearts = "❤ #{item[:route].hearts_count}"
+      - else
+        .callout.secondary.text-center Brak zdjęć w tym sezonie.
+
+    / ── Zespoły ──
+    .tabs-panel id="gd-tab-zespoly"
+      - if @teams.any?
+        table.hover.stack
           thead
             tr
-              th
-              th width='50%' kto?
-              th width='10%' bicków
+              th.text-center style="width:2.5rem;" #
+              th duet
+              th.text-right style="width:8rem;" wspólnych dróg
+              th.text-right style="width:6rem;" metrów
           tbody
-            - @best_route_of_season.first(5).each do |route|
+            - @teams.each_with_index do |team, index|
               tr
+                td.text-center
+                  span.gd-rank = index + 1
                 td
-                  - route.colleagues.each do |u|
-                    = link_to user_path(kw_id: u.kw_id) do
-                      - if u.avatar.present?
-                        = image_tag(u.avatar.url, class: 'topbar-avatar-image')
-                      - else
-                        = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                td = link_to route.name, activities_mountain_route_path(route.slug)
-                td.text-center = route.max_mountain_routes_hearts_count
+                  - team[:users].each do |u|
+                    = link_to gorskie_dziki_profile_path(kw_id: u.kw_id, year: @year) do
+                      = image_tag(u.avatar.present? ? u.avatar.url : 'default-avatar.png', class: 'gd-avatar')
+                  span style="margin-left:0.4rem; font-weight:600;"
+                    = team[:users].map(&:display_name).join(' & ')
+                td.text-right
+                  strong = team[:routes_count]
+                td.text-right.gd-num = team[:meters]
+      - else
+        .callout.secondary.text-center Brak wspólnych przejść w tym sezonie.
 
-      .large-4.columns
-        h5 #exploratortatr
-        table.stack
-          thead
-            tr
-              th
-              th kto?
-              th width='15%' odkrytych
-          tbody
-            - season_range = @repository.start_date..@repository.end_date
-            - @tatra_uniqe.first(5).each do |user|
+    / ── Rejony ──
+    .tabs-panel id="gd-tab-rejony"
+      - if @area_stats.any?
+        - max_area = @area_stats.map { |a| a[:meters] }.max.to_f
+        - @area_stats.each do |stat|
+          .gd-bar
+            .gd-bar-name title=stat[:area] = stat[:area]
+            .progress role="progressbar"
+              .progress-meter style="width:#{max_area > 0 ? (stat[:meters] / max_area * 100).round : 0}%;"
+            .gd-bar-val = "#{stat[:meters]} m · #{stat[:count]}×"
+      - else
+        .callout.secondary.text-center Brak danych o rejonach.
+
+    / ── Hala sław ──
+    .tabs-panel id="gd-tab-hala"
+      - if @hall_of_fame.any?
+        .gd-hof
+          - @hall_of_fame.each do |hof|
+            = link_to gorskie_dziki_path(year: hof[:year]), class: 'gd-hof-card' do
+              .card
+                .gd-hof-year = hof[:year]
+                = image_tag(hof[:user].avatar.present? ? hof[:user].avatar.url : 'default-avatar.png', class: 'gd-hof-avatar')
+                .gd-hof-name = hof[:user].display_name
+                .gd-hof-meters = "#{hof[:meters]} m"
+      - else
+        .callout.secondary.text-center Brak mistrzów.
+
+    / ── Pozostałe klasyfikacje ──
+    .tabs-panel id="gd-tab-klasyfikacje"
+      .row
+        .medium-4.columns
+          h6 najlepsze przejścia sezonu
+          table.hover.stack
+            thead
               tr
-                td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                  - if user.avatar.present?
-                    = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                  - else
-                    = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                td.text-center = user.mountain_routes.where(climbing_date: season_range, created_at: season_range).where("description LIKE '%#exploratortatr%'").count
+                th kto?
+                th.text-right bicków
+            tbody
+              - @best_of_season.first(5).each do |user|
+                tr
+                  td = link_to Db::User.find(user.id).display_name, gorskie_dziki_profile_path(kw_id: user.kw_id, year: @year)
+                  td.text-right = user.total_mountain_routes_hearts_count
+        .medium-4.columns
+          h6 najlepsze przejście sezonu
+          table.hover.stack
+            thead
+              tr
+                th droga
+                th.text-right bicków
+            tbody
+              - @best_route_of_season.first(5).each do |route|
+                tr
+                  td = link_to route.name, activities_mountain_route_path(route.slug)
+                  td.text-right = route.max_mountain_routes_hearts_count
+        .medium-4.columns
+          h6 #exploratortatr
+          table.hover.stack
+            thead
+              tr
+                th kto?
+                th.text-right odkrytych
+            tbody
+              - season_range = @repository.start_date..@repository.end_date
+              - @tatra_uniqe.first(5).each do |user|
+                tr
+                  td = link_to Db::User.find(user.id).display_name, gorskie_dziki_profile_path(kw_id: user.kw_id, year: @year)
+                  td.text-right = user.mountain_routes.where(climbing_date: season_range, created_at: season_range).where("description LIKE '%#exploratortatr%'").count
+
+#gd-lightbox onclick="this.classList.remove('open'); document.getElementById('gd-lightbox-img').src='';"
+  img#gd-lightbox-img src=""
+
+javascript:
+  (function() {
+    function initGorskieDziki() {
+      // Rozwijanie wierszy z listą przejść zawodnika
+      document.querySelectorAll('.gd-row').forEach(function(rowEl) {
+        if (rowEl.dataset.gdBound) return;
+        rowEl.dataset.gdBound = '1';
+        rowEl.addEventListener('click', function() {
+          var target = document.getElementById(this.dataset.gdTarget);
+          if (target) target.classList.toggle('open');
+        });
+      });
+      // Zamykanie lightboxa klawiszem Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          var lb = document.getElementById('gd-lightbox');
+          if (lb) { lb.classList.remove('open'); document.getElementById('gd-lightbox-img').src = ''; }
+        }
+      });
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initGorskieDziki);
+    } else {
+      initGorskieDziki();
+    }
+  })();
+
+  function gdOpenPhoto(url, e) {
+    if (e) e.stopPropagation();
+    var lb = document.getElementById('gd-lightbox');
+    document.getElementById('gd-lightbox-img').src = url;
+    lb.classList.add('open');
+  }

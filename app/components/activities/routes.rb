@@ -25,7 +25,7 @@ Rails.application.routes.draw do
   get 'przejscia/tradowe' => 'activities/mountain_routes#new', as: :new_trad_route, defaults: { route_type: 'trad_climbing' }
   get "routes" => 'activities/routes#index'
   get "gorskie-dziki/regulamin" => 'activities/routes#gorskie_dziki_regulamin', as: :gorskie_dziki_regulamin
-  get "gorskie-dziki" => 'activities/routes#gorskie_dziki', as: :gorskie_dziki
+  get "gorskie-dziki(/:year)" => 'activities/routes#gorskie_dziki', as: :gorskie_dziki, constraints: { year: /\d{4}/ }
   get "tradowe-dziki", to: "activities/routes#liga_tradowa", as: :tradowe_dziki, defaults: { year: '2025' }
   get "narciarskie-dziki" => 'activities/routes#narciarskie_dziki', as: :narciarskie_dziki
   get "liga-tradowa/:year" => 'activities/routes#liga_tradowa', as: :liga_tradowa

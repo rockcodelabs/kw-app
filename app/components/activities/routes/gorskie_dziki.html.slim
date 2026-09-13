@@ -1,166 +1,354 @@
-.row
-  .large-12.columns
+css:
+  .gd-wrap { max-width: 900px; margin: 0 auto; padding: 0 0.5rem; }
+
+  .gd-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .gd-actions a { flex: 1; }
+
+  .gd-nav { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .gd-nav .button { margin: 0; }
+
+  .gd-months { display: flex; align-items: center; justify-content: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .gd-months .button { margin: 0; }
+
+  .gd-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.2rem; color: #333; }
+  .gd-subtitle { font-size: 0.95rem; color: #777; margin-bottom: 0.75rem; }
+  .gd-empty { padding: 1.5rem; text-align: center; color: #999; background: #fafafa; border: 1px dashed #e0e0e0; border-radius: 8px; }
+
+  /* Desktop table */
+  .gd-table { width: 100%; border-collapse: collapse; }
+  .gd-table thead tr { background: #f5f5f5; border-bottom: 2px solid #e0e0e0; }
+  .gd-table th { padding: 0.75rem 0.5rem; font-size: 0.85rem; color: #555; }
+  .gd-table tbody tr.main-row { border-bottom: 1px solid #efefef; cursor: pointer; transition: background 0.15s; }
+  .gd-table tbody tr.main-row:hover { background: #f0f4ff !important; }
+  .gd-table td { padding: 0.6rem 0.5rem; vertical-align: middle; }
+
+  .gd-table tr.detail-row { display: none; background: #f0f4ff; }
+  .gd-table tr.detail-row.open { display: table-row; }
+  .gd-table tr.detail-row > td { padding: 0; border-bottom: 2px solid #c5d0e8; }
+
+  .gd-sub-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .gd-sub-table thead tr { background: #dce4f5; }
+  .gd-sub-table th { padding: 0.5rem 0.75rem; color: #555; font-weight: 600; }
+  .gd-sub-table td { padding: 0.45rem 0.75rem; vertical-align: middle; }
+  .gd-sub-table tr.sub-even { background: #ffffff; }
+  .gd-sub-table tr.sub-odd  { background: #eef2fb; }
+  .gd-sub-table td.no-wrap  { white-space: nowrap; }
+  .gd-sub-table td.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
+
+  .gd-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .gd-thumb  { width: 44px; height: 44px; object-fit: cover; object-position: center; border-radius: 5px; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.25); display: block; cursor: pointer; }
+  .gd-thumb-row { display: inline-flex; gap: 0.3rem; align-items: center; flex-wrap: nowrap; }
+  .gd-rank   { font-weight: bold; color: #888; font-size: 1.1rem; }
+  .gd-meters { font-weight: bold; font-size: 1.1rem; }
+  .gd-muted  { color: #aaa; }
+
+  /* Mobile cards */
+  @media screen and (max-width: 640px) {
+    .gd-actions { flex-direction: column; }
+    .gd-table-wrap { display: none; }
+    .gd-cards { display: block; }
+
+    .gd-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; margin-bottom: 0.6rem; box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow: hidden; cursor: pointer; }
+    .gd-card.open { border-color: #a0b0e0; box-shadow: 0 2px 10px rgba(80,110,200,0.13); }
+    .gd-card-main { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; }
+    .gd-card-rank { font-weight: 700; color: #999; font-size: 1rem; min-width: 1.4rem; text-align: center; }
+    .gd-card-avatar { flex-shrink: 0; }
+    .gd-card-body { flex: 1; min-width: 0; }
+    .gd-card-name { font-weight: 600; font-size: 0.95rem; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gd-card-last { font-size: 0.78rem; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 0.1rem; }
+    .gd-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; flex-shrink: 0; }
+    .gd-card-meters { font-weight: 700; font-size: 1.15rem; color: #333; }
+    .gd-card-meta { font-size: 0.72rem; color: #888; }
+    .gd-card-photos { display: flex; gap: 0.3rem; padding: 0 0.75rem 0.55rem 0.75rem; overflow-x: auto; -webkit-overflow-scrolling: touch; justify-content: center; }
+    .gd-card-detail { display: none; border-top: 1px solid #dce4f5; background: #f4f7ff; }
+    .gd-card.open .gd-card-detail { display: block; }
+    .gd-sub-item { padding: 0.55rem 0.75rem; border-bottom: 1px solid #e0e8f8; font-size: 0.82rem; }
+    .gd-sub-item:last-child { border-bottom: none; }
+    .gd-sub-item-header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.2rem; }
+    .gd-sub-item-name { font-weight: 600; color: #1a73e8; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gd-sub-item-pts { font-weight: 700; color: #333; flex-shrink: 0; }
+    .gd-sub-item-meta { color: #888; font-size: 0.76rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .gd-sub-item-photos { display: flex; gap: 0.3rem; margin-top: 0.35rem; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  }
+
+  @media screen and (min-width: 641px) {
+    .gd-cards { display: none; }
+    .gd-table-wrap { display: block; }
+  }
+
+  /* Lightbox */
+  #gd-lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; cursor: pointer; }
+  #gd-lightbox.open { display: flex; }
+  #gd-lightbox-img { max-width: 90vw; max-height: 90vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.7); }
+
+javascript:
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.gd-row').forEach(function(row) {
+      row.addEventListener('click', function() {
+        var target = document.getElementById(this.dataset.toggleTarget);
+        if (!target) return;
+        var open = target.classList.toggle('open');
+        this.style.background = open ? '#e8eeff' : '';
+      });
+    });
+
+    document.querySelectorAll('.gd-card').forEach(function(card) {
+      card.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' || e.target.tagName === 'IMG') return;
+        this.classList.toggle('open');
+      });
+    });
+
+    var overlay    = document.getElementById('gd-lightbox');
+    var overlayImg = document.getElementById('gd-lightbox-img');
+    overlay.addEventListener('click', function() {
+      overlay.classList.remove('open');
+      overlayImg.src = '';
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { overlay.classList.remove('open'); overlayImg.src = ''; }
+    });
+  });
+
+  function gdOpenPhoto(url, e) {
+    e.stopPropagation();
+    var overlay    = document.getElementById('gd-lightbox');
+    var overlayImg = document.getElementById('gd-lightbox-img');
+    overlayImg.src = url;
+    overlay.classList.add('open');
+  }
+
+#gd-lightbox
+  img#gd-lightbox-img src=""
+
+.gd-wrap
+
+  .gd-actions
     = link_to 'Regulamin górskich dzików', gorskie_dziki_regulamin_path, class: 'button warning large expanded'
-.row
-  .large-12.columns
-    h4 Górskie dziki sezonu
-    .callout.primary
-      .row
-        .large-4.columns
-          - if Date.today.month >= 7
-            h5 = I18n.t('date.month_names')[Date.today.month - 1] + (" #{Date.today.year}")
-            table.stack
-              thead
-                tr
-                  th
-                  th kto?
-                  th width='15%' metrów
-              tbody
-                - @prev_month_leaders.first(5).each do |user|
-                  tr
-                    td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                      - if user.avatar.present?
-                        = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                      - else
-                        = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                    td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                    td.text-center = user.total_mountain_routes_length
 
-        .large-4.columns
-          - if Date.today.month >= 6
-            h5 = I18n.t('date.month_names')[Date.today.month] + (" #{Date.today.year}")
-            table.stack
-              thead
-                tr
-                  th
-                  th kto?
-                  th width='15%' metrów
-              tbody
-                - @current_month_leaders.first(5).each do |user|
-                  tr
-                    td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                      - if user.avatar.present?
-                        = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                      - else
-                        = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                    td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                    td.text-center = user.total_mountain_routes_length
+  / ── Nawigacja po latach (historia sezonów) ──
+  .gd-nav
+    - prev_year = @year - 1
+    - next_year = @year + 1
+    - visible_years = ([@year - 1, @year, @year + 1] & (@first_year..@last_year).to_a)
+    - if prev_year >= @first_year
+      = link_to "‹", gorskie_dziki_path(year: prev_year, month: @month), class: "button secondary", style: "min-width:2.5rem;"
+    - else
+      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ‹
+    - visible_years.each do |y|
+      - is_current = (y == @year)
+      = link_to y.to_s, gorskie_dziki_path(year: y, month: @month), class: "button #{is_current ? 'primary' : 'secondary'}", style: "min-width:4.5rem; #{is_current ? 'font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,0.25);' : 'opacity:0.7;'}"
+    - if next_year <= @last_year
+      = link_to "›", gorskie_dziki_path(year: next_year, month: @month), class: "button secondary", style: "min-width:2.5rem;"
+    - else
+      span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ›
 
-        .large-4.columns
-          h5 = "sezon #{Activities::ClimbingRepository.new.start_date.year}"
-          table.stack
-            thead
-              tr
-                th
-                th kto?
-                th width='15%' metrów
-            tbody
-              - @season_leaders.first(5).each do |user|
-                tr
-                  td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                    - if user.avatar.present?
-                      = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                    - else
-                      = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                  td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                  td.text-center = user.total_mountain_routes_length
+  / ── Nawigacja po miesiącach sezonu ──
+  .gd-months
+    = link_to "Cały sezon", gorskie_dziki_path(year: @year), class: "button #{@month.nil? ? 'primary' : 'secondary'}", style: "#{@month.nil? ? 'font-weight:bold;' : 'opacity:0.7;'}"
+    - @visible_months.each do |m|
+      - is_active = (m == @month)
+      = link_to I18n.t('date.month_names')[m], gorskie_dziki_path(year: @year, month: m), class: "button #{is_active ? 'primary' : 'secondary'}", style: "#{is_active ? 'font-weight:bold;' : 'opacity:0.7;'}"
 
-    h4 Pozostałe klasyfikacje
-    .callout.secondary
-      .row
-        .large-4.columns
-          h5 najlepsze przejścia sezonu
-          table.stack
-            thead
-              tr
-                th
-                th kto?
-                th width='15%' bicków
-            tbody
-              - @best_of_season.first(5).each do |user|
-                tr
-                  td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                    - if user.avatar.present?
-                      = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                    - else
-                      = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                  td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                  td.text-center = user.total_mountain_routes_hearts_count
+  .gd-title = "Górskie Dziki #{@year}"
+  .gd-subtitle
+    - if @month
+      = "#{I18n.t('date.month_names')[@month]} #{@year} · przewspinane metry"
+    - else
+      = "cały sezon (#{I18n.t('date.month_names')[6]}–#{I18n.t('date.month_names')[11]}) · przewspinane metry"
 
-        .large-4.columns
-          h5 najlepsze przejście sezonu
-          table.stack
-            thead
-              tr
-                th
-                th width='50%' kto?
-                th width='10%' bicków
-            tbody
-              - start_date = Activities::ClimbingRepository.new.start_date
-              - end_date = Activities::ClimbingRepository.new.end_date
-              - range = start_date..end_date
-              - @best_route_of_season.first(5).each do |route|
-                tr
-                  td
-                    - route.colleagues.each do |u|
-                      = link_to user_path(kw_id: u.kw_id) do
-                        - if u.avatar.present?
-                          = image_tag(u.avatar.url, class: 'topbar-avatar-image')
-                        - else
-                          = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                  td = link_to route.name, activities_mountain_route_path(route.slug)
-                  td.text-center = route.max_mountain_routes_hearts_count
-
-        .large-4.columns
-          h5 #exploratortatr
-          table.stack
-            thead
-              tr
-                th
-                th kto?
-                th width='15%' odkrytych
-            tbody
-              - start_date = DateTime.new(Activities::ClimbingRepository.new.start_date.year, 06, 1)
-              - end_date = DateTime.new(Activities::ClimbingRepository.new.start_date.year, 11, 30)
-              - range = start_date..end_date
-              - @tatra_uniqe.first(5).each do |user|
-                tr
-                  td width='45px' = link_to user_path(kw_id: user.kw_id) do
-                    - if user.avatar.present?
-                      = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-                    - else
-                      = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-                  td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-                  td.text-center = user.mountain_routes.where(climbing_date: range, created_at: range).where("description LIKE '%#exploratortatr%'").count
-
-.row
-  .large-12.columns
-    h5 = "Tabela sezonu #{Activities::ClimbingRepository.new.start_date.year}"
-    table.stack
-      thead
-        tr
-          th width='30px' Miejsce
-          th width='50px'
-          th width='250px' Kto?
-          th.large-text-left Ostatnie przejście
-          th.large-text-right width='50px' Szacunek [bicki]
-          th.large-text-right width='50px' Przewspinane [metry]
-
-      tbody
-        - i = 0
-        - @season_leaders.each do |user|
+  - if @leaders.empty?
+    .gd-empty Brak przejść w tym okresie.
+  - else
+    / ════════════════════════════════
+    / Desktop table
+    / ════════════════════════════════
+    .gd-table-wrap
+      table.gd-table
+        thead
           tr
-            td.text-center = i + 1
-            td width='45px' = link_to user_path(kw_id: user.kw_id) do
-              - if user.avatar.present?
-                = image_tag(user.avatar.url, class: 'topbar-avatar-image')
-              - else
-                = image_tag('default-avatar.png', class: 'topbar-avatar-image')
-            td.text-center.large-text-left = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
-            td.large-text-left
-              - if user.mountain_routes.any?
-                = link_to user.mountain_routes.last.name, activities_mountain_route_path(user.mountain_routes.last.id)
-            td.large-text-right
-              = Activities::ClimbingRepository.new.respect_for(user)
-            td.text-center.large-text-right = user.total_mountain_routes_length
-          - i += 1
+            th.text-center style="width:2.5rem;" #
+            th style="width:2.75rem;"
+            th style="width:20%;" kto?
+            th style="width:20%;" ostatnia droga
+            th
+            th.text-center style="width:5.5rem;" metrów
+            th.text-center style="width:4.5rem;" dróg
+            th.text-center style="width:4.5rem;" bicków
+        tbody
+          - @leaders.each_with_index do |row, index|
+            - user   = row[:user]
+            - row_id = "user-routes-#{user.id}"
+            tr.gd-row.main-row style="#{index.odd? ? 'background:#fafafa;' : ''}" data-toggle-target=row_id
+              td.text-center
+                span.gd-rank = index + 1
+              td style="padding:0.5rem 0.25rem 0.5rem 0.5rem;"
+                = link_to user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();' do
+                  - if user.avatar.present?
+                    = image_tag(user.avatar.url, class: 'gd-avatar')
+                  - else
+                    = image_tag('default-avatar.png', class: 'gd-avatar')
+              td style="font-weight:500;"
+                = link_to user.display_name, user_path(kw_id: user.kw_id), onclick: 'event.stopPropagation();'
+              td
+                - if row[:last_route]
+                  = link_to row[:last_route].name, activities_mountain_route_path(row[:last_route].slug), style: 'color:#1a73e8; font-weight:500;', onclick: 'event.stopPropagation();'
+                - else
+                  span.gd-muted —
+              td.text-center
+                - if row[:photos].any?
+                  span.gd-thumb-row
+                    - row[:photos].each do |photo|
+                      = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
+              td.text-center
+                span.gd-meters = row[:meters]
+              td.text-center style="color:#555;"
+                = row[:routes_count]
+              td.text-center style="color:#555;"
+                = row[:hearts]
+            tr.detail-row id=row_id
+              td colspan="8"
+                table.gd-sub-table
+                  thead
+                    tr
+                      th data
+                      th droga
+                      th trudność
+                      th.text-center długość
+                      th.text-center bicki
+                      th zdjęcia
+                  tbody
+                    - row[:routes].each_with_index do |route, ri|
+                      - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
+                      tr class="#{ri.even? ? 'sub-even' : 'sub-odd'}"
+                        td.no-wrap style="color:#666; font-size:0.83rem;"
+                          = route.climbing_date.strftime('%Y-%m-%d')
+                        td.truncate
+                          = link_to route.name, activities_mountain_route_path(route.slug), style: 'color:#1a73e8; font-weight:500;'
+                        td style="color:#555;"
+                          = route.difficulty
+                        td.text-center style="color:#555;"
+                          = "#{route.length} m"
+                        td.text-center style="font-weight:600;"
+                          = route.hearts_count
+                        td
+                          - if route_photos.any?
+                            span.gd-thumb-row
+                              - route_photos.each do |photo|
+                                = image_tag(photo.file.large.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
+
+    / ════════════════════════════════
+    / Mobile cards
+    / ════════════════════════════════
+    .gd-cards
+      - @leaders.each_with_index do |row, index|
+        - user = row[:user]
+        .gd-card
+          .gd-card-main
+            .gd-card-rank = index + 1
+            .gd-card-avatar
+              = link_to user_path(kw_id: user.kw_id) do
+                - if user.avatar.present?
+                  = image_tag(user.avatar.url, class: 'gd-avatar')
+                - else
+                  = image_tag('default-avatar.png', class: 'gd-avatar')
+            .gd-card-body
+              .gd-card-name
+                = link_to user.display_name, user_path(kw_id: user.kw_id), style: 'color:inherit; text-decoration:none;'
+              .gd-card-last
+                - if row[:last_route]
+                  | #{row[:last_route].name}
+                - else
+                  span.gd-muted —
+            .gd-card-right
+              .gd-card-meters = "#{row[:meters]} m"
+              .gd-card-meta = "#{row[:routes_count]} dróg · #{row[:hearts]} bicków"
+
+          - if row[:photos].any?
+            .gd-card-photos
+              - row[:photos].each do |photo|
+                = image_tag(photo.file.medium.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
+
+          .gd-card-detail
+            - row[:routes].each do |route|
+              - route_photos = route.photos.select { |p| p.file.present? && p.file.thumb.present? }.first(3)
+              .gd-sub-item
+                .gd-sub-item-header
+                  .gd-sub-item-name
+                    = link_to route.name, activities_mountain_route_path(route.slug)
+                  .gd-sub-item-pts = "#{route.length} m"
+                .gd-sub-item-meta
+                  span = route.climbing_date.strftime('%Y-%m-%d')
+                  - if route.difficulty.present?
+                    span = route.difficulty
+                  span = "#{route.hearts_count} bicków"
+                - if route_photos.any?
+                  .gd-sub-item-photos
+                    - route_photos.each do |photo|
+                      = image_tag(photo.file.large.url, class: 'gd-thumb', onclick: "gdOpenPhoto('#{photo.file.url}', event)")
+
+  / ════════════════════════════════
+  / Pozostałe klasyfikacje sezonu
+  / ════════════════════════════════
+  h4 style="margin-top:2rem;" Pozostałe klasyfikacje sezonu #{@year}
+  .callout.secondary
+    .row
+      .large-4.columns
+        h5 najlepsze przejścia sezonu
+        table.stack
+          thead
+            tr
+              th
+              th kto?
+              th width='15%' bicków
+          tbody
+            - @best_of_season.first(5).each do |user|
+              tr
+                td width='45px' = link_to user_path(kw_id: user.kw_id) do
+                  - if user.avatar.present?
+                    = image_tag(user.avatar.url, class: 'topbar-avatar-image')
+                  - else
+                    = image_tag('default-avatar.png', class: 'topbar-avatar-image')
+                td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
+                td.text-center = user.total_mountain_routes_hearts_count
+
+      .large-4.columns
+        h5 najlepsze przejście sezonu
+        table.stack
+          thead
+            tr
+              th
+              th width='50%' kto?
+              th width='10%' bicków
+          tbody
+            - @best_route_of_season.first(5).each do |route|
+              tr
+                td
+                  - route.colleagues.each do |u|
+                    = link_to user_path(kw_id: u.kw_id) do
+                      - if u.avatar.present?
+                        = image_tag(u.avatar.url, class: 'topbar-avatar-image')
+                      - else
+                        = image_tag('default-avatar.png', class: 'topbar-avatar-image')
+                td = link_to route.name, activities_mountain_route_path(route.slug)
+                td.text-center = route.max_mountain_routes_hearts_count
+
+      .large-4.columns
+        h5 #exploratortatr
+        table.stack
+          thead
+            tr
+              th
+              th kto?
+              th width='15%' odkrytych
+          tbody
+            - season_range = @repository.start_date..@repository.end_date
+            - @tatra_uniqe.first(5).each do |user|
+              tr
+                td width='45px' = link_to user_path(kw_id: user.kw_id) do
+                  - if user.avatar.present?
+                    = image_tag(user.avatar.url, class: 'topbar-avatar-image')
+                  - else
+                    = image_tag('default-avatar.png', class: 'topbar-avatar-image')
+                td = link_to Db::User.find(user.id).display_name, user_path(kw_id: user.kw_id)
+                td.text-center = user.mountain_routes.where(climbing_date: season_range, created_at: season_range).where("description LIKE '%#exploratortatr%'").count

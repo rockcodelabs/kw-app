@@ -50,6 +50,8 @@ module Db
     ACOMPLISHED_COURSES = %w(basic_kw basic basic_without_second second second_winter cave cave_kw ski list blank instructors other_club)
     enum gender: [:male, :female]
 
+    after_save :sync_user_gender, if: :sync_user_gender?
+
     def self.model_name
       ActiveModel::Name.new("Db::Profile", nil, "Profile")
     end
@@ -112,6 +114,18 @@ module Db
 
     def description
       "Wpisowe oraz składka członkowska za rok #{::Membership::Activement.new.payment_year} od #{first_name} #{last_name}."
+    end
+
+    private
+
+    def sync_user_gender?
+      saved_change_to_gender? || saved_change_to_kw_id?
+    end
+
+    def sync_user_gender
+      return if kw_id.blank? || gender.blank? || user.blank?
+
+      user.update_column(:gender, Db::User.genders.fetch(gender))
     end
   end
 end

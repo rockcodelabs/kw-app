@@ -127,7 +127,7 @@ module Activities
 
       users = ::Db::User
         .where(climbing_boars: true)
-        .includes(mountain_routes: :photos)
+        .includes(:profile, mountain_routes: :photos)
         .where.not(mountain_routes: { id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY })
         .where(mountain_routes: { route_type: route_type, climbing_date: climbing_range, created_at: created_range })
 

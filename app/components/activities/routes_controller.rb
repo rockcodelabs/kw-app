@@ -120,8 +120,12 @@ module Activities
     end
 
     def arrange(rows)
-      rows = rows.select { |row| row[:user].gender == @gender } if @gender
+      rows = rows.select { |row| boar_gender(row[:user]) == @gender } if @gender
       sort_rows(rows, @sort)
+    end
+
+    def boar_gender(user)
+      user.gender.presence || user.profile&.gender
     end
 
     def sort_rows(rows, sort)

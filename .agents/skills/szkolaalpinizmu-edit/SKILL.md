@@ -42,7 +42,7 @@ has its text in **two different places**:
 
 | What | Where | How to edit |
 |---|---|---|
-| Intro, "Otwieramy zapisy" banner, Harmonogram I turnusu, II-IV turnus (accordion blocks), Platnosci, bank account | `post_content` of **page ID 405** (Gutenberg blocks) | `wp post get/update 405` |
+| Intro, "Otwieramy zapisy" banner, Harmonogram I turnusu, II-IV turnus (accordion blocks), Platnosci, bank account | `post_content` of **page ID 405** (Gutenberg blocks) | `scripts/page.php` (get/set) |
 | Sections Program kursu (0), Jak wyglada kurs? (1), Cena zawiera (2), Wymagania (3), Wyposazenie (4), Co po kursie? (5) | Easy Accordion post **ID 408** (`sp_easy_accordion`), serialized meta `sp_eap_upload_options` -> `accordion_content_source[i].accordion_content_description` | `scripts/accordion.php` |
 
 Not editable here: the **ZAPISY table** (courses, dates, price, signups) is
@@ -56,7 +56,10 @@ date or price, grep all of them and tell the user about any left unchanged.
 
 ## Procedure
 
-Work in `tmp/sa/` (gitignored). Use a timestamp in file names.
+Work in `tmp/sa/` (gitignored). Use a timestamp in file names. The `edit_file`
+tool cannot see gitignored `tmp/`, so edit the `*-new.html` files with a small
+`python3` script that asserts every old string occurs exactly once (or `sed`),
+then review with `diff -u`.
 
 1. **Clarify** exactly what text changes. Ask if the old text or location is
    ambiguous. Keep the existing language (Polish) and style/markup.
@@ -93,10 +96,22 @@ Work in `tmp/sa/` (gitignored). Use a timestamp in file names.
 
 5. **Write to production**:
 
-   Page 405 (content is read from stdin; WordPress keeps a revision):
+   Page 405 (WordPress keeps a revision). **Do not use `wp post update 405 -`**:
+   WP-CLI 2.3.0 ignores stdin and reports "Content, title, and excerpt are
+   empty" without writing. Also, the page contains a **PHP Everywhere block**
+   (the ZAPISY table), and that plugin aborts any save that is not made by an
+   allowed user (administrator) - so a plain WP-CLI save, with no user, fails
+   with the same message. Use `scripts/page.php` and **pass `--user=`** with an
+   administrator login (currently `dariusz.finster`, WP user 16):
    ```
-   ssh deploy@51.68.141.247 'sudo -n -u www-data /usr/local/bin/wp --path=/home/kwkrakow/webs/alp post update 405 - 2>&1 | grep -v "^PHP "' < tmp/sa/405-new.html
+   scp -o ConnectTimeout=10 -o BatchMode=yes .agents/skills/szkolaalpinizmu-edit/scripts/page.php deploy@51.68.141.247:/tmp/sa_page.php
+   scp -o ConnectTimeout=10 -o BatchMode=yes tmp/sa/405-new.html deploy@51.68.141.247:/tmp/sa_405_new.html
+   ssh deploy@51.68.141.247 'chmod 644 /tmp/sa_page.php /tmp/sa_405_new.html; sudo -n -u www-data /usr/local/bin/wp --path=/home/kwkrakow/webs/alp --user=dariusz.finster eval-file /tmp/sa_page.php set 405 /tmp/sa_405_new.html 2>&1 | grep -v "^PHP "'
    ```
+   Success looks like `Success: Updated post 405 (...), saved content matches
+   the file.` If the admin user no longer exists, list admins with
+   `$W user list --fields=ID,user_login,roles` and use another administrator
+   (ask the user first).
 
    Accordion item (upload the new html, then set):
    ```
@@ -105,11 +120,12 @@ Work in `tmp/sa/` (gitignored). Use a timestamp in file names.
    ```
 
 6. **Flush the cache** (WP Super Cache is active, so visitors may otherwise
-   see stale pages):
+   see stale pages). There is no `wp super-cache` command on this install; call
+   the plugin function:
    ```
-   ssh deploy@51.68.141.247 'sudo -n -u www-data /usr/local/bin/wp --path=/home/kwkrakow/webs/alp super-cache flush 2>&1 | grep -v "^PHP "'
+   ssh deploy@51.68.141.247 'sudo -n -u www-data /usr/local/bin/wp --path=/home/kwkrakow/webs/alp eval "if (function_exists(\"wp_cache_clear_cache\")) { wp_cache_clear_cache(); echo \"flushed\\n\"; } else { echo \"no flush function\\n\"; }" 2>&1 | grep -v "^PHP "'
    ```
-   If that command is unavailable, tell the user to use WP Super Cache ->
+   If it prints `no flush function`, tell the user to use WP Super Cache ->
    "Delete Cache" in wp-admin.
 
 7. **Verify** by fetching the public page and checking the new text is there
@@ -117,17 +133,22 @@ Work in `tmp/sa/` (gitignored). Use a timestamp in file names.
    ```
    curl -s "https://szkolaalpinizmu.pl/wspinanie/klubowy/?nocache=<ts>" | grep -c "<new text>"
    ```
-   (or use the `fetch` tool on the page URL). Report the result.
+   (or use the `fetch` tool on the page URL). Report the result. Notes:
+   WordPress renders ` - ` in titles as an en dash (`&#8211;`), so grep for that
+   form; `2026` will still appear in JSON-LD metadata (`dateModified`), which is
+   fine. Also confirm the ZAPISY `<table` and the "Program kursu" accordion are
+   still on the page.
 
 8. **Clean up** remote temp files
-   (`rm -f /tmp/sa_accordion.php /tmp/sa_acc_new.html`). Keep the local
+   (`rm -f /tmp/sa_accordion.php /tmp/sa_acc_new.html /tmp/sa_page.php /tmp/sa_405_new.html`). Keep the local
    `tmp/sa/*-backup-*` files so the change can be rolled back, and tell the
    user where they are.
 
 ## Rollback
 
-Page 405: `... post update 405 - < tmp/sa/405-backup-<ts>.html`
-(or restore a revision from wp-admin -> page -> Revisions).
+Page 405: upload `tmp/sa/405-backup-<ts>.html` and run `page.php set 405 <file>`
+with `--user=` as in step 5 (or restore a revision from wp-admin -> page ->
+Revisions).
 Accordion: `... eval-file /tmp/sa_accordion.php set <i> <uploaded backup file>`.
 
 ## Rules

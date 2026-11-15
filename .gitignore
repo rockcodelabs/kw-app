@@ -45,6 +45,9 @@ tags
 # Local environment files with secrets (keep .example files)
 .kamal/env.staging
 
+# Local staging secrets with real values - never commit
+.kamal/secrets-staging
+
 # Ignore all logfiles and tempfiles.
 /cache/*
 public/*

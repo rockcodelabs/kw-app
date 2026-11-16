@@ -48,7 +48,7 @@ class Ability
     cannot :see_dziki, Db::Activities::MountainRoute
     can :read, Settlement::ContractRecord, creator_id: user.id
     can :index, Settlement::ContractRecord, creator_id: user.id
-    can :update, Settlement::ContractRecord, creator_id: user.id, state: [:new, :accepted]
+    can :update, Settlement::ContractRecord, creator_id: user.id, state: %w[new accepted]
     can [:read], Settlement::ContractRecord, contract_users: { user_id: user.id }
     can :manage, Storage::UploadRecord, uploadable_type: ['Db::Activities::MountainRoute'], uploadable: { user_id: user.id }
     can :manage, Storage::UploadRecord, uploadable_type: 'Settlement::ContractRecord', uploadable: { creator_id: user.id }
@@ -160,7 +160,7 @@ class Ability
     can :search, Settlement::ContractRecord
     can :accept, Settlement::ContractRecord
     can :read, Settlement::ContractRecord
-    can :manage, Settlement::ContractRecord, state: [:new, :accepted]
+    can :manage, Settlement::ContractRecord, state: %w[new accepted]
     can :create, Training::Supplementary::CourseRecord
     can :manage, Management::ProjectRecord
     cannot :destroy, Settlement::ContractRecord
@@ -177,7 +177,7 @@ class Ability
     can :export, Settlement::ContractRecord
     can :accept, Settlement::ContractRecord
     can :read, Settlement::ContractRecord
-    can :manage, Settlement::ContractRecord, state: [:new, :accepted, :preclosed]
+    can :manage, Settlement::ContractRecord, state: %w[new accepted preclosed]
     can :prepayment, Settlement::ContractRecord
     cannot :destroy, Settlement::ContractRecord
     can :manage, Settlement::ProjectRecord

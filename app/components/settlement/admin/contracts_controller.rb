@@ -44,10 +44,14 @@ module Settlement
       end
 
       def history
+        authorize! :read, PaperTrail::Version
+
         @versions = PaperTrail::Version.includes(:item).where(item_type: ["Settlement::ContractorRecord", "Settlement::ContractRecord"]).order(created_at: :desc).page(params[:page]).per(10)
       end
 
       def analiza
+        authorize! :analiza, Settlement::ContractRecord
+
         start_date = Date.new(params[:year].to_i, 1, 1)
         end_date = Date.new(params[:year].to_i, 12, 31)
 
@@ -95,11 +99,17 @@ module Settlement
       end
 
       def download_attachment
-        send_file(
-          params[:url],
-          filename: params[:filename],
-          disposition: 'attachment'
-        )
+        contract = Settlement::ContractRecord.find(params[:id])
+        authorize! :read, contract
+
+        attachment = contract.attachments.find { |file| file.url == params[:url] }
+        return redirect_to(admin_contract_path(contract), alert: 'Nie ma takiego załącznika!') unless attachment
+
+        if attachment.file.is_a?(CarrierWave::SanitizedFile)
+          send_file(attachment.file.path, filename: File.basename(attachment.file.path), disposition: 'attachment')
+        else
+          redirect_to attachment.url, allow_other_host: true
+        end
       end
 
       def edit
@@ -110,6 +120,9 @@ module Settlement
 
       def update
         @contract = Settlement::ContractRecord.find(params[:id])
+
+        authorize! :update, @contract
+        authorize! params[:verify].to_sym, Settlement::ContractRecord if %w[accept prepayment finish].include?(params[:verify])
 
         either(update_record) do |result|
           result.success do |contract|

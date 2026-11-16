@@ -30,7 +30,42 @@ pl:
     key?: brakuje
   dry_validation:
     errors:
-      internal_number_uniq: taki numer już istnieje
+      internal_number_uniq: taki numer już istnieje w tym roku rozliczeniowym
+      accepted_fields: nie wszystkie wypełnione
+      accepted_group: sprawdzajacy
+      preclosed_group: akceptujacy
+      closed_fields: Rodzaj wydatku, Obszar i Rodzaj działalności
+      unique_nip: nip juz istnieje lub ma błędny format
+      nip_if_fv: kontrahent musi mieć podany nip
+      group_type_presence: nie może być puste
+      payout_type_presence: nie może być puste
+      bank_account_presence: nie może być puste
+      project_presence: musi być wybrany
+      photos_presence: nie mogą być puste
+      document_type_presence: nie może być puste
       key?: brakuje
       attr?: brakuje
       filled?: brakuje
+      float?: musi być liczbą
+      int?: musi być liczbą całkowitą
+      str?: musi być tekstem
+      array?: musi być listą
+      bool?: musi być wartością logiczną
+# dry-validation resolves rule failures (key.failure(:symbol)) in its default locale (:en) when the
+# contract is called, so the custom rule messages must exist under :en as well.
+en:
+  dry_validation:
+    errors:
+      internal_number_uniq: taki numer już istnieje w tym roku rozliczeniowym
+      accepted_fields: nie wszystkie wypełnione
+      accepted_group: sprawdzajacy
+      preclosed_group: akceptujacy
+      closed_fields: Rodzaj wydatku, Obszar i Rodzaj działalności
+      unique_nip: nip juz istnieje lub ma błędny format
+      nip_if_fv: kontrahent musi mieć podany nip
+      group_type_presence: nie może być puste
+      payout_type_presence: nie może być puste
+      bank_account_presence: nie może być puste
+      project_presence: musi być wybrany
+      photos_presence: nie mogą być puste
+      document_type_presence: nie może być puste

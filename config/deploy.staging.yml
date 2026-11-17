@@ -26,6 +26,7 @@ env:
     RACK_ENV: staging
     DB_HOST: kw-app-staging-postgres
     RAILS_SERVE_STATIC_FILES: true
+    ASSET_HOST: http://panel.taterniczek.pl
 
 ssh:
   user: rege

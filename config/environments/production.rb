@@ -35,7 +35,9 @@ Rails.application.configure do
   # `config.assets.precompile` and `config.assets.version` have moved to config/initializers/assets.rb
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
-  config.action_controller.asset_host = 'https://nowypanel.kw.krakow.pl'
+  # Read at runtime only (ASSET_HOST is set in config/deploy.production.yml). It must stay unset
+  # during `assets:precompile`, otherwise the host is baked into url() in the compiled CSS (fonts, images).
+  config.action_controller.asset_host = ENV['ASSET_HOST'].presence
 
   # Specifies the header that your server uses for sending files.
   # config.action_dispatch.x_sendfile_header = 'X-Sendfile' # for Apache

@@ -442,6 +442,23 @@ Pass = `== N/N checks passed` and exit code 0. Every `FAIL` line names the check
 - Staging's Mailgun API key is **empty** and the domain is a Mailgun **sandbox** domain (it only delivers to pre-authorised recipients). So real e-mail delivery, the delivery webhook against real Mailgun and the inbound route cannot be proven on staging. This corrects the earlier assumption (section 1.3 era) that staging has working Mailgun credentials; nothing could have been sent from it.
 - Staging is plain HTTP behind kamal-proxy: no TLS, no HSTS, no `Secure` cookie flag, `force_ssl` false, `config.hosts` empty.
 
+### B.1b Staging run 2, real prod data, after the G16-G22 fixes (2026-11-17, evening)
+
+Steps (skill `prod-db-restore`, all on `pi5main.local`, live prod only read): fetch newest nightly dump (taken 2026-11-17 02:15 UTC, manifest-verified) -> `preflight` -> `restore` into a scratch DB (11 s, 101 tables) -> strict `verify` **PASS 101/101 tables, 98/98 sequences, structure equal** -> `migrate` (exactly one pending migration, `20241226180715`) -> `verify --after-migrate` **PASS** -> `swap` (about 12 s of staging downtime; the previous staging DB is kept as `kw_app_staging_prev_20261117221449` for rollback) -> scenario rerun. The mail risk was checked first: staging delivery is `:mailgun` with an **empty API key** and a sandbox domain, Sidekiq does not run, so nothing can be sent. The local dump was deleted afterwards.
+
+**Result: 94 of 97 checks pass** (was 78). G16, G17, G19, G20, G21 and G22 are green. Remaining:
+
+| Check | Why | Status |
+|-------|-----|--------|
+| Unsigned Dotpay callback marks a payment paid; unknown `control` gives 500 (2 checks) | G23, old behaviour, not a regression | open, decide before/after cutover |
+| Mailgun API key present | staging has an empty key by design of its current config | staging config only |
+
+With prod data: all **11/11 notification types render**; `Mailboxer` extensions load; the inbound reply creates a message; `expired_sign_ups` SQL is `sent_at IS NOT NULL AND expired_at IS NOT NULL`.
+
+**B-FIL-2 answered (read-only):** the staging credentials can read the production container `kw-app-cloud-production`; 564 restored profiles carry a photo, 5 of 5 sampled files answer **HTTP 200 to an anonymous HEAD** with `develop`'s URL scheme (`fog_public = true`, container in the URL, no asset host), and the authenticated HEAD is 200 too. So the earlier worry (that `master`'s private-files setup would make existing files unreachable on `develop`) does **not** materialise: the container is public. Still to do on the rehearsal: open 5 photos and 2 attachments in a browser (B-FIL-2 manual part).
+
+Side findings: staging runs a `kw-app-staging-redis` accessory, but the web container has no `REDIS_URL_SIDEKIQ`, so Sidekiq cannot reach it (see G8). The CI `Test Suite` workflow fails at "Set up Ruby" since `ubuntu-latest` became 26.04 and Ruby 3.2.2 is not published for it; pin `runs-on: ubuntu-24.04` or use `ruby-version: '3.2'` (workflow change: ask first). The `Postmark Message-ID` lines in the harness output come from the `:test` delivery interceptor, not a real send.
+
 ### B.2 Checklist
 
 Status legend for the **Staging 2026-11-17** column: PASS, FAIL (see gap), N/T = not testable on staging (reason), static = verified by reading code.

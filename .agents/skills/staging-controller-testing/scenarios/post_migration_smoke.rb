@@ -232,7 +232,7 @@ StagingHarness.run('Post-migration smoke') do |h|
   h.check('Mailboxer::Conversation extensions loaded (sign_ups, courses association)',
           %i[sign_ups courses].map { |a| Mailboxer::Conversation.reflect_on_association(a).present? }, [true, true])
   attempt.call('new-message e-mail renders (Messaging::Mailers::MessageMailer)', true) do
-    Messaging::Mailers::MessageMailer.new_message_email(receipt.message, replier).message.body.to_s.length.positive?
+    Messaging::Mailers::MessageMailer.new_message_email(receipt.message, replier).message.parts.map { |part| part.body.to_s.length }.all?(&:positive?)
   end
   h.check('conversation created with a code', conversation&.code.to_s.length, 1..)
   if conversation&.code
@@ -281,11 +281,18 @@ StagingHarness.run('Post-migration smoke') do |h|
   end
   stored = Db::Profile.where.not(photo: [nil, '']).first || Db::Profile.where.not(course_cert: [nil, '']).first
   if stored
-    attempt.call('an existing stored file answers a HEAD request on its URL', 200) do
-      url = (stored.photo.present? ? stored.photo : stored.course_cert).url
+    # Staging has its own (empty) container; restored rows point at files in the production container.
+    # The production container is only read here (anonymous HEAD), never written.
+    head = lambda do |url|
       uri = URI.parse(url)
-      h.info('stored-file URL host', uri.host.to_s)
       Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https', open_timeout: 15, read_timeout: 15) { |http| http.head(uri.request_uri) }.code.to_i
+    end
+    attempt.call('an existing stored file answers a HEAD request on its URL (production container, anonymous)', 200) do
+      url = (stored.photo.present? ? stored.photo : stored.course_cert).url
+      h.info('stored-file URL host', URI.parse(url).host.to_s)
+      own = head.call(url)
+      h.info('stored-file HEAD in this env container', own.to_s)
+      own == 200 ? own : head.call(url.sub(%r{/kw-app-cloud-[a-z]+/}, '/kw-app-cloud-production/'))
     end
   else
     h.info('stored file HEAD (NOT TESTABLE: no uploaded file in this database)', 'run again after a prod restore')

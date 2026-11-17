@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Settlement
   class ContractorForm < Dry::Validation::Contract
     config.messages.load_paths << 'app/components/settlement/errors.yml'
@@ -15,12 +17,8 @@ module Settlement
       optional(:description)
     end
 
-    rule(:nip) do |nip|
-      if nip.nil? || nip.empty?
-        true
-      else
-        !Settlement::ContractorRecord.exists?(nip: nip)
-      end
+    rule(:nip) do
+      key.failure(:unique_nip) if value.present? && Settlement::ContractorRecord.exists?(nip: value)
     end
   end
 end

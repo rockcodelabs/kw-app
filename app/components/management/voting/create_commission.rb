@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 module Management
   module Voting
     class CreateCommission
+      include Dry::Monads[:result]
 
       def initialize(form)
         @form = form

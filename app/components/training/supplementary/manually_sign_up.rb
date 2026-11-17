@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 module Training
   module Supplementary
     class ManuallySignUp
+      include Dry::Monads[:result]
 
       def initialize(repository, form)
         @repository = repository
@@ -8,8 +11,8 @@ module Training
       end
 
       def call(admin_id:, raw_inputs:)
-        form_outputs = form.call(raw_inputs)
-        return Failure(form_outputs.messages(full: true)) unless form_outputs.success?
+        form_outputs = form.call(raw_inputs.to_h)
+        return Failure(form_outputs.errors(locale: :pl).to_h) unless form_outputs.success?
 
         course = Training::Supplementary::CourseRecord.find(form_outputs[:course_id])
         if form_outputs[:email].present?

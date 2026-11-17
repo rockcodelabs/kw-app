@@ -12,7 +12,7 @@ module Training
 
       def call(raw_inputs:)
         form_outputs = form_class.new(record: Training::Supplementary::CourseRecord.new).call(raw_inputs)
-        return Failure(form_outputs.errors.to_h) unless form_outputs.success?
+        return Failure(form_outputs.errors(locale: :pl).to_h) unless form_outputs.success?
 
         repository.create(form_outputs: form_outputs)
 

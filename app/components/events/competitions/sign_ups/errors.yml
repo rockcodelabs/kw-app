@@ -62,6 +62,61 @@ en:
             range: "length must be within %{size_left} - %{size_right}"
 
 en:
+  # dry-validation 1.x blocks. Rule failures (key.failure(:symbol)) are resolved in :en at call time,
+  # so the symbol messages are Polish in both locales.
+  dry_validation:
+    errors:
+      tshirt_size_1_presence: Wybierz rozmiar koszulki 1
+      tshirt_size_2_presence: Wybierz rozmiar koszulki 2
+      terms_of_service_true: Musisz zaakceptować regulamin!
+      medical_rules_true: Zapoznaj się z klauzulą informacyjną dotyczącą przetwarzania danych osobowych!
+      participant_license_1_filled: Musisz podać numer licencji PZA 1
+      correct_junior_category_1: Uczestnik 1 jest starszy niż kategoria Junior
+      active_kw_id_1: Musisz podać numer legitymacji klubu 1 z opłaconą składką
+      active_kw_id_2: Musisz podać numer legitymacji klubu 2 z opłaconą składką
+      rules:
+        team_name:
+          filled?: Team name has to be filled
+        remarks:
+          filled?: Please let us know in Remarks section about accomodation you need
+        participant_phone_1:
+          filled?: Phone number 1 cannot be empty
+        participant_first_name_1:
+          filled?: First name 1 cannot be empty
+        participant_name_1:
+          filled?: First and last name 1 cannot be empty
+        tshirt_size_1:
+          filled?: Choose t-shirt size 1
+        tshirt_size_2:
+          filled?: Choose t-shirt size 2
+        participant_country_1:
+          filled?: Wybierz kraj 1
+        participant_gender_1:
+          filled?: Choose gender 1
+        participant_gender_2:
+          filled?: Choose gender 2
+        participant_email_1:
+          filled?: E-mail 1 cannot be empty
+          format?: E-mail 1 is invalid
+        participant_birth_year_1:
+          filled?: Fill your brith year in format YYYY
+          gt?: Birth year 1 cannot be above %{num}
+          lt?: Birth year 1 cannot be below %{num}
+        competition_package_type_1_id:
+          filled?: Choose package 1
+        participant_name_2:
+          filled?: First and last name 2 cannot be empty
+        participant_email_2:
+          filled?: E-mail 2 cannot be empty
+          format?: E-mail 2 is invalid
+        participant_birth_year_2:
+          filled?: Fill your brith year 2 in format YYYY
+          gt?: Birth year 2 cannot be above %{num}
+          lt?: Birth year 2 cannot be below %{num}
+        competition_package_type_2_id:
+          filled?: Choose package 2
+        terms_of_service:
+          true?: Accept regulations
   errors:
     correct_junior_category_1: Participant 1 is older than Junior category
     active_kw_id_1: Have to fill KW Kraków membership id 1
@@ -110,6 +165,73 @@ en:
       terms_of_service:
         true?: Accept regulations
 pl:
+  # dry-validation 1.x blocks. Rule failures (key.failure(:symbol)) are resolved in :en at call time,
+  # so the symbol messages are Polish in both locales.
+  dry_validation:
+    errors:
+      tshirt_size_1_presence: Wybierz rozmiar koszulki 1
+      tshirt_size_2_presence: Wybierz rozmiar koszulki 2
+      terms_of_service_true: Musisz zaakceptować regulamin!
+      medical_rules_true: Zapoznaj się z klauzulą informacyjną dotyczącą przetwarzania danych osobowych!
+      participant_license_1_filled: Musisz podać numer licencji PZA 1
+      correct_junior_category_1: Uczestnik 1 jest starszy niż kategoria Junior
+      active_kw_id_1: Musisz podać numer legitymacji klubu 1 z opłaconą składką
+      active_kw_id_2: Musisz podać numer legitymacji klubu 2 z opłaconą składką
+      rules:
+        remarks:
+          filled?: Prosimy abyś podał informacje o potrzebnym zakwaterowaniu i rozmiarze koszulek
+        participant_phone_2:
+          filled?: Telefon 2 nie może być pusty
+        participant_phone_1:
+          filled?: Telefon 1 nie może być pusty
+        participant_first_name_1:
+          filled?: Imię 1 nie może być puste
+        participant_name_1:
+          filled?: Imię i nazwisko 1 nie może być puste
+        tshirt_size_1:
+          filled?: Wybierz rozmiar koszulki 1
+        tshirt_size_2:
+          filled?: Wybierz rozmiar koszulki 2
+        participant_license_filled:
+          filled?: Licencja PZA 1 musi zostać wypełniona
+        participant_country_1:
+          filled?: Wybierz kraj 1
+        participant_gender_1:
+          filled?: Płeć 1 musi zostać wybrana
+        participant_gender_2:
+          filled?: Płeć 2 musi zostać wybrana
+        participant_email_1:
+          filled?: E-mail 1 nie może być pusty
+          format?: E-mail 1 jest nieprawidłowy
+        participant_kw_id_1:
+          filled?: Numer klubowy 1 musi zostać wypełniony
+          int?: Numer klubowy 1 musi być liczbą
+        participant_kw_id_2:
+          filled?: Numer klubowy 2 musi zostać wypełniony
+          int?: Numer klubowy 2 musi być liczbą
+        participant_birth_year_1:
+          int?: Rok urodzenia 1 musi być liczbą w formacie RRRR
+          filled?: Musisz podać rok urodzenia 1
+          gt?: Rok urodzenia 1 nie może być wcześniej niż %{num} w formacie RRRR
+          lt?: Rok urodzenia 1 nie może być później niż %{num} w formacie RRRR
+        competition_package_type_1_id:
+          filled?: Musisz wybrać pakiet 1
+        participant_name_2:
+          filled?: Imię i nazwisko 2 nie może być puste
+        participant_email_2:
+          filled?: E-mail 2 nie może być pusty
+          format?: E-mail 2 jest nieprawidłowy
+        team_name:
+          filled?: Musisz podać nazwę zespołu
+        participant_birth_year_2:
+          int?: Rok urodzenia 2 musi być liczbą w formacie RRRR
+          filled?: Musisz podać rok urodzenia 2
+          gt?: Rok urodzenia 2 nie może być wcześniej niż %{num}
+          lt?: Rok urodzenia 2 nie może być później niż %{num}
+        competition_package_type_2_id:
+          filled?: Musisz wybrać pakiet 2
+        terms_of_service:
+          true?: Musisz zaakceptować regulamin
   errors:
     tshirt_size_1_presence: Wybierz rozmiar koszulki 1
     tshirt_size_2_presence: Wybierz rozmiar koszulki 2

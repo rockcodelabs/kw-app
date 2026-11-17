@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'dry-validation'
 require 'dry-types'
 Dry::Types.load_extensions(:maybe)
@@ -42,26 +44,26 @@ module Events
          required(:competition_package_type_2_id).filled
         end
 
-         rule(:participant_kw_id_1, :competition_package_type_1_id) do |kw_id, package_id|
-           if Events::Db::CompetitionPackageTypeRecord.find(package_id).membership?
-             ::Membership::Activement.new(user: ::Db::User.find_by(kw_id: kw_id)).active?
-           else
-             true
-           end
-         end
+        rule(:participant_kw_id_1, :competition_package_type_1_id) do
+          package = Events::Db::CompetitionPackageTypeRecord.find_by(id: values[:competition_package_type_1_id])
 
-         rule(:participant_kw_id_2, :competition_package_type_2_id) do |kw_id, package_id|
-           if Events::Db::CompetitionPackageTypeRecord.find(package_id).membership?
-             ::Membership::Activement.new(user: ::Db::User.find_by(kw_id: kw_id)).active?
-           else
-             true
-           end
-         end
-
-         rule(:terms_of_service) do |terms|
-           ActiveRecord::Type::Boolean.new.cast(terms)
-         end
+          if package&.membership? && !::Membership::Activement.new(user: ::Db::User.find_by(kw_id: values[:participant_kw_id_1])).active?
+            key(:participant_kw_id_1).failure(:active_kw_id_1)
+          end
         end
+
+        rule(:participant_kw_id_2, :competition_package_type_2_id) do
+          package = Events::Db::CompetitionPackageTypeRecord.find_by(id: values[:competition_package_type_2_id])
+
+          if package&.membership? && !::Membership::Activement.new(user: ::Db::User.find_by(kw_id: values[:participant_kw_id_2])).active?
+            key(:participant_kw_id_2).failure(:active_kw_id_2)
+          end
+        end
+
+        rule(:terms_of_service) do
+          key.failure(:terms_of_service_true) unless ActiveRecord::Type::Boolean.new.cast(value)
+        end
+      end
     end
   end
 end

@@ -4,6 +4,9 @@ require "dry/monads"
 Dry::Validation.load_extensions(:monads)
 Dry::Schema.load_extensions(:monads)
 
+# Shared Polish predicate messages; contracts defined after this inherit the load path.
+Dry::Validation::Contract.config.messages.load_paths << Rails.root.join("config/dry_validation/errors.yml").to_s
+
 #module Dry
 #  module Validation
 #    def self.Params(**options, &block)

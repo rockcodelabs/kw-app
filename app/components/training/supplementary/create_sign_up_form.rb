@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Training
   module Supplementary
     class CreateSignUpForm < Dry::Validation::Contract
@@ -10,22 +12,17 @@ module Training
         optional(:supplementary_course_package_type_id).maybe(:string)
         optional(:user_id)
         optional(:question).maybe(:string)
+        optional(:expired_at)
       end
 
-      rule(:question, :course_id) do |question, course_id|
-        course = Training::Supplementary::CourseRecord.find(course_id)
-        if course.question
-          !question.blank?
-        else
-          true
-        end
+      rule(:question, :course_id) do
+        course = Training::Supplementary::CourseRecord.find_by(id: values[:course_id])
+        key(:question).failure(:question_required) if course&.question && values[:question].blank?
       end
-      rule(:supplementary_course_package_type_id) do |supplementary_course_package_type_id|
-        if supplementary_course_package_type_id.nil?
-          true
-        else
-          !supplementary_course_package_type_id.blank?
-        end
+
+      rule(:supplementary_course_package_type_id, :course_id) do
+        course = Training::Supplementary::CourseRecord.find_by(id: values[:course_id])
+        key(:supplementary_course_package_type_id).failure(:package_required) if course&.packages && values[:supplementary_course_package_type_id].blank?
       end
     end
   end

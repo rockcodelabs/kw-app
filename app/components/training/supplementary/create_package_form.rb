@@ -1,12 +1,13 @@
+# frozen_string_literal: true
+
 module Training
   module Supplementary
     class CreatePackageForm < Dry::Validation::Contract
-      config.messages.load_paths << 'app/components/training/errors.yml'
-
       params do
-      required(:name).filled(:string)
-      required(:cost).filled
-      required(:course_id).filled
+        required(:name).filled(:string)
+        required(:cost).filled
+        required(:course_id).filled
+        optional(:membership)
       end
     end
   end

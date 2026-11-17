@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Management
   module Voting
     class CaseForm < Dry::Validation::Contract

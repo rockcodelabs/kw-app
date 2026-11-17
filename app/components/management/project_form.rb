@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 module Management
   class ProjectForm < Dry::Validation::Contract
     config.messages.load_paths << 'app/components/management/errors.yml'
 
-    schema do
+    params do
       required(:name).filled(:string)
       optional(:state)
       optional(:description).maybe(:string)
@@ -10,7 +12,6 @@ module Management
       optional(:benefits).maybe(:string)
       optional(:estimated_time).maybe(:string)
       optional(:know_how).maybe(:string)
-      optional(:attachments)
       optional(:attachments)
       optional(:users_names)
     end

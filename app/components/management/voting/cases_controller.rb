@@ -62,7 +62,7 @@ module Management
 
           result.failure do |errors|
             @case_record = Management::Voting::CaseRecord.new(case_params)
-            @errors = errors.map(&:to_sentence)
+            @errors = errors.map { |field, messages| "#{Management::Voting::CaseRecord.human_attribute_name(field)} #{messages.to_sentence}" }
             render :new
           end
         end
@@ -83,7 +83,7 @@ module Management
           end
 
           result.failure do |errors|
-            @errors = errors.map(&:to_sentence)
+            @errors = errors.map { |field, messages| "#{Management::Voting::CaseRecord.human_attribute_name(field)} #{messages.to_sentence}" }
             render :edit
           end
         end

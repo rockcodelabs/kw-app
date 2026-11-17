@@ -1,14 +1,17 @@
+# frozen_string_literal: true
+
 module Management
   module Voting
     class CreateCase
+      include Dry::Monads[:result]
 
       def initialize(form)
         @form = form
       end
 
       def call(raw_inputs:)
-        form_outputs = form.call(raw_inputs.to_unsafe_h)
-        return Failure(form_outputs.messages.values) unless form_outputs.success?
+        form_outputs = form.new.call(raw_inputs.to_unsafe_h)
+        return Failure(form_outputs.errors(locale: :pl).to_h) unless form_outputs.success?
 
         case_record = Management::Voting::CaseRecord.create(form_outputs.to_h)
         case_record.update meeting_type: 1

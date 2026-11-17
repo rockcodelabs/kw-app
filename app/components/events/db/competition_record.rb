@@ -56,13 +56,13 @@ module Events
       def form
         case custom_form
         when 'mjs'
-          ::Events::Competitions::SignUps::MjsForm.new
+          ::Events::Competitions::SignUps::MjsForm.new(competition_id: id)
         when 'mas'
-          ::Events::Competitions::SignUps::MasForm.new
+          ::Events::Competitions::SignUps::MasForm.new(competition_id: id)
         when 'tshirt'
-          ::Events::Competitions::SignUps::TshirtForm.new
+          ::Events::Competitions::SignUps::TshirtForm.new(competition_id: id)
         else
-          ::Events::Competitions::SignUps::DefaultForm.new
+          ::Events::Competitions::SignUps::DefaultForm.new(competition_id: id)
         end
       end
 

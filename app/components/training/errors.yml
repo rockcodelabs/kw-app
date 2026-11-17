@@ -5,6 +5,23 @@ pl:
   closed_or_open: 'Zapisy zamknięte'
   slug?: 'jest niepoprawny, użyj znaków a-z oraz -'
 
+  dry_validation:
+    errors:
+      package_required: 'musi zostać wybrany!'
+      question_required: 'musi zostać wypełniona!'
+      gps_tracks_extension: 'Track musi posiadać rozszerzenie .gpx!'
+      ski_route:
+        rules:
+          name:
+            filled?: 'Nazwa przejścia musi być podana'
+          climbing_date:
+            filled?: 'Data przejścia musi być wypełniona'
+          rating:
+            filled?: 'Ocena przejścia musi zostać wybrana'
+          colleague_ids:
+            filled?: 'Partnerzy z klubu muszą zostać wskazani'
+            key?: 'Partnerzy z klubu muszą zostać wskazani'
+
   errors:
     package_required: 'musi zostać wybrany!'
     question_required: 'musi zostać wypełniona!'
@@ -31,6 +48,13 @@ pl:
         slug?: 'Adres strony jest niepoprawny, użyj znaków a-z oraz -'
         filled?: 'Adres strony wydarzenia nie może być puste'
 en:
+  # dry-validation resolves rule failures (key.failure(:symbol)) in its default locale (:en)
+  # at call time, so the custom rule messages must exist under :en as well.
+  dry_validation:
+    errors:
+      package_required: 'musi zostać wybrany!'
+      question_required: 'musi zostać wypełniona!'
+      gps_tracks_extension: 'Track musi posiadać rozszerzenie .gpx!'
   errors:
     rules:
       team_name:

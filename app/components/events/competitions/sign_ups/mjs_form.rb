@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'dry-validation'
 require 'dry-types'
 Dry::Types.load_extensions(:maybe)
@@ -37,32 +39,31 @@ module Events
          required(:terms_of_service).filled
          required(:medical_rules).filled
         end
-         rule(:participant_kw_id_1, :competition_package_type_1_id) do |kw_id, package_id|
-           if Events::Db::CompetitionPackageTypeRecord.find(package_id).membership?
-             ::Membership::Activement.new(user: ::Db::User.find_by(kw_id: kw_id)).active?
-           else
-             true
-           end
-         end
 
-         rule(:participant_birth_year_1, :competition_package_type_1_id) do |year, package_id|
-           package = Events::Db::CompetitionPackageTypeRecord.find(package_id)
+        rule(:participant_kw_id_1, :competition_package_type_1_id) do
+          package = Events::Db::CompetitionPackageTypeRecord.find_by(id: values[:competition_package_type_1_id])
 
-           if package.junior_year.present? && package.junior_year > year.to_i
-            false
-           else
-             true
-           end
-         end
+          if package&.membership? && !::Membership::Activement.new(user: ::Db::User.find_by(kw_id: values[:participant_kw_id_1])).active?
+            key(:participant_kw_id_1).failure(:active_kw_id_1)
+          end
+        end
 
-         rule(:terms_of_service) do |terms|
-           ActiveRecord::Type::Boolean.new.cast(terms)
-         end
+        rule(:participant_birth_year_1, :competition_package_type_1_id) do
+          package = Events::Db::CompetitionPackageTypeRecord.find_by(id: values[:competition_package_type_1_id])
 
-         rule(:medical_rules) do |terms|
-           ActiveRecord::Type::Boolean.new.cast(terms)
-         end
+          if package&.junior_year.present? && package.junior_year > values[:participant_birth_year_1].to_i
+            key(:participant_birth_year_1).failure(:correct_junior_category_1)
+          end
+        end
+
+        rule(:terms_of_service) do
+          key.failure(:terms_of_service_true) unless ActiveRecord::Type::Boolean.new.cast(value)
+        end
+
+        rule(:medical_rules) do
+          key.failure(:medical_rules_true) unless ActiveRecord::Type::Boolean.new.cast(value)
         end
       end
+    end
   end
 end

@@ -26,7 +26,7 @@ module Management
         result.failure do |errors|
           @project = Management::ProjectRecord.new(project_params)
           @users = @project.users.map { |u| { name: u.display_name, id: u.id} }
-          @errors = errors.map(&:to_sentence)
+          @errors = errors.map { |field, messages| "#{Management::ProjectRecord.human_attribute_name(field)} #{messages.to_sentence}" }
           render :new
         end
       end
@@ -49,14 +49,15 @@ module Management
       authorize! :manage, @project
 
       either(update_record) do |result|
-        result.success do |project:|
+        result.success do |project|
           redirect_to project_path(project), flash: { notice: 'Zaktualizowano projekt' }
         end
 
-        result.failure do |errors:|
-          @project = Management::ProjectRecord.new(project_params)
+        result.failure do |errors|
+          @project = Management::ProjectRecord.find(params[:id])
+          @project.assign_attributes(project_params.except(:attachments, :users_names))
           @users = @project.users.map { |u| { name: u.display_name, id: u.id} }
-          @errors = errors.map(&:to_sentence)
+          @errors = errors.map { |field, messages| "#{Management::ProjectRecord.human_attribute_name(field)} #{messages.to_sentence}" }
           render :edit
         end
       end

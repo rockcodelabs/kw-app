@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 module Training
   module Activities
     class CreateSkiRoute
+      include Dry::Monads[:result]
 
       def initialize(repository, form)
         @repository = repository
@@ -8,8 +11,8 @@ module Training
       end
 
       def call(raw_inputs:, user_id:)
-        form_outputs = form.call(raw_inputs)
-        return Failure(form_outputs.messages(locale: :pl)) unless form_outputs.success?
+        form_outputs = form.new.call(raw_inputs.to_h)
+        return Failure(form_outputs.errors(locale: :pl).to_h) unless form_outputs.success?
 
         route = repository.create(form_outputs: form_outputs, user_id: user_id)
 

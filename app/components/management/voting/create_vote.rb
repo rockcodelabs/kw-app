@@ -1,17 +1,20 @@
+# frozen_string_literal: true
+
 module Management
   module Voting
     class CreateVote
+      include Dry::Monads[:result]
 
       def initialize(form)
         @form = form
       end
 
       def call(raw_inputs:, current_user_id:)
-        form_outputs = form.call(raw_inputs.to_unsafe_h)
+        form_outputs = form.new.call(raw_inputs.to_unsafe_h)
         return Failure(raw_inputs[:case_id]) unless form_outputs.success?
 
         case_record = Management::Voting::CaseRecord.find_by(id: raw_inputs[:case_id])
-        return Failure(raw_inputs[:case_id]) unless case_record.voting?
+        return Failure(raw_inputs[:case_id]) unless case_record&.voting?
 
         vote_record = Management::Voting::VoteRecord.new(form_outputs.to_h)
 

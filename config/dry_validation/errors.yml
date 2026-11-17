@@ -1,0 +1,52 @@
+# Shared Polish messages for every dry-validation contract (loaded in config/initializers/dry.rb).
+# Rule failures (key.failure(:symbol)) are resolved in the default locale (:en) when a contract is
+# called, so domain-specific rule messages are declared under :en as well as :pl in each component's
+# errors.yml. Predicate messages are only read when errors(locale: :pl) is requested.
+pl:
+  dry_validation:
+    errors:
+      array?: musi być listą
+      attr?: brakuje
+      bool?: musi być wartością logiczną
+      date?: musi być datą
+      date_time?: musi być datą
+      decimal?: musi być liczbą
+      empty?: musi być puste
+      eql?: musi być równe %{left}
+      even?: musi być parzyste
+      false?: musi być odznaczone
+      filled?: musi być wypełnione
+      float?: musi być liczbą
+      format?: ma niepoprawny format
+      gt?: musi być większe niż %{num}
+      gteq?: musi być większe lub równe %{num}
+      hash?: musi być obiektem
+      included_in?:
+        arg:
+          default: "musi być jedną z wartości: %{list}"
+          range: "musi być w zakresie: %{list_left} - %{list_right}"
+      inclusion?: "musi być jedną z wartości: %{list}"
+      int?: musi być liczbą całkowitą
+      key?: brakuje
+      lt?: musi być mniejsze niż %{num}
+      lteq?: musi być mniejsze lub równe %{num}
+      max_size?: rozmiar nie może być większy niż %{num}
+      min_size?: rozmiar nie może być mniejszy niż %{num}
+      nil?: nie może być podane
+      not_eql?: nie może być równe %{left}
+      number?: musi być liczbą
+      odd?: musi być nieparzyste
+      size?:
+        arg:
+          default: "rozmiar musi wynosić %{size}"
+          range: "rozmiar musi być w zakresie %{size_left} - %{size_right}"
+        value:
+          string:
+            arg:
+              default: "długość musi wynosić %{size}"
+              range: "długość musi być w zakresie %{size_left} - %{size_right}"
+      str?: musi być tekstem
+      time?: musi być czasem
+      true?: musi być zaznaczone
+      type?: "musi być typu %{type}"
+      unexpected_key: nie jest dozwolone

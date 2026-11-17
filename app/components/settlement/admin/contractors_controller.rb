@@ -18,6 +18,8 @@ module Settlement
       end
 
       def create
+        authorize! :create, Settlement::ContractorRecord
+
         either(create_record) do |result|
           result.success do |a|
             if params[:quick]
@@ -63,7 +65,7 @@ module Settlement
 
         @contractor = Settlement::ContractorRecord.find(params[:id])
 
-        if @contractor.update_attributes(contractor_params)
+        if @contractor.update(contractor_params)
           redirect_to admin_contractor_path(@contractor.id), notice: 'Zaktualizowano'
         else
           render :edit

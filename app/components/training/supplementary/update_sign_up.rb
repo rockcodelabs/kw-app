@@ -1,14 +1,18 @@
+# frozen_string_literal: true
+
 module Training
   module Supplementary
     class UpdateSignUp
+      include Dry::Monads[:result]
+
       def initialize(repository, form)
         @repository = repository
         @form = form
       end
 
       def call(id:, raw_inputs:)
-        form_outputs = form.call(raw_inputs)
-        return Failure(form_outputs.messages(locale: I18n.locale)) unless form_outputs.success?
+        form_outputs = form.call(raw_inputs.to_h)
+        return Failure(form_outputs.errors(locale: :pl).to_h) unless form_outputs.success?
 
         sign_up = Training::Supplementary::SignUpRecord.find(id)
         sign_up.update(form_outputs.to_h)

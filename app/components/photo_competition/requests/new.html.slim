@@ -10,6 +10,7 @@
         ul
           li Proporcje zdjęcia: 3:2
           li Rozdzielczość i rozmiar: min 6Mpx
+          li = "Maksymalnie #{PhotoCompetition::RequestRecord::MAX_PHOTOS_PER_CATEGORY} zdjęć w jednej kategorii"
       = form_for @request, as: :request, url: edition_requests_path, html: { multipart: true } do |f|
         - if @request.errors.any?
           .callout.alert

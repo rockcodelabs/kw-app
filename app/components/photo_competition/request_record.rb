@@ -20,6 +20,8 @@ module PhotoCompetition
   class RequestRecord < ActiveRecord::Base
     self.table_name = 'photo_requests'
 
+    MAX_PHOTOS_PER_CATEGORY = 5
+
     has_paper_trail only: [:accepted]
 
     mount_uploader :file, ::PhotoCompetition::FileUploader
@@ -33,6 +35,7 @@ module PhotoCompetition
     validates :title, presence: true, if: :title_needed?
     validates :area, presence: true, if: :area_needed?
     validates :description, presence: true, if: :description_needed?
+    validate :category_photo_limit_not_exceeded, on: :create
 
     def description_needed?
       category && category.mandatory_fields.include?('description')
@@ -44,6 +47,17 @@ module PhotoCompetition
 
     def area_needed?
       category && category.mandatory_fields.include?('area')
+    end
+
+    private
+
+    def category_photo_limit_not_exceeded
+      return unless user_id && edition_record_id && category_record_id
+
+      submitted = self.class.where(user_id: user_id, edition_record_id: edition_record_id, category_record_id: category_record_id).count
+      return if submitted < MAX_PHOTOS_PER_CATEGORY
+
+      errors.add(:base, "Możesz zgłosić maksymalnie #{MAX_PHOTOS_PER_CATEGORY} zdjęć w jednej kategorii")
     end
   end
 end

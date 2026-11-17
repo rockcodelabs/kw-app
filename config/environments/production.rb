@@ -65,6 +65,9 @@ Rails.application.configure do
   # config.cache_store = :mem_cache_store
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
+  # master set this globally in config/application.rb; the Rails 6.1 upgrade (9fc768e5) dropped it, which silently
+  # moved every deliver_later onto the in-process :async adapter (no persistence, no retries, no Sidekiq UI).
+  config.active_job.queue_adapter = :sidekiq
   # config.active_job.queue_adapter     = :resque
   # config.active_job.queue_name_prefix = "kw_app_#{Rails.env}"
   config.action_mailer.perform_caching = false

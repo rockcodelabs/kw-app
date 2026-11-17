@@ -59,15 +59,25 @@ Rails.application.configure do
   # config.cache_store = :mem_cache_store
 
   # Use a real queuing backend for Active Job (and separate queues per environment)
+  # master set this globally in config/application.rb; the Rails 6.1 upgrade (9fc768e5) dropped it, which silently
+  # moved every deliver_later onto the in-process :async adapter (no persistence, no retries, no Sidekiq UI).
+  config.active_job.queue_adapter = :sidekiq
   # config.active_job.queue_adapter     = :resque
   # config.active_job.queue_name_prefix = "kw_app_#{Rails.env}"
   config.action_mailer.perform_caching = false
   config.action_mailer.default_url_options = { host: 'https://panel.taterniczek.pl' }
-  config.action_mailer.delivery_method = :mailgun
   config.action_mailer.mailgun_settings = {
     api_key: ENV.fetch('MAILGUN_API_KEY') { Rails.application.credentials.dig(:mailgun, :api_key) },
     domain: ENV.fetch('MAILGUN_DOMAIN') { Rails.application.credentials.dig(:mailgun, :domain) },
   }
+  # Staging holds a 1:1 copy of production data (real member e-mails) and runs Sidekiq, so it must never send
+  # real mail by accident. Mails go to tmp/mails inside the container unless STAGING_REAL_MAIL=true is set.
+  if ENV['STAGING_REAL_MAIL'] == 'true'
+    config.action_mailer.delivery_method = :mailgun
+  else
+    config.action_mailer.delivery_method = :file
+    config.action_mailer.file_settings = { location: Rails.root.join('tmp/mails').to_s }
+  end
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false

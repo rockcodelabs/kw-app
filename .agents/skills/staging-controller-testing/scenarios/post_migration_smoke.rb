@@ -325,16 +325,16 @@ StagingHarness.run('Post-migration smoke') do |h|
   begin
     pong = Sidekiq.redis { |c| c.ping }
     h.check('Sidekiq Redis answers PING', pong, 'PONG')
+    h.check('a Sidekiq worker process is alive (job role running)', Sidekiq::ProcessSet.new.size, 1..)
+    h.info('Sidekiq queues (name=size)', Sidekiq::Queue.all.map { |q| "#{q.name}=#{q.size}" }.join(' '))
+    h.info('Sidekiq retry/dead/scheduled', "#{Sidekiq::RetrySet.new.size}/#{Sidekiq::DeadSet.new.size}/#{Sidekiq::ScheduledSet.new.size}")
   rescue StandardError => e
-    h.info('Sidekiq Redis (NOT TESTABLE on staging)', "#{e.class}: #{e.message[0, 80]}")
+    h.info('Sidekiq Redis (NOT REACHABLE)', "#{e.class}: #{e.message[0, 80]}")
   end
-  h.info('active_job queue adapter in the real app config', Rails.application.config.active_job.queue_adapter.inspect)
+  # master sets :sidekiq in config/application.rb; the Rails 6.1 upgrade dropped it (G25)
+  h.check('ActiveJob adapter is :sidekiq (as on old prod)', Rails.application.config.active_job.queue_adapter, :sidekiq)
   h.check_status('anonymous /sidekiq is not served', h.client('fresh-anon').get('/sidekiq'), [302, 401, 404])
   h.check_status('plain member /sidekiq is not served', as.('notified', recipient).get('/sidekiq'), [302, 401, 403, 404])
   admin_ui = as.('admin', admin).get('/sidekiq')
-  if admin_ui.exception.to_s.include?('Redis') || admin_ui.exception.class.name.to_s.include?('Redis')
-    h.info('admin /sidekiq (NOT TESTABLE: Redis unreachable here)', admin_ui.error_summary.to_s)
-  else
-    h.check_status('admin /sidekiq opens', admin_ui, [200, 301, 302])
-  end
+  h.check_status('admin /sidekiq opens', admin_ui, [200, 301, 302])
 end

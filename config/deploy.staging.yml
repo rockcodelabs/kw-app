@@ -9,6 +9,12 @@ servers:
   web:
     hosts:
       - pi5main.local
+  job:
+    hosts:
+      - pi5main.local
+    cmd: bundle exec sidekiq -C config/sidekiq.yml
+    options:
+      network: "kw-app-network"
 
 deploy_timeout: 180
 
@@ -27,6 +33,12 @@ env:
     DB_HOST: kw-app-staging-postgres
     RAILS_SERVE_STATIC_FILES: true
     ASSET_HOST: http://panel.taterniczek.pl
+    REDIS_URL_SIDEKIQ: redis://kw-app-staging-redis:6379/1
+  secret:
+    - RAILS_MASTER_KEY
+    - APPSIGNAL_PUSH_API_KEY
+    - STRAVA_VERIFY_TOKEN
+    - REDIS_PASSWORD
 
 ssh:
   user: rege

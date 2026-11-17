@@ -105,7 +105,7 @@ Kamal `web` role + `kw-app-staging-postgres` + `kw-app-staging-redis`. **No Side
 - You already use OVH Public Cloud (OpenStack, region WAW) for uploads, so no new vendor/account/billing. Create one bucket + one S3 user limited to that bucket.
 - `restic` = one static binary: client-side encryption, dedup, retention (`forget --keep-daily 7 --keep-weekly 4 --keep-monthly 6`), integrity `check`. The DB is ~90 MB raw so cost is cents per month.
 - Credentials and the restic password live in bws (`kw-app-production-restic-password`, `...-backup-s3-*`), not on disk beyond a root-only env file.
-- Put the bucket in a **different OVH region/project from the VPS** than the live data where possible, and **store the restic password also outside the VPS** (bws is that copy).
+- Put the bucket in a **different OVH region/project from the VPS** than the live data where possible, and **store the restic password also outside the VPS** (bws is that copy; a lost restic password means unrecoverable backups, so keep a break-glass copy too, C.7.2).
 - Optional second copy: have the Pi at home **pull** the encrypted dumps over SSH with a restricted key. Adds nothing to the cloud bill, but the Pi is a single home device, so treat it as a bonus, not the primary.
 - Rejected as more work: Backblaze B2 (new vendor), a second VPS (patching + cost), plain rsync without encryption (PII in the dump).
 
@@ -177,7 +177,7 @@ Order matters: **never close the current SSH session until a second, new session
    Validate with `sshd -t`, then `sshd -T | grep -E 'passwordauthentication|permitrootlogin'`, reload (not restart), open a **new** session, only then close the old one.
 4. **Firewall (UFW)**, IPv6 included (`IPV6=yes`): default deny incoming, allow `22/tcp` (use `ufw limit`), `80/tcp`, `443/tcp`. **Docker bypasses UFW for published ports**, so: publish nothing but kamal-proxy (80/443), do not publish Postgres/Redis at all, and add the `DOCKER-USER` chain rule set (ufw-docker pattern) as defence in depth. Verify from outside with `nmap -Pn` (laptop and one more network).
 5. **fail2ban**: `sshd` jail with `backend = systemd` (Ubuntu 26.04 uses journald; the old Ansible playbook used `/var/log/auth.log`, which may not exist), `maxretry 4`, `bantime 1h` increasing, `ignoreip` = our fixed IPs.
-6. **Automatic security updates**: `unattended-upgrades` (security pocket only), `Automatic-Reboot` at a quiet hour (e.g. 05:00 Sun) or use Ubuntu Pro Livepatch (free for personal use, up to 5 machines) and reboot manually. `needrestart` in automatic mode.
+6. **Automatic security updates**: `unattended-upgrades` (security pocket only), `Automatic-Reboot` at a quiet hour (e.g. 05:00 Sun) or use Ubuntu Pro Livepatch (free for personal use, up to 5 machines) and reboot manually. `needrestart` in automatic mode **but** with Docker/containerd excluded from automatic restarts (details and mail report options in C.4).
 7. **Kernel/network sysctl** (`/etc/sysctl.d/90-hardening.conf`): `rp_filter`, `accept_redirects=0`, `send_redirects=0`, `tcp_syncookies=1`, `kernel.dmesg_restrict=1`, `kernel.kptr_restrict=2`, `fs.protected_hardlinks/symlinks=1`. Do **not** disable IPv4 forwarding (Docker needs it).
 8. **Logging**: persistent journald with size cap (`SystemMaxUse=500M`), `auditd` with a small ruleset (sshd, sudo, docker socket, `/etc/ssh`), optional.
 9. **OVH side**: enable the VPS **automated backup / snapshot** option, record the KVM/console access path (this is your recovery if SSH breaks), verify reverse DNS/IPv6, enable OVH 2FA on the account.
@@ -187,7 +187,7 @@ Gate: password SSH rejected from outside, only 22/80/443 open on both IPv4 and I
 
 ### P2. Docker engine and Kamal prerequisites [ASK]
 1. Install Docker from the **official apt repo** (`docker-ce`, `containerd.io`, `docker-buildx-plugin`; confirm the codename with `lsb_release -cs` = `resolute`). Fallback: Ubuntu `docker.io` 29.1.x. Do not pipe-install; Kamal's `server bootstrap` can be skipped because Docker is already present.
-2. `/etc/docker/daemon.json`: `{"log-driver":"local","log-opts":{"max-size":"20m","max-file":"5"},"live-restore":true,"no-new-privileges":true}` then restart Docker. (`log-driver local` plus rotation fixes G10 on the host side.)
+2. `/etc/docker/daemon.json`: `{"log-driver":"local","log-opts":{"max-size":"20m","max-file":"5"},"live-restore":true,"no-new-privileges":true}` then restart Docker. (`log-driver local` plus rotation fixes G10 on the host side. `log-opts` apply only to containers created afterwards, so deploy/reboot everything once after the change; C.1. Size-only rotation does not guarantee 7 days: see C.10.3.)
 3. Add `deploy` to the `docker` group. Verify `docker run --rm hello-world` as `deploy`.
 4. **Create the network Kamal expects (G7)**: `docker network create kw-app-network`.
 5. Data dirs for accessories (Kamal creates them under the deploy user's home; confirm ownership and that they sit on the 38 GB disk with room for growth; DB is 86 MB raw, uploads volume per D4).
@@ -261,10 +261,10 @@ Gate: `kamal config -d production` OK, both deploy files list the same secret na
 4. **Redis/Sidekiq state**: do **not** copy Redis. Old prod runs Sidekiq/Ruby 2.6 payloads; new is Sidekiq 7.3. Instead drain: stop enqueuing, wait for queues to reach 0, list the `scheduled` and `retry` sets (export, then re-enqueue on new prod if any). Sessions are cookie-based so no user logs out because of Redis.
 5. **Backups on new prod (replace the broken off-host copy)**:
    - nightly `pg_dump -Fc` in the Postgres container to `/var/backups/kw-app`, 7 daily + 4 weekly + 6 monthly, with a manifest (sha256, row-count digest via `table_digest.py`) like the current runner;
-   - `restic` (or equivalent) client-side encrypted copy to the OVH Object Storage bucket (D4, section 3.2), credentials from bws, **alert on failure** (Gatus/healthchecks ping, not silent like today);
+   - `restic` (or equivalent) client-side encrypted copy to the OVH Object Storage bucket (D4, section 3.2), credentials from bws (a dedicated least-privilege key: object read/write/delete on that one bucket only), **alert on failure** (Gatus/healthchecks ping, not silent like today);
    - weekly automated **restore test** into a scratch DB with `verify`;
    - OVH VPS snapshot as the third layer (not a substitute: snapshots are crash-consistent only);
-   - targets: RPO 24 h (nightly) or lower with WAL archiving if you want it, RTO under 2 h.
+   - targets: RPO 24 h (nightly) or lower with WAL archiving/PITR if you want it (one of the three Postgres backup approaches; the plan uses SQL dumps), RTO under 2 h.
 
 ### P6. Observability and alerting
 1. AppSignal: confirm the new host reports (env key `APPSIGNAL_PUSH_API_KEY`, `APPSIGNAL_ENVIRONMENT` / hostname label distinguishes new vs old during overlap).
@@ -272,6 +272,7 @@ Gate: `kamal config -d production` OK, both deploy files list the same secret na
 3. Host metrics: the Pi already runs `beszel`/`beszel-agent`, so add a `beszel-agent` container on the VPS (disk, RAM, swap, Docker). Alert at 80% disk, 90% RAM, swap in use.
 4. Logs: Docker `local` driver with rotation; `kamal app logs`; AppSignal for errors. Decide retention (e.g. 14 days) given PII.
 5. Security alerts: fail2ban ban digest and unattended-upgrades result by e-mail (use Mailgun SMTP or a script) so you see them.
+6. The routine schedule, maintenance mode, deploy safety and incident runbooks live in **Appendix C**; every alert defined here must map to a row in C.4 / C.6. Log reading and rotation (archive, journald, logrotate, `prod-logs` skill) is C.10.
 
 ### P7. Rehearsal on the new VPS (no real traffic)
 1. `kamal setup -d production` with a **temporary hostname** (`nowypanel.kw.krakow.pl` pointed at the VPS; lower TTL first). This boots kamal-proxy, Postgres, Redis, web, job, cron.
@@ -342,6 +343,8 @@ Gate: Phase U complete (or fallback consciously chosen), two clean rehearsals on
 - [ ] P6 monitoring and alerts
 - [ ] Appendix B green on staging (G16, G17, G19-G22 fixed first), then on both rehearsals, then post-flip (B.3)
 - [ ] P7 two rehearsals green, **on the final Ruby/Rails stack**
+- [ ] Appendix C **[PREP]** items done before P7 (deep health check, `5xx.html` + `error_pages_path`, backup alerting, access list, break-glass)
+- [ ] C.10 log reading + rotation [PREP]: `kw-log-archive`, journald limits, `/etc/logrotate.d/kw-app`, `prod-logs` skill, C.10.6 verification passed in P7
 - [ ] P8 cutover (announce, maintenance, restore, flip, verify)
 - [ ] 14-day watch, then P9 decommission, rotation, docs
 
@@ -402,6 +405,8 @@ Evidence: `config/schedule.rb`, `lib/tasks/periodic.rake`, old prod `crontab -l`
 0 0 1 9 *         bin/rails recalculate_cost
 ```
 Seven entries and three processes per heavy slot become one. Schedule stays equivalent to the 10 existing jobs; only #7 gets less frequent.
+
+**Heartbeat rules** (healthchecks.io practice): ping only **after** the wrapper succeeded, `cmd && curl -fsS -m 10 --retry 5 -o /dev/null "$HC_PING_<JOB>"`; on failure call `$HC_PING_<JOB>/fail`; optionally `/start` before the run so duration is measured; set the grace time above the job's longest runtime; keep `TZ` identical in the cron container and the healthchecks.io check (a mismatch causes early/late alerts).
 
 ---
 
@@ -604,6 +609,195 @@ Status legend for the **Staging 2026-11-17** column: PASS, FAIL (see gap), N/T =
 7. Then the **[watch]** rows at T+1 h, T+1 day, T+7 days, T+14 days.
 
 Any failure in steps 1-4 is a go/no-go input for the rollback decision window (30 min, P8).
+
+---
+
+## Appendix C. First server maintenance preparation for the Rails app (2026-11-17)
+
+Goal: before the first real traffic, the operator (Rafal, and any helper) can answer "what do I do when X happens, and what do I do every week" without improvising. Everything below is **preparation**: items marked **[PREP]** must exist before the P7 rehearsal, the rest is the steady-state routine. Kamal facts were checked against Kamal 2.10.1 (`kamal help`, gem source); repo facts against `develop`.
+
+### C.1 What the repo does today that shapes maintenance [V]
+| Fact | Where | Consequence for operations |
+|------|-------|----------------------------|
+| **Every web container boot runs `bin/rails db:prepare`** (migrates automatically on deploy **and** on every restart, incl. reboot) | `bin/docker-entrypoint` | A deploy is a schema change. `kamal rollback` swaps the image back but **does not undo migrations**, so every migration must be backward compatible with the previous release (add before use, remove one release later). A failing migration keeps the old container serving (the new one never gets healthy) but blocks the deploy: read `kamal app logs`. |
+| `/up` returns `OK` without touching DB/Redis | `HealthCheckController` | kamal-proxy's default healthcheck is `GET /up` once per second with a 5 s timeout, and it stops checking once the app is up (Kamal docs, `configuration/proxy`). Good for that (a DB blip must not eject the app), **blind** as an uptime monitor: it stays green while the DB is down. Add a separate deep check (DB `SELECT 1`, Redis `PING`, Sidekiq process count) on another path for the external monitor [PREP, develop, TDD]. |
+| Only `public/404.html`, `422.html`, `500.html` exist; no `error_pages_path` in `config/deploy*.yml` | `public/`, deploy config | `kamal app maintenance` would show a bare proxy message. Add `public/5xx.html` (Polish, club branding, "wrocimy za chwile") and `error_pages_path: public` [PREP, ask: deploy config]. |
+| Rails logs to STDOUT at `:debug`; no Docker log rotation yet | `production.rb`, G10 | Disk and PII risk. Docker `local` driver with `max-size 20m, max-file 5` (P2.2) and `:info` (P4). Docker's default `json-file` driver does not rotate. Daemon `log-opts` apply **only to containers created after the change**, so recreate existing containers (a deploy or `kamal accessory reboot`) before trusting them. Alternative: Kamal `logging:` (`driver`/`options`) in deploy config [ask], which maps to `--log-driver/--log-opt`. kamal-proxy has its own `run.log_max_size` (default 10m). |
+| Thruster (`thrust`) fronts Puma; kamal-proxy fronts Thruster; TLS is Let's Encrypt via kamal-proxy | `Dockerfile.production`, `proxy.ssl: true` | Kamal's proxy docs say **port 443 must be open** for the Let's Encrypt challenge, and `ssl: true` needs the host name to resolve to this server (single server only). Keep 80 open too for the HTTP->HTTPS redirect: never close 80/443 in UFW/OVH firewall; alert on cert expiry (P6.2). |
+| Roles: `web`, plus `job` (Sidekiq) and `cron` (supercronic) to be added in P4 | G1/G2, A.5 | Maintenance on the DB must stop **all three**; `kamal app maintenance` only drains `web`. |
+| Redis accessory is a cache/queue store, not a source of truth | P5.4 | Losing it loses only queued/retrying jobs and Sidekiq stats. Back up the `retry`/`scheduled` sets before any Redis reboot. Sidekiq's wiki requires a persistent Redis with `maxmemory-policy noeviction` and jobs are delivered **at least once**, so every job and mailer must be idempotent. Keep this Redis separate from any cache Redis. |
+
+### C.2 Maintenance mode and safe stop [PREP, rehearse in P7]
+1. **Announce** (club mailing/panel banner) at least 48 h before planned downtime; best window: Sunday 05:00-07:00 Europe/Warsaw. **Avoid** 1 March (yearly fee reminder runs 00:00), 1 September (`recalculate_cost`), and the days around course sign-up openings (check the activities calendar).
+2. **Web only** (deploys, config): `kamal app maintenance -d production --message "Prace serwisowe, wracamy za ok. 15 min"` ... `kamal app live -d production`. The proxy answers 503 with the `5xx.html` page; `/up` also reports down, so pause the external monitor first.
+3. **Data work** (restore, Postgres upgrade, Redis reboot): maintenance on, then stop workers so nothing writes: `kamal app stop -d production -r job,cron` (web role stays for the maintenance page), do the work, `kamal app boot -d production -r job,cron`, then `kamal app live`. Order on the way up: **DB -> web -> job -> cron** (same as P8 step 5).
+4. **Before** any maintenance that touches data: a fresh `pg_dump -Fc` (C.4) and an OVH snapshot; record the dump path and sha256 in the change note.
+5. **Deploy lock**: Kamal takes `kamal lock` for deploys. If a run is interrupted, inspect with `kamal lock status -d production` before releasing it; never release a lock while a deploy may still be running (`kamal audit -d production` shows who did what).
+
+### C.3 Deploy-time safety [PREP]
+1. **Retain rollback targets**: `retain_containers: 3` (Kamal default) keeps the last 3 containers/images; do not run `docker system prune -a` by hand. Rollback = `kamal rollback <VERSION> -d production` (versions: `kamal app containers`).
+2. **Migration policy** (see C.1): review each migration for locks on big tables (`payments`, `membership fee` rows ~12k, `notifications`); no `rename_column`/`remove_column` in the same release as the code change; large data backfills go to a rake task run by hand in maintenance, not inside `db:prepare`.
+3. **Pre-deploy checklist** (copy into the deploy note): CI green on the commit, `bundler-audit` + Brakeman green, last backup < 24 h and verified, no pending club event/opening in the next 2 h, Appendix B smoke scenario green on staging for the same image, new jobs/mailers are idempotent (at-least-once delivery, see C.1).
+4. **Post-deploy**: `kamal app details`, `/up` 200, deep check green, AppSignal shows the new release and no new error class within 15 min, `Sidekiq::ProcessSet` count = expected (staging smoke scenario B-JOB does this), then B.3 steps 1-3 after anything user-visible.
+5. **Production deploys happen from CI only** (`main`), staging from `develop`; a hand `kamal deploy -d production` from a laptop is an emergency path and is logged in the change note. Remember: until the cutover, `main` points at the obsolete host (`.rules` section 14 note).
+6. **Optional automation with Kamal hooks** [recommendation]: `.kamal/hooks/pre-deploy` (e.g. abort when the newest backup is older than 24 h) and `post-deploy` (e-mail/ntfy deploy notice). Hooks are executables **without a file extension**, receive `KAMAL_*` environment variables, a non-zero exit aborts the command, and `--skip_hooks` bypasses them (Kamal docs, `hooks/overview`). The repo has only `.kamal/hooks/pre-connect` plus `*.sample` files (the traefik-named samples are Kamal 1 leftovers; Kamal 2 names are `pre-proxy-reboot` / `post-proxy-reboot`). `kamal proxy reboot` causes a short outage; with several servers use `--rolling`.
+
+### C.4 Routine schedule (set up in P4-P6, then operate)
+| When | Task | How / threshold | Where it must alert |
+|------|------|-----------------|---------------------|
+| **Daily (automatic)** | `pg_dump -Fc` + manifest, restic copy off-host, backup heartbeat ping | P5.5; fail = alert, never silent (today it is silent). Method: SQL dump, RPO 24 h. Postgres docs list three approaches (SQL dump, file-system backup, continuous archiving/PITR); WAL archiving is the upgrade path if a lower RPO is ever needed | healthchecks ping, e-mail |
+| Daily (automatic) | unattended-upgrades security pocket; reboot-required flag check | `Automatic-Reboot "true"` with `Automatic-Reboot-Time "05:00"` (local time; default is no reboot) or Livepatch + manual reboot; `Unattended-Upgrade::Mail` + `MailReport "only-on-error"` (or `on-change`). **`needrestart`** (24.04+) restarts services after upgrades: configure it (`$nrconf{restart} = 'l'` or an `override_rc` entry for docker/containerd) so a security update cannot restart Docker at a random hour; restart in the window instead. Daily runs come from `apt-daily.timer` | e-mail digest (P6.5) |
+| Daily (look, 2 min) | AppSignal: new incidents, error rate, p95; Beszel: disk < 80%, RAM < 90%, swap idle; `fail2ban-client status sshd` count | | AppSignal + Beszel alerts |
+| **Weekly** | Sidekiq `/sidekiq`: **dead** and **retry** sets (clear or fix), queue latency `critical`/`default`/`mailers`; cron heartbeats all seen (see the heartbeat rules under A.5); `docker system df` (images < 10 GB); `journalctl -p err -S -7d` | dead set must be 0 or explained | healthchecks silence alert |
+| Weekly (automatic) | restore test into a scratch DB + `verify` (P5.5) | PASS 100% or page | healthchecks |
+| Weekly (automatic) | CarrierWave cache cleanup: `CarrierWave.clean_cached_files!(86_400)` as a cron entry (old prod collected **1.7 GB** of stale cache and 8 `.php` probe files; the container filesystem is replaced on each deploy, but a long-lived container can still fill) [PREP, develop, TDD, add to A.5] | | none (log only) |
+| **Monthly** | Image pull of the pinned base tags: Postgres `16.x` / Redis `7.x` patch releases (read release notes; update the tag in deploy config [ask]; dump first; `kamal accessory reboot` = brief outage, use C.2.3); `bundle outdated --strict` + `bundler-audit`; Rails/Ruby security announcements; check certificate expiry and domain/DNS renewals (`kw.krakow.pl`, `panel.kw.krakow.pl`, VPS billing) | Postgres minor upgrades never need a dump/restore (only majors do) | |
+| Monthly | Postgres health: `SELECT relname, n_dead_tup, last_autovacuum FROM pg_stat_user_tables ORDER BY n_dead_tup DESC LIMIT 10;`, DB size growth (86 MB raw on 2026-11-17), connections vs `RAILS_MAX_THREADS` x processes, `pg_stat_activity` long queries | autovacuum is on by default (avoid `VACUUM FULL`); only investigate when dead tuples stay high. Wraparound check: `SELECT datname, age(datfrozenxid) FROM pg_database;` | |
+| Monthly | Redis: `INFO memory`, AOF size (`/data`), `maxmemory` unset today (set one, e.g. 256 MB with `noeviction` for the queue DB, so a leak cannot eat the box); `redis-cli --latency` and swap use when Sidekiq feels slow | | Beszel RAM |
+| **Quarterly** | Restore drill on a **fresh** VPS from the off-host copy only (proves the backup is usable without the old box); Lynis rerun; SSH key and user review; bws rotation review; Rails/Ruby upgrade planning (Phase U cadence); delete dead cron/code | report kept in `docs/` as a dated section | |
+| Yearly | 1 Mar / 1 Sep jobs observed live (A.1 #9, #10); OVH snapshot retention and VPS size review; Ruby/Rails EOL check (endoflife.date) | | |
+
+### C.5 Capacity and baselines to record on day 1 [PREP]
+New VPS: 2 vCPU, 3.8 GB RAM, 38 GB disk (section 1.2). Record in the rehearsal note and compare after 14 days: `docker stats` idle and under the P7.4 load test, DB size, Redis memory, image sizes, `df -h`, AppSignal p95 for the 5 heaviest pages. Watch out for: three Rails processes per cron slot on old prod (A.3.2; one wrapper on new prod), Puma/Sidekiq concurrency (`RAILS_MAX_THREADS`, `config/sidekiq.yml` `:concurrency: 5`) vs Postgres connection limit, and swap (a 2 GB swapfile is a safety net, sustained swap use = resize the VPS).
+
+### C.6 Incident runbooks (short form; one page each when the stack is live)
+| Symptom | First checks (in order) | Likely fix |
+|---------|-------------------------|-----------|
+| Site down / 502 | `kamal app details`, `kamal proxy logs`, `docker ps` on host, `/up` from outside, disk full? | `kamal app boot`; if bad release `kamal rollback <prev>`; if disk, prune images/logs first |
+| Site up but slow / 500s | AppSignal incident (see `staging-logs-appsignal` skill), `kamal app logs --tail 200`, DB connections, Fog/OpenStack timeouts (A.3.3) | restart web; check OVH Object Storage status; roll back |
+| Mail not arriving | Sidekiq `mailers` queue latency + dead set, Mailgun logs (the app sends via Mailgun; the `Postmark` lines in the logs are a legacy observer), SPF/DKIM, `STAGING_REAL_MAIL`-style flags must be absent in prod | `Sidekiq` retry (safe only because jobs are idempotent, C.1); fix API key (bws) |
+| Sidekiq stuck | `Sidekiq::ProcessSet` empty? `kamal app logs -r job`, Redis auth (G28 class of bug), memory | `kamal app boot -r job`; on retry storms check idempotency before mass-retrying the dead set |
+| Cron silent | healthchecks silence alert, `kamal app logs -r cron`, timezone `TZ=Europe/Warsaw` | restart cron role; run the wrapper by hand with `DRY_RUN=1` |
+| Disk > 85% | `docker system df`, `du -xh /var/lib/docker \| sort -h \| tail`, journald size, Postgres WAL | `kamal prune all`, rotate logs, clean CarrierWave cache, resize |
+| DB trouble / data loss | stop `job`+`cron`, maintenance on, **do not write**; newest verified dump from restic; `prod-db-restore` skill (`restore`, `verify`, `migrate`) | restore, verify 100%, bring roles up in the C.2.3 order |
+| TLS certificate expired | `kamal proxy logs`, port **443** open (and 80 for the redirect)?, DNS still points to the VPS | open the port, `kamal proxy reboot` (brief outage) |
+| Locked out of SSH | OVH KVM console (recorded in P1.9), fail2ban unban own IP, restore snapshot as last resort | see P1 safeguards |
+| Suspected compromise | isolate (UFW deny all except your IP), snapshot for evidence, rotate everything in the rotation backlog (bws), review `kamal audit`, `last`, `journalctl -u ssh` | rebuild from a clean VPS: all state is in backups, config in git, secrets in bws |
+
+### C.7 Access, secrets, documentation hygiene [PREP]
+1. **Who can do what**: `ubuntu` (sudo) for the host, `deploy` (docker group, no sudo) for Kamal/CI, bws machine account scoped to production secrets (P3.9), OVH account with 2FA. Write the names (not secrets) of the people with access into this doc at go-live; remove access on the same day someone leaves.
+2. **Break-glass**: where the OVH console login, the bws access and the Dotpay/Mailgun/SendGrid panel logins live (1Password vault names only here, never values). A second person must be able to reach them. Include the **restic repository password**: bws holds the working copy, but a lost password means unrecoverable backups (restic docs), so keep one more copy in the break-glass vault.
+3. **Console and DB access recipes** (also in the `kamal-deployment` skill, to be rewritten in P9.3): Rails console `kamal app exec -d production -i --reuse "bin/rails console"` (read-only habits: no `update_all` without a transaction and a count first); psql through `kamal accessory exec postgres -i "psql -U production_user kw_app_production"`.
+4. **Change log**: every manual action on the server (package, config, restart, restore) goes into a dated note (what, why, who, rollback). `kamal audit` covers only Kamal.
+5. **After a rotation or role change** re-run the Appendix B auth/mail/payment checks (B-AUTH, B-MAIL, B-PAY) because they are the paths that break when a secret changes.
+
+### C.8 First two weeks after the flip (watch period, before old prod is decommissioned)
+| Day | Do |
+|-----|-----|
+| T+0 (B.3) | 30-minute verification order, first nightly backup observed, first cron slot watched live |
+| T+1 | Backup + off-host copy + weekly-style restore test run once by hand; AppSignal baseline vs old prod; Sidekiq dead set; first `unattended-upgrades` log |
+| T+3 | Disk/RAM/swap trend; fail2ban bans (legitimate IPs?); cert and DNS check; club feedback round (mail, payments, login) |
+| T+7 | First weekly routine from C.4 done end to end; decide on resize if swap/RAM pressure; record the baseline in C.5 |
+| T+14 | Go/no-go for decommissioning old prod (P9.4); final archived dump; start the rotation backlog (P9.1); update `.rules` section 14 and the skills |
+
+### C.9 Open items for the owner
+1. Who is the **second operator** (backup person) and what level of access do they get? [?]
+2. Acceptable planned-downtime window and how the club is informed (mailing list, panel banner, Facebook) [?]
+3. Alert destinations: one e-mail address that is **not** hosted on the new VPS, plus optionally a phone push (healthchecks.io/ntfy/Telegram) [?]
+4. Budget/decision for a hosted uptime monitor from outside your network (P6.2) [?]
+5. Approve the develop-only changes this appendix adds [ASK, TDD]: deep health check, `public/5xx.html`, CarrierWave cache cleanup cron entry, Redis `maxmemory`, wider `filter_parameters`.
+6. **Decided (owner: ok):** one sanitised week of old-prod nginx traffic as the rehearsal baseline. Needs the owner to run the one-time `sudo` command in C.10.1 on old prod (read-only) and paste the output. No change to `deploy`'s groups on old prod.
+7. **Recommended (owner asked):** yes, add `deploy` to `adm` and `systemd-journal` on new prod in P1 [ASK at that batch]. Reasons: read-only; `deploy` is already in the `docker` group, which is root-equivalent, so it adds no real privilege; and it lets the `prod-logs` skill read journald/`/var/log` without handing out `ubuntu`/sudo. Cost: a leaked CI key could also read `auth.log` (IPs, usernames), which it could already get by running a root container. Keep `sudo` for `ubuntu` only.
+8. **Decided (owner: ok):** 14 days app/proxy logs, 30 days journald, 8 weeks auth/SSH on the VPS. A longer copy on the owner's NAS is allowed, see C.10.3 item 7.
+
+### C.10 Reading a week of logs and rotating logs on new prod [PREP, docs only for now]
+Nothing here has been run on `51.255.38.227`. Goal: any week of production logs can be read without improvising, disk can never fill from logs, and PII does not live longer than needed.
+
+**C.10.1 What old prod does today [V, read-only, 2026-11-17]** (so we do not copy its gaps)
+| Fact | Detail |
+|------|--------|
+| **No Rails request log exists at all** | `config/environments/production.rb` line 100 sets `config.logger = Logger.new('/dev/null')` *after* the `RAILS_LOG_TO_STDOUT` block, and `log_level` is `:error`. Errors live only in AppSignal. Do **not** carry this over: new prod logs to STDOUT (P4) at `:info`. |
+| App-side files | only `shared/log/appsignal.log` (8 MB, mode 666) and `releases/*/cron_log.log` (54 KB, appended by cron). **Neither has a logrotate entry.** |
+| Sidekiq | systemd `StandardOutput=syslog`, readable through `journalctl -t sidekiq` (55,545 lines in 7 days; journal starts 2026-11-06, `Storage` default). |
+| nginx | daily, `rotate 14`, compress, 0640 `www-data:adm` (~16 MB/day raw, ~1.4 MB gz). **`deploy` is not in `adm` and has no passwordless sudo, so it cannot read them.** A week of traffic from old prod therefore needs a human with sudo (open item C.9.6). |
+| Host files | Ubuntu defaults: `syslog` daily x7, `auth.log`/`kern.log`/`ufw.log` weekly, `postgresql` weekly x10 (`copytruncate`), `redis` weekly x12. `/var/log` is 289 MB, disk is 84% full (3.1 GB free). `ufw.log` and `kern.log` are byte-identical in size (UFW logging goes to both), 10 MB per week each. |
+
+**Baseline command for the owner (one-time, read-only, old prod; output has routes and status codes only, no IPs, no query strings, ids replaced by `N`).** Run on old prod as a user with sudo; paste the two outputs back. Tested locally on sample lines in the combined nginx format, not on prod:
+```bash
+L() { sudo sh -c 'zcat -f /var/log/nginx/access.log /var/log/nginx/access.log.1 /var/log/nginx/access.log.[2-7].gz'; }
+# top routes by status and method
+L | awk -F'"' '{split($2,r," "); split($3,s," "); p=r[2]; sub(/\?.*/,"",p); gsub(/[0-9]+/,"N",p); print s[1], r[1], p}' | sort | uniq -c | sort -rn | head -n 60
+# requests per day by status class
+L | awk -F'"' '{split($1,a," "); d=substr(a[4],2,11); split($3,s," "); c=substr(s[1],1,1)"xx"; n[d" "c]++} END{for(k in n) print n[k], k}' | sort -k2,2 -k3,3
+```
+Purpose: confirm the real route mix for B.1 (e.g. whether `/warunki`, `/api/meteoblue`, `/api/pogodynka`, `/email_processor`, `/dotpay` are used), 4xx/5xx baseline per day, and bot noise (`wp-login.php`, `.php` probes) to compare with new prod after the flip.
+
+**C.10.2 Log sources on new prod and where each is read**
+| Source | Written to | Read with | Rotated by |
+|--------|------------|-----------|------------|
+| Rails web, Sidekiq (`job`), cron wrapper (`cron`) | container stdout -> Docker `local` driver | `kamal app logs -d production -r web\|job\|cron`, or `docker logs` on the host | Docker driver (size based, see C.10.3) |
+| kamal-proxy access log (JSON, includes `request_id`, `status`, `duration`) | proxy container stdout | `kamal proxy logs -d production` | Docker driver, plus the proxy's `run.log_max_size` (default 10m) |
+| Postgres, Redis accessories | container stdout | `kamal accessory logs postgres\|redis -d production` | Docker driver |
+| Host: SSH, sudo, UFW, fail2ban, unattended-upgrades, kernel | journald (and `/var/log/*` if rsyslog is present on 26.04, **verify in P1, do not assume**) | `journalctl -u ssh --since "7 days ago"`, `fail2ban-client status sshd` | journald size/time limits, logrotate for any files |
+| Backup runner and restic output | `/var/log/kw-app/backup.log` (new) | `tail`, healthchecks.io ping with the log tail | our own `/etc/logrotate.d/kw-app` |
+| Errors, traces, slow requests | AppSignal (no log lines are shipped there, confirmed in the `staging-logs-appsignal` skill) | AppSignal CLI/MCP | AppSignal retention |
+
+Container names and ids change on every deploy and Kamal keeps `retain_containers: 3` old ones, so **a week of logs spans several containers**. Always select by label (`service=kw-app-production`, `role=web|job|cron`) and include stopped containers (`docker ps -a`), never by a remembered id.
+
+**C.10.3 The problem with size-only rotation, and the recommendation**
+Docker's `local` driver rotates by **size** (`max-size 20m x max-file 5` = about 100 MB per container, P2.2), not by time. At `:info` a busy week of Rails + proxy output can exceed that, so "last 7 days" is not guaranteed and one noisy hour can push a quiet day out. Recommended layering [recommendation, estimates not measured]:
+1. **Keep the driver caps as the disk safety net** (daemon default in P2.2). For `web` and `proxy` raise to `max-size 50m`, `max-file 10` through Kamal `logging:` options [ask: deploy config], leave Postgres/Redis at the default. Remember `log-opts` only apply to containers created after the change (C.1).
+2. **Daily time-based archive on the host** (new script `kw-log-archive`, root cron/systemd timer at 00:10 Europe/Warsaw): for every container with the label `service=kw-app-production` plus `kamal-proxy` and the two accessories (running **and** stopped), write `docker logs --timestamps --since <yesterday 00:00> --until <today 00:00>` through `gzip` into `/var/log/kw-app/<name>-YYYYMMDD.log.gz`, mode 0640 `root:adm`. Retention: delete files older than **14 days** (`find ... -mtime +14 -delete`). Report success/failure with a healthchecks.io ping (A.5 heartbeat rules). Docker timestamps are UTC; keep that and convert only when reading. Estimated space: Rails + proxy ~30-60 MB/day raw, ~5 MB/day gz, so ~70 MB for 14 days (to be replaced with real numbers at T+7, C.8).
+3. **journald**: `/etc/systemd/journald.conf.d/kw.conf` with `Storage=persistent`, `SystemMaxUse=500M`, `MaxRetentionSec=1month`. journald rotates itself; `journalctl --vacuum-time=30d` is the manual lever.
+4. **Own logrotate file** `/etc/logrotate.d/kw-app` for `/var/log/kw-app/*.log` (backup/restic logs): `weekly`, `rotate 8`, `compress`, `delaycompress`, `missingok`, `notifempty`, `create 0640 root adm`. Never `copytruncate` something that has a heartbeat reading it. `logrotate.timer` is already the scheduler on Ubuntu.
+5. **Nothing writes `log/production.log` in a container.** If a file logger is ever added, it goes through its own volume and logrotate entry first.
+6. **Retention policy (PII)**: app/proxy logs 14 days, journald 30 days, auth/SSH 8 weeks, Docker caps as above. Logs contain emails, names and request parameters, and `filter_parameters` masks only `passw`, `secret`, `token`, `_key`, `crypt`, `salt`, `certificate`, `otp`, `ssn`; extend it for PESEL, phone, e-mail and Dotpay fields in P4 [ASK, develop, TDD]. Archive files are never copied off the host unredacted.
+7. **Optional NAS copy [recommendation, owner offered a NAS]**: useful because an attacker or a full disk can erase logs on the VPS, so an off-host copy is the forensic record. Design: the **NAS pulls, the VPS never pushes** (no NAS credentials or open home-network port on the VPS). A dedicated `logpull` user on the VPS, member of `adm` only, with an SSH key restricted by `command="rrsync -ro /var/log/kw-app",restrict` (read-only rsync of that one directory), and the NAS runs `rsync -a --ignore-existing` daily over SSH. The key lives on the NAS only. Prerequisites: the NAS must reach the VPS SSH port (D5: if SSH is limited to an allowlist, the NAS's public IP or a VPN has to be on it), full-disk/volume encryption and a user-restricted share on the NAS because the logs contain member PII, a NAS retention (e.g. 90 days) that is **written down** (the 14-day rule in item 6 is what the club has agreed; a longer copy needs the owner's explicit decision), and a heartbeat so a silent NAS is noticed. The same pull pattern can later fetch the encrypted restic/dump files (section 3.2 optional second copy). Not needed for go-live: build after T+14.
+
+**C.10.4 Reading a week (recipes; read-only; all outputs capped)**
+Access: `deploy` is in the `docker` group, which is already root-equivalent, so reading container logs needs no extra rights. Reading host files/journal needs `ubuntu`, or adding `deploy` to `adm` and `systemd-journal` (read only; open item C.9.7 [ASK]).
+```bash
+# Window helper: Kamal 2.10.1 `app logs` supports --since (e.g. 168h), -n, -g, --grep-options
+kamal app logs -d production -r web --since 168h -g ' 5[0-9][0-9] ' -n 200
+
+# Everything for one request across web + proxy (request id from a user report or AppSignal)
+kamal app logs -d production -r web --since 168h -g '<request-id>'
+kamal proxy logs -d production --since 168h | grep '<request-id>' | cut -c1-600
+
+# On the host: whole week per day from the archive (works across deploys and restarts)
+zcat /var/log/kw-app/web-2026111{1..7}.log.gz 2>/dev/null | grep -E 'Completed 5[0-9]{2}' | cut -c1-240 | head -n 100
+zcat /var/log/kw-app/job-*.log.gz | grep -E 'ERROR|FATAL|WARN' | cut -c1-240 | head -n 100
+
+# Counts per day instead of lines (safe to paste): 5xx per archive day
+for f in /var/log/kw-app/proxy-*.log.gz; do printf '%s %s\n' "$f" "$(zcat "$f" | grep -c '"status":5')"; done
+
+# Host and security (needs ubuntu or adm/systemd-journal)
+journalctl -u ssh --since "7 days ago" | grep -c 'Failed password'
+journalctl -u ssh --since "7 days ago" | grep -c 'Accepted'
+fail2ban-client status sshd
+journalctl -p err --since "7 days ago" | tail -n 50
+sudo grep -h 'Unattended-upgrades' /var/log/unattended-upgrades/unattended-upgrades.log | tail -n 20
+```
+Rules: cap every command (`head`, `tail -n`, `cut -c1-240`), prefer counts and request ids to raw lines, no `docker logs -f` left running, no pasting emails/PESEL/tokens into chats or issues, never read the archive on a laptop copy unless it was fetched on purpose and deleted after.
+
+**C.10.5 Planned skill `prod-logs` [PREP, build in P6 after the host exists; rehearse first on staging]**
+- Scope: **read-only**, no `rm`/`truncate`/`docker prune`/restarts. Host selected from one variable so the same skill points at old prod, new prod or staging (staging differs: its Rails log is a file inside the container, see `staging-logs-appsignal`).
+- Scripts: `read-logs.sh --since 7d --role web|job|cron|proxy|postgres|redis --grep <pattern> --max-lines N` (label-based container selection, archive-aware, redacts e-mails/long tokens, refuses unbounded output) and `week-digest.sh` (per day: 5xx count and top 10 paths, slowest paths from proxy `duration`, Sidekiq errors/retries, mailer failures, SSH failures/accepts, fail2ban bans, disk and Docker log sizes). The digest doubles as the **weekly** C.4 check and can be e-mailed.
+- Also documents the rotation inventory (this section) and the verification commands below so it stays the single operational reference; `docs/` keeps only this plan (`.rules`: one document).
+
+**C.10.6 Verification of rotation (run in the P7 rehearsal, again at T+1 and T+7)**
+| Check | Command | Pass |
+|-------|---------|------|
+| Every container uses the intended driver and caps | `docker inspect --format '{{.Name}} {{.HostConfig.LogConfig.Type}} {{.HostConfig.LogConfig.Config}}' $(docker ps -aq)` | `local` with `max-size`/`max-file` on all, incl. proxy and accessories |
+| Docker logs are not unbounded | `du -sh /var/lib/docker/containers` stays flat across a deploy | growth bounded by caps |
+| Archive ran | newest `/var/log/kw-app/*-YYYYMMDD.log.gz` is yesterday's, non-empty, `gzip -t` OK, heartbeat green | yes |
+| Archive retention | `find /var/log/kw-app -mtime +14 \| wc -l` | 0 |
+| Archive covers a deploy day | after a rehearsal deploy, the web archive for that day contains lines from **both** the old and new container | yes |
+| logrotate config valid | `logrotate -d /etc/logrotate.d/kw-app`, then once `logrotate -f` | no errors, `.1`/`.gz` created, heartbeat still reads |
+| journald limits | `journalctl --disk-usage` | below `SystemMaxUse` |
+| Disk headroom | `df -h /` and `docker system df` | log share < 5% of disk; Beszel alert at 80% |
+
+### C.11 Sources checked (2026-11-17)
+Facts above marked verified come from these pages; everything else is a recommendation.
+- Kamal: `commands/app` (maintenance/live/stop/boot, `-r`), `commands/proxy`, `configuration/proxy` (healthcheck, `error_pages_path`, port 443), `configuration/logging`, `configuration/cron`, `hooks/overview`. Kamal's own cron example uses a `cron` role with `bash -c "(env && cat config/crontab) | crontab - && cron -f"`; this plan uses supercronic, either works as long as the environment variables reach the cron process (the example copies `env`).
+- kamal-proxy README (`run.log_max_size`, maintenance/error pages).
+- Sidekiq wiki: Using Redis (`noeviction`, persistence), Best Practices (idempotent jobs).
+- PostgreSQL 16 docs: Routine Vacuuming, Backup and Restore.
+- Docker docs: logging drivers (`local`, `json-file`, `log-opts` apply to new containers). Old-prod log facts in C.10.1 come from read-only `ls`/`cat`/`journalctl` as `deploy` on 2026-11-17 (nothing written). Kamal 2.10.1 `kamal app logs --help` (flags `--since --lines --grep --grep-options --container-id`).
+- restic docs: repository password, least-privilege bucket access.
+- Ubuntu Server docs: Automatic updates (`unattended-upgrades`, `Automatic-Reboot-Time`, mail report).
+- healthchecks.io cron guide (heartbeat pattern, grace time, `/start` and `/fail`, timezone pitfalls).
+- Rails guides: upgrade one minor at a time, Ruby first (matches Phase U).
 
 ---
 

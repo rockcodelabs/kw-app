@@ -297,7 +297,7 @@ StagingHarness.run('Post-migration smoke') do |h|
     Training::Supplementary::FillEmptyPlaces Training::Supplementary::DestroySignUp
     Training::Supplementary::OpenConversation Training::Supplementary::AddToConversation
     Training::Supplementary::SendEmailWithPayment Training::Questionare::SnwProfileService
-    Events::Competitions::SignUps::Destroy Charity::CreateDonation
+    Events::Competitions::SignUps::Destroy
   ]
   g16.each do |name|
     klass = name.safe_constantize

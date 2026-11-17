@@ -116,6 +116,30 @@ bws secret delete $ID                                                           
 
 Result on 2026-11-17: read, create, edit, delete secrets and create/delete projects all worked. Per-project machine-account access can only be configured in the Bitwarden web UI.
 
+## Rotation backlog (decided 2026-11-17: do AFTER the migration to new prod)
+
+These were exposed in an agent session on 2026-11-17 (the decrypted `production.yml.enc` was echoed into tool output) and/or are readable by anyone via the public repo, because `config/master.key` was committed in 2019 and still exists on `main` and in git history. Treat all as compromised. Names only, no values.
+
+| # | Credential | Where it lives now | Rotate at | Effect of rotating |
+|---|------------|--------------------|-----------|--------------------|
+| 1 | `secret_key_base` (prod) | `production.yml.enc` / env | generate new | all users logged out; passwords unaffected |
+| 2 | Redis password (prod, and staging which shares it) | bws `kw-app-production-redis-password`, `staging-redis-password` | generate new, give each env its own | restart Redis + app together |
+| 3 | Mailgun API key + SMTP login/password | `production.yml.enc` | Mailgun dashboard | mail stops until updated |
+| 4 | OpenStack tenant/username/API key (uploads storage) | `production.yml.enc` | OVH manager | uploads fail until updated |
+| 5 | Dotpay login/password | `production.yml.enc` | Dotpay panel | payments fail until updated |
+| 6 | Strava client secret | `production.yml.enc` | Strava API settings | Strava sync fails until updated |
+| 7 | Google OAuth client secret | `production.yml.enc` | Google Cloud console | Google login fails until updated |
+| 8 | AppSignal push API key | bws `kw-app-appsignal-push-api-key` (old value was hardcoded in `config/appsignal.yml` in git history) | AppSignal app settings | metrics stop until updated |
+| 9 | Strava webhook verify token | bws `kw-app-strava-verify-token` (already a fresh random value; old `strava_token` is in git history but only matters at subscription creation) | nothing to do unless re-subscribing | - |
+| 10 | Production `RAILS_MASTER_KEY` | bws `kw-app-production-master-key` (identical to the leaked `config/master.key`) | `bin/rails credentials:edit --environment production` with a NEW key, re-encrypt, then update bws | do this last, together with item 1-7 re-encryption |
+| 11 | Dev/test `secret_key_base`, Devise sample secret/pepper | were in git history | no action (dev/test only, Devise ones were commented out) | - |
+
+Order when doing it: new credential at provider -> update the value (bws entry, or re-encrypt `production.yml.enc` for the ones that live there) -> deploy -> verify -> revoke old. Item 10 re-keys the whole file, so do items 3-7 inside that same edit. After the migration also remove `config/master.key` and `config/secrets.yml` history exposure from `main`.
+
+Staging was also affected only through the shared Redis password and the stale local file below; its own master key and Postgres password differ from production's.
+
+Local leftover (laptop only, git-ignored, not read by Kamal): `.kamal/secrets-staging` holds 22 old KEY=VALUE lines (RAILS_MASTER_KEY, POSTGRES_PASSWORD and KAMAL_REGISTRY_PASSWORD differ from bws, i.e. stale; OpenStack/Dotpay/Mailgun/etc. have no bws copy). Before deleting it, make sure each value that is still needed exists in bws or the staging credentials.
+
 ## Known gaps (as of 2026-11-17)
 
 - The repo is public and `config/master.key` was committed in 2019. It is removed from `develop` but remains on `main` and in git history, where it decrypts the current `production.yml.enc` and older staging/dev/prod credential files. Treat every value in those files as exposed and rotate them. After the prod migration: remove `master.key` from `main` and re-key production credentials.

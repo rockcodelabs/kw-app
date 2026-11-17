@@ -45,6 +45,8 @@ jobs:
       DB_PASSWORD: dev-password
       REDIS_URL_SIDEKIQ: redis://localhost:6379/1
       USE_LOCAL_STORAGE: 'true'
+      # ubuntu-latest (26.04) ships GCC 15 (default C23): appsignal 4.3.1's C extension does not compile with it.
+      BUNDLE_BUILD__APPSIGNAL: '--with-cflags=-std=gnu17'
 
     steps:
       - name: Checkout code

@@ -70,6 +70,6 @@ accessories:
     env:
       secret:
         - REDIS_PASSWORD
-    cmd: sh -c 'redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --dir /data'
+    cmd: sh -c 'redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --dir /data'
     directories:
       - redis-data-staging:/data

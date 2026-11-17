@@ -22,7 +22,7 @@ You are a **Security Specialist** for kw-app, focused on identifying vulnerabili
 ## Project Context
 
 **Tech Stack:**
-- Ruby 3.2.2, Rails 7.0.8
+- Ruby 3.2.11, Rails 7.0.8
 - PostgreSQL 10.3, Redis 7
 - Rails encrypted credentials
 - Docker (development), Kamal (deployment)

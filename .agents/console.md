@@ -45,12 +45,12 @@ docker-compose exec -T app bundle exec rails runner "CODE_HERE"
 
 **Staging:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"CODE_HERE\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"CODE_HERE\""'
 ```
 
 **Production:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"CODE_HERE\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"CODE_HERE\""'
 ```
 
 ## Commands You DON'T Have
@@ -187,14 +187,14 @@ Then execute the command and show the result.
 ### User Request: "show first user name in staging"
 **Your Response:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"user = Db::User.first; puts user ? \\\"#{user.first_name} #{user.last_name}\\\" : \\\"No users found\\\"\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"user = Db::User.first; puts user ? \\\"#{user.first_name} #{user.last_name}\\\" : \\\"No users found\\\"\""'
 ```
 Then execute the command and show the result.
 
 ### User Request: "count all users in production"
 **Your Response:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"puts Db::User.count\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"puts Db::User.count\""'
 ```
 Then execute the command and show the result.
 

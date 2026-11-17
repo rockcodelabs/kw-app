@@ -95,7 +95,7 @@ You MUST NOT:
 - Run `bundle exec rspec` on host (wrong Ruby version)
 - Run `rails console` on host
 
-Exception: Kamal deployment commands use native Ruby with `chruby 3.2.2`.
+Exception: Kamal deployment commands use native Ruby with `chruby 3.2.11`.
 
 Exact commands: `docs/DEV_COMMANDS.md`
 
@@ -204,7 +204,7 @@ When generating new components, use templates from: `templates/`
 
 | Component | Version |
 |-----------|---------|
-| Ruby | 3.2.2 |
+| Ruby | 3.2.11 |
 | Rails | 7.0.8 |
 | PostgreSQL | 10.3 |
 | Redis | 7 |

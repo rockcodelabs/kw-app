@@ -26,7 +26,7 @@
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| Ruby | 3.2.2 | Language |
+| Ruby | 3.2.11 | Language |
 | Rails | 7.0.8 | Framework |
 | PostgreSQL | 10.3 | Database |
 | Redis | 7 | Caching, Sidekiq |

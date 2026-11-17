@@ -26,7 +26,7 @@ bundle exec rspec  # Wrong Ruby version, no PostgreSQL/Redis
 ```
 
 **Why Docker is mandatory:**
-- Host Ruby (2.6.10) ≠ App Ruby (3.2.2)
+- Host Ruby (2.6.10) ≠ App Ruby (3.2.11)
 - Tests need PostgreSQL 10.3 and Redis 7 from containers
 - Exact gem versions from container's bundle
 - Consistent with CI environment

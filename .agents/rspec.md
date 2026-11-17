@@ -571,7 +571,7 @@ bundle exec rspec
 
 **Fix:**
 ```bash
-# ✅ Correct - uses Docker Ruby (3.2.2)
+# ✅ Correct - uses Docker Ruby (3.2.11)
 docker-compose exec -T app bundle exec rspec
 ```
 

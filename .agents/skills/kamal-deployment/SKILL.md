@@ -21,7 +21,7 @@ kw-app uses Kamal for zero-downtime deployments to:
 ## Prerequisites
 
 **Local Machine Requirements:**
-- Ruby 3.2.2 (via chruby) - **NOT Docker!**
+- Ruby 3.2.11 (via chruby) - **NOT Docker!**
 - Kamal gem installed globally or in bundle
 - SSH keys configured for deployment servers
 
@@ -30,7 +30,7 @@ kw-app uses Kamal for zero-downtime deployments to:
 ### Deployment Flow
 
 ```
-Local Machine (chruby 3.2.2)
+Local Machine (chruby 3.2.11)
     ↓
 Run: kamal deploy -d staging/production
     ↓
@@ -46,7 +46,7 @@ Run: kamal deploy -d staging/production
 ### Why Native Ruby for Kamal?
 
 - Kamal runs on **host machine**, not in Docker
-- Needs native Ruby 3.2.2 (via chruby)
+- Needs native Ruby 3.2.11 (via chruby)
 - Docker is used ONLY for the app container being deployed
 
 ## Configuration Files
@@ -79,34 +79,34 @@ config/
 
 ```bash
 # Deploy to staging
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d staging'
 
 # Deploy to production
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d production'
 
 # Deploy specific branch
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d staging --version=feature-branch'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d staging --version=feature-branch'
 
 # Check deployment status
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d staging'
 
 # View logs
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d staging'
 
 # Rollback to previous version
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal rollback -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal rollback -d production'
 ```
 
 ### Console Access
 
 **Staging Console:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
 ```
 
 **Production Console:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
 ```
 
 **Flag Meanings:**
@@ -118,12 +118,12 @@ zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d product
 
 **Run rake task:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate:status"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate:status"'
 ```
 
 **Run Rails runner:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
 ```
 
 ## Deployment Workflow
@@ -143,16 +143,16 @@ Before deploying:
 
 ```bash
 # 1. Check current status
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d staging'
 
 # 2. Deploy
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d staging'
 
 # 3. Verify deployment
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d staging'
 
 # 4. Smoke test via console
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
 ```
 
 ### 3. Migration Deployment
@@ -163,17 +163,17 @@ If migration fails, deployment stops (zero-downtime preserved).
 
 **Manual migration (if needed):**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate"'
 ```
 
 ### 4. Emergency Rollback
 
 ```bash
 # Rollback to previous version
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal rollback -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal rollback -d production'
 
 # Check status
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d production'
 ```
 
 ## Troubleshooting
@@ -186,12 +186,12 @@ zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d prod
 
 1. Check app logs:
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d staging'
 ```
 
 2. Check container status:
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d staging'
 ```
 
 3. SSH to server and check Docker:
@@ -209,12 +209,12 @@ docker logs <container-id>
 
 1. Remove `--reuse` for first connection:
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging -i "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging -i "bin/rails console"'
 ```
 
 2. Or authenticate first:
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal registry login -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal registry login -d staging'
 ```
 
 ### Issue: Out of Memory (Staging Pi)
@@ -234,12 +234,12 @@ zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal registry login -d s
 
 **Symptoms:** 
 ```
-Your Ruby version is 2.6.10, but your Gemfile specified 3.2.2
+Your Ruby version is 2.6.10, but your Gemfile specified 3.2.11
 ```
 
 **Cause:** Running Kamal without chruby.
 
-**Solution:** Always wrap in `zsh -c 'source ~/.zshrc && chruby 3.2.2 && ...'`
+**Solution:** Always wrap in `zsh -c 'source ~/.zshrc && chruby 3.2.11 && ...'`
 
 ### Issue: Migrations Fail During Deployment
 
@@ -255,7 +255,7 @@ docker-compose exec -T app bundle exec rake db:migrate
 2. Fix migration and redeploy
 3. OR manually run on server:
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate"'
 ```
 
 ## CI/CD Integration
@@ -324,13 +324,13 @@ jobs:
 
 ```bash
 # 1. Check app is running
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d production'
 
 # 2. Check logs for errors
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d production --tail 100'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d production --tail 100'
 
 # 3. Test critical paths (console)
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
 > User.count
 > # Test other critical models
 
@@ -350,7 +350,7 @@ zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d product
 
 **ALL Kamal commands:**
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal <command> -d <env> [flags]'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal <command> -d <env> [flags]'
 ```
 
 ### Common Operations

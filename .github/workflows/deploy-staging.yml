@@ -94,9 +94,9 @@ jobs:
           echo "127.0.0.1 pi5main.local" | sudo tee -a /etc/hosts
           echo "✅ Added pi5main.local to /etc/hosts"
       
-      - name: Set up Ruby 3.2.2 with ruby-build
+      - name: Set up Ruby 3.2.11 with ruby-build
         run: |
-          RUBY_VERSION="3.2.2"
+          RUBY_VERSION="3.2.11"
           RUBY_INSTALL_DIR="/opt/hostedtoolcache/Ruby/${RUBY_VERSION}/arm64"
           
           # Check if Ruby is already installed in tool cache

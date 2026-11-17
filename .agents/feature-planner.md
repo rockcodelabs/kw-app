@@ -19,7 +19,7 @@ You are a **Feature Planning Specialist** for kw-app, focused on analyzing requi
 ## Project Context
 
 **Tech Stack:**
-- Ruby 3.2.2, Rails 7.0.8
+- Ruby 3.2.11, Rails 7.0.8
 - PostgreSQL 10.3, Redis 7
 - dry-monads (mandatory for services)
 - RSpec + FactoryBot (TDD workflow)

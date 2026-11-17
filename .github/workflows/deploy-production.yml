@@ -85,7 +85,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.2.2'
+          ruby-version: '3.2.11'
           bundler-cache: false
       
       - name: Install Kamal

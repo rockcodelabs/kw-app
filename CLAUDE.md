@@ -74,7 +74,7 @@ Request → Controller → Operation → Model → Database
 
 | Component | Version |
 |-----------|---------|
-| Ruby | 3.2.2 |
+| Ruby | 3.2.11 |
 | Rails | 7.0.8 |
 | PostgreSQL | 10.3 |
 | Redis | 7 |

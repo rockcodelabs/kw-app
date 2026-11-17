@@ -1,12 +1,12 @@
-ARG RUBY_VERSION=3.2.2
-FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
+ARG RUBY_VERSION=3.2.11
+FROM docker.io/library/ruby:$RUBY_VERSION-slim-bookworm AS base
 
 # Rails app lives here
 WORKDIR /rails
 
 # Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libpq-dev postgresql-client build-essential bash bash-completion git pkg-config tzdata imagemagick libsodium-dev libxml2-dev && \
+    apt-get install --no-install-recommends -y curl libjemalloc2 libpq-dev postgresql-client build-essential bash bash-completion git pkg-config tzdata imagemagick libsodium-dev libxml2-dev zlib1g-dev && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set production environment

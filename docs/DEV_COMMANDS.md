@@ -78,13 +78,13 @@ docker-compose exec app bundle exec rails console
 ### Staging Console (via Kamal with Native Ruby)
 
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging -i --reuse "bin/rails console"'
 ```
 
 ### Production Console (via Kamal with Native Ruby)
 
 ```bash
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
 ```
 
 ### Rails Runner (Execute Ruby Code)
@@ -94,10 +94,10 @@ zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d product
 docker-compose exec -T app bundle exec rails runner "puts User.count"
 
 # Staging
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
 
 # Production
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"puts User.count\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production --reuse "bin/rails runner \"puts User.count\""'
 ```
 
 ---
@@ -278,42 +278,42 @@ docker-compose exec -T app bundle exec rake about
 
 ## Deployment (Kamal)
 
-> **Note:** Kamal commands use native Ruby (chruby 3.2.2), NOT Docker!
+> **Note:** Kamal commands use native Ruby (chruby 3.2.11), NOT Docker!
 
 ### Deploy
 
 ```bash
 # Deploy to staging
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d staging'
 
 # Deploy to production
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal deploy -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal deploy -d production'
 
 # Rollback
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal rollback -d production'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal rollback -d production'
 ```
 
 ### Monitoring
 
 ```bash
 # Check app status
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app details -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app details -d staging'
 
 # View logs
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d staging'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d staging'
 
 # Tail logs
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app logs -d staging --tail 100'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app logs -d staging --tail 100'
 ```
 
 ### Remote Commands
 
 ```bash
 # Run rake task on remote
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate:status"'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails db:migrate:status"'
 
 # Run rails runner on remote
-zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
+zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging --reuse "bin/rails runner \"puts User.count\""'
 ```
 
 ### Kamal Flags Reference
@@ -461,11 +461,11 @@ docker system prune -f
 | Context | Use |
 |---------|-----|
 | Tests, Console, Rake, Rails runner | Docker (`docker-compose exec`) |
-| Kamal deployment commands | Native Ruby (`chruby 3.2.2`) |
+| Kamal deployment commands | Native Ruby (`chruby 3.2.11`) |
 
 ### Why Docker is Mandatory
 
-- System Ruby (2.6.10) ≠ App Ruby (3.2.2)
+- System Ruby (2.6.10) ≠ App Ruby (3.2.11)
 - Tests need PostgreSQL 10.3 and Redis 7 from containers
 - Consistent gem versions
 - Matches CI environment

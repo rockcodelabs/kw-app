@@ -127,14 +127,14 @@
   },
   {
     "label": "Staging Console (Kamal)",
-    "command": "zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d staging -i --reuse \"bin/rails console\"'",
+    "command": "zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d staging -i --reuse \"bin/rails console\"'",
     "use_new_terminal": true,
     "allow_concurrent_runs": false,
     "reveal": "always"
   },
   {
     "label": "Production Console (Kamal)",
-    "command": "zsh -c 'source ~/.zshrc && chruby 3.2.2 && bundle exec kamal app exec -d production -i --reuse \"bin/rails console\"'",
+    "command": "zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production -i --reuse \"bin/rails console\"'",
     "use_new_terminal": true,
     "allow_concurrent_runs": false,
     "reveal": "always"

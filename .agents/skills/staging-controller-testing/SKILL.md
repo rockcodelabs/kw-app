@@ -100,11 +100,13 @@ end
 | Call | Purpose |
 |------|---------|
 | `h.user(label, roles: [], active: false)` | Create a throwaway user. `roles` are `Db::User` roles (see `Ability`). `active: true` forces `Membership::Activement#active?` |
-| `h.client(label = 'anonymous', user = nil)` | Session; `.get/.post/.put/.patch/.delete(path, params: {})` returns `Response` (`status`, `location`, `body`, `content_type`, `exception`, `redirect?`) |
+| `h.client(label = 'anonymous', user = nil)` | Session; `.get/.post/.put/.patch/.delete(path, params: {})` returns `Response` (`status`, `location`, `body`, `content_type`, `headers`, `exception`, `redirect?`) |
 | `h.check_status(name, response, 200 \| [302, 303])` | Status equals value, or any of an Array |
 | `h.check_denied(name, response)` | 401/403 **or redirect to `/`** (what `CanCan::AccessDenied` does here). A bare 302 is *not* denial |
 | `h.check(name, actual, expected)` | `expected === actual`: value, Range (`1..`), Regexp. Arrays are compared exactly |
 | `h.enqueued_jobs` / `h.clear_enqueued_jobs!` | Inspect jobs/mails that `deliver_later` queued |
+| `h.capture_mail { ... }` | Runs the block with mail jobs performed inline into the `:test` delivery; returns the deliveries. Aborts if the delivery method is not `:test` |
+| `h.info(name, text)` | Prints an `INFO` line (hosts, counts). Never pass secret values |
 | `h.routes` | URL helpers |
 
 ### Scenario conventions
@@ -125,7 +127,11 @@ end
 - **Class-level `authorize!` ignores CanCan conditions.** `authorize! :finish, Settlement::ContractRecord` passes for any role with `can :manage, ContractRecord, state: [...]`, so state conditions in `Ability` do not protect collection/member actions unless the controller authorizes the *instance*.
 - **Actions without `authorize!`** are open to anonymous users (no `authenticate_user!` in `Admin::BaseController`). Always include an anonymous check.
 - Staging `config.hosts` is cleared; the harness uses `staging-check.local` as the request host.
-- dry-validation is 1.x: `Contract` classes need `.new`/`.call` on an instance. Code written for 0.x (`Form.call`, `.with`) raises `NoMethodError` on staging.
+- `dry-validation` is 1.x: `Contract` classes need `.new`/`.call` on an instance. Code written for 0.x (`Form.call`, `.with`) raises `NoMethodError` on staging.
+- **A client that registers or signs in stays signed in.** Use a fresh `h.client('fresh-anon')` for every anonymous check that follows a registration or login.
+- Devise sign-out is **GET** `/users/sign_out`; admin accept is **PUT**.
+- The Warden `login_as` hook is global, so do not mix clients' expectations within one request chain.
+- `TRACKED_MODELS` in the harness (includes `Db::Profile`, `Db::Payment`) are the models whose row counts are compared before and after the rollback; add models your scenario writes to.
 - `Dry::Validation` messages, Polish locale strings and flash text may change; assert on status/data, not on flash copy.
 
 ## Interpreting results & next steps
@@ -134,6 +140,13 @@ end
 2. Confirm in code before reporting; separate **bugs** (500s, missing authorization, wrong state effects) from **policy questions** (is `financial_management` meant to be able to `finish`?).
 3. Fix via the normal workflow (TDD with RSpec in Docker, see `testing-standards`), then re-run the scenario after the staging deploy (`kamal-deployment`) to confirm.
 4. Port stable, valuable checks into `spec/requests/` so CI covers them. Keep this scenario for staging-only concerns.
+
+## Ready-made scenarios
+
+| Scenario | Purpose |
+|----------|---------|
+| `scenarios/settlement_admin_contracts.rb` | Authorization matrix for `Settlement::Admin::ContractsController` |
+| `scenarios/post_migration_smoke.rb` | Post-migration smoke checks (`B-xx` IDs) for login, profiles, mail, notifications, Dotpay callback, Strava webhook, files, cron code paths. Results are mapped in `docs/NEW_PRODUCTION_PLAN.md` Appendix B. Some checks FAIL by design to document known vulnerabilities (G23) |
 
 ## Related
 

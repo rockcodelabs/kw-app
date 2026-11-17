@@ -22,6 +22,8 @@ module StagingHarness
   EMAIL_DOMAIN = 'example.invalid'
   TRACKED_MODELS = %w[
     Db::User
+    Db::Profile
+    Db::Payment
     Settlement::ContractRecord
     Settlement::ContractorRecord
     NotificationCenter::NotificationRecord
@@ -38,7 +40,7 @@ module StagingHarness
     end
   end
 
-  Response = Struct.new(:status, :location, :body, :content_type, :exception, keyword_init: true) do
+  Response = Struct.new(:status, :location, :body, :content_type, :exception, :headers, keyword_init: true) do
     def redirect?
       (300..399).cover?(status)
     end
@@ -76,7 +78,8 @@ module StagingHarness
         location: response.location,
         body: response.body.to_s,
         content_type: response.media_type,
-        exception: @session.request.env['action_dispatch.exception']
+        exception: @session.request.env['action_dispatch.exception'],
+        headers: response.headers.to_h
       )
     end
   end
@@ -165,7 +168,33 @@ module StagingHarness
       ok
     end
 
+    # Informational line that is not a pass/fail check (e.g. "not testable here").
+    def info(name, text)
+      puts format('  INFO %s  -> %s', name, text)
+    end
+
     # --- job / mail helpers ----------------------------------------------
+
+    # Runs the block with mail jobs executed inline and returns the messages
+    # that ActionMailer's :test delivery method collected. Nothing leaves the
+    # process (delivery_method is forced to :test by isolate_side_effects!).
+    # Non-mail jobs enqueued inside the block are dropped, not run.
+    def capture_mail
+      abort 'Refusing to capture mail: delivery_method is not :test' unless ActionMailer::Base.delivery_method == :test
+
+      adapter = ActiveJob::Base.queue_adapter
+      adapter.perform_enqueued_jobs = true
+      adapter.filter = [ActionMailer::Base.delivery_job]
+      ActionMailer::Base.perform_deliveries = true
+      ActionMailer::Base.deliveries.clear
+      yield
+      ActionMailer::Base.deliveries.dup
+    ensure
+      adapter.perform_enqueued_jobs = false
+      adapter.filter = nil
+      ActionMailer::Base.perform_deliveries = false
+      ActionMailer::Base.deliveries.clear
+    end
 
     def enqueued_jobs
       ActiveJob::Base.queue_adapter.enqueued_jobs

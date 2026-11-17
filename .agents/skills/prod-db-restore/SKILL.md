@@ -8,7 +8,7 @@ allowed-tools: Read, Bash
 
 Builds on `scp-transfer` (fetch + verify the dump) and `bws-secrets`. Scripts live in `.agents/skills/prod-db-restore/scripts/`. Tested end to end on 2026-11-17 against a scratch DB on staging; the final swap was rehearsed on throwaway databases only.
 
-> Production is `51.68.141.247` (live, read-only source). `146.59.44.70` is the future prod and is NOT live. See `.rules` section 14.
+> Production is `51.68.141.247` (live, read-only source). `51.255.38.227` (new OVH VPS) is the future prod and is NOT live; `146.59.44.70` is obsolete. See `.rules` section 14.
 
 ## What "1:1" means here
 
@@ -55,7 +55,7 @@ $S drop --db "$PREV" --yes
 rm -rf "$(dirname "$DUMP")"
 ```
 
-`-t new-prod` selects the other profile (placed before the command): `$S -t new-prod preflight "$DUMP"`. Profiles: `scripts/profiles/{staging,new-prod}.env`. **`new-prod.env` is UNTESTED** (SSH to 146.59.44.70 was refused); confirm every value before first use.
+`-t new-prod` selects the other profile (placed before the command): `$S -t new-prod preflight "$DUMP"`. Profiles: `scripts/profiles/{staging,new-prod}.env`. **`new-prod.env` is UNTESTED** (SSH to the new VPS 51.255.38.227 was refused on 2026-11-17); confirm every value before first use.
 
 ## What each step does and why
 
@@ -89,7 +89,7 @@ Run strict `verify` **before** `migrate`; that is the pure 1:1 proof. After migr
 ## Using this for the old-prod -> new-prod migration
 
 1. Keep prod as the source; do not stop it. For a final cut-over a human must decide on a write freeze and a fresh dump (a new dump on prod is a write: ask first; the nightly 03:15 dump is up to ~24 h old).
-2. `bin/migrate-database-to-new-prod` and `bin/verify-migration` already exist and target `146.59.44.70`. Compare their approach with this skill before choosing one.
+2. `bin/migrate-database-to-new-prod` and `bin/verify-migration` already exist and still target the obsolete `146.59.44.70`; repoint to `51.255.38.227`. Compare their approach with this skill before choosing one.
 3. Fill in and verify `profiles/new-prod.env` (container, user, DB, web filter) over a working SSH, run `preflight` then `restore` and `verify` into a scratch DB first, exactly as for staging.
 4. New prod is PG 16 like staging; prod is PG 10.23. Plain-SQL dumps from 10 load fine into 16 (tested).
 5. Also migrate uploaded files (OpenStack container) and decide what to do about Redis. The DB dump alone is not the whole app state.

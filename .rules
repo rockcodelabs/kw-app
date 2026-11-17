@@ -223,15 +223,15 @@ When generating new components, use templates from: `templates/`
 | Environment | Host | Status |
 |-------------|------|--------|
 | Production (LIVE) | `51.68.141.247`, native (no Docker), Postgres 10 cluster `main` on :5432, DB `kw_app_production`, user `deploy` | The real production. Daily dumps in `/var/lib/kw-db-backup/dumps/` |
-| New production (NOT LIVE) | `146.59.44.70` (`ubuntu`), Kamal + Docker | Target of the planned migration. No real traffic. SSH is currently refused |
+| New production (NOT LIVE) | `51.255.38.227` (OVH VPS, created 2026-11-17), Kamal + Docker planned | Target of the planned migration. No real traffic. Fresh VPS: SSH login user/key not yet known (our 1Password key is refused for `ubuntu`/`debian`/`root`/`deploy`/`admin`). Replaces the old `146.59.44.70` candidate |
 | Staging | `pi5main.local` (`rege`), Kamal + Docker, container `kw-app-staging-postgres` | Staging for `develop` |
 
 You MUST:
 - Treat `51.68.141.247` as production for every task (dumps, logs, diagnostics, "prod" in any request).
-- Treat `146.59.44.70` as NOT production until the user says the migration is done.
+- Treat `51.255.38.227` as NOT production until the user says the migration is done. `146.59.44.70` is obsolete.
 - Keep production access read-only unless the user explicitly approves a write.
 
-Note: `config/deploy.production.yml`, `.github/workflows/deploy-production.yml`, `bin/migrate-database-to-new-prod` and `bin/verify-migration` all point at `146.59.44.70` (the future prod). A push to `main` would deploy there, not to the live server. Update this section when the migration happens.
+Note: `config/deploy.production.yml`, `.github/workflows/deploy-production.yml`, `bin/migrate-database-to-new-prod` and `bin/verify-migration` all still point at the obsolete `146.59.44.70` and must be repointed to `51.255.38.227` (ask first, deploy config) once SSH works. A push to `main` would deploy to `146.59.44.70`, not to the live server. Update this section when the migration happens.
 
 ---
 

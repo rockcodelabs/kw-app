@@ -8,7 +8,7 @@ allowed-tools: Read, Bash
 
 How to move files between **live production**, **this machine (the hub)** and **staging (Pi)** without leaking data or touching production state. Everything here was tested on 2026-11-17.
 
-> Current state: production is `51.68.141.247`. `146.59.44.70` is the future prod and is NOT live. See `.rules` section 14. Update this skill when the migration happens.
+> Current state: production is `51.68.141.247`. `51.255.38.227` (new OVH VPS) is the future prod and is NOT live; `146.59.44.70` is obsolete. See `.rules` section 14. Update this skill when the migration happens.
 
 ## Hosts
 
@@ -17,7 +17,7 @@ How to move files between **live production**, **this machine (the hub)** and **
 | **Production (LIVE)** | `deploy@51.68.141.247` | Ubuntu 20.04, OpenSSH 8.2, native (no Docker) | **Source only.** No `jq` installed, so parse JSON locally |
 | **Staging Pi** | `rege@pi5main.local` | Debian 13 aarch64, OpenSSH 10.0 | Docker; `/tmp` is **tmpfs** (8 GB, RAM-backed, wiped on reboot); 100+ GB free on `/` |
 | **This machine (hub)** | local user | macOS, OpenSSH 9.9 | Has `jq`, `shasum`, `gzip`, `python3`, `rsync` |
-| New prod (NOT LIVE) | `ubuntu@146.59.44.70` | SSH refused | Do not use |
+| New prod (NOT LIVE) | `51.255.38.227` (user unknown) | Port 22 open; our key refused for ubuntu/debian/root/deploy/admin | Do not use until access is set up |
 
 ## Topology: everything goes through this machine
 
@@ -125,7 +125,7 @@ stat -f %z "$D/$NAME"                              # macOS; Linux: stat -c %s. M
 | Symptom | Cause / action |
 |---------|----------------|
 | `Permission denied (publickey)` from the Pi to prod | Expected: the Pi has no prod key. Route via the laptop |
-| `Connection refused` on `146.59.44.70` | That's the not-live new prod. Production is `51.68.141.247` |
+| `Permission denied` on `51.255.38.227` / `Connection refused` on `146.59.44.70` | Those are the not-live new / obsolete hosts. Production is `51.68.141.247` |
 | `local_status` is not `VERIFIED` | Last nightly backup failed local verification. Do not use the dump; read `/var/lib/kw-db-backup/last-cron.log` (read-only) and tell the user |
 | `offhost_status: ERROR` | Known (`native_deadline`), informational. Mention it, do not fix it from here |
 | Hash mismatch | Truncated/corrupted transfer. Re-fetch once; if it repeats, stop and report |

@@ -192,6 +192,7 @@ When generating new components, use templates from: `templates/`
 | `docs/DEV_COMMANDS.md` | All shell commands |
 | `docs/FEATURE_WORKFLOW.md` | @feature workflow phases |
 | `docs/KNOWN_ISSUES.md` | Known bugs and solutions |
+| `docs/NEW_PRODUCTION_PLAN.md` | Plan: hardened new prod VPS, Kamal config gaps, cutover and rollback |
 | `AGENTS.md` | Available agents and routing |
 | `.agents/` | Individual agent specifications |
 | `.agents/skills/` | Deep-dive knowledge modules |

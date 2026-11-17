@@ -22,6 +22,8 @@ env:
     DB_PORT: 5432
   secret:
     - RAILS_MASTER_KEY
+    - APPSIGNAL_PUSH_API_KEY
+    - STRAVA_VERIFY_TOKEN
 
 proxy:
   app_port: 3000

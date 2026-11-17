@@ -104,6 +104,10 @@ module SecretsCompatibility
     super.presence || ENV.fetch('STRAVA_SECRET') { Rails.application.credentials.dig(:strava, :client_secret) }
   end
   
+  def strava_verify_token
+    super.presence || ENV.fetch('STRAVA_VERIFY_TOKEN') { Rails.application.credentials.dig(:strava, :verify_token) }
+  end
+
   # Pages
   def strzelecki_page
     super.presence || Rails.application.credentials.dig(:pages, :strzelecki)

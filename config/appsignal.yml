@@ -1,7 +1,7 @@
 default: &defaults
-  # Your push api key, it is possible to set this dynamically using ERB:
-  # push_api_key: "<%= ENV['APPSIGNAL_PUSH_API_KEY'] %>"
-  push_api_key: "950d528c-b59e-4b03-a19e-72317b2846c7"
+  # Push api key comes from ENV (bws secret `kw-app-appsignal-push-api-key`,
+  # injected by Kamal via env.secret). Never hardcode it here.
+  push_api_key: "<%= ENV['APPSIGNAL_PUSH_API_KEY'] %>"
 
   # Your app's name
   name: "KwApp"

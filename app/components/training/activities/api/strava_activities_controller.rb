@@ -24,7 +24,9 @@ module Training
 
         def subscribe
           challenge = ::Strava::Webhooks::Models::Challenge.new(params.permit(:"hub.challenge", :"hub.mode", :"hub.verify_token"))
-          raise 'Bad Request' unless challenge.verify_token == 'strava_token'
+          expected = Rails.application.secrets.strava_verify_token.to_s
+          valid = expected.present? && ActiveSupport::SecurityUtils.secure_compare(challenge.verify_token.to_s, expected)
+          raise 'Bad Request' unless valid
 
           render json: challenge.response, status: 200
         end

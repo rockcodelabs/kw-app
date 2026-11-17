@@ -9,7 +9,6 @@ fi
 # If running the rails server then create or migrate existing database
 if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
   echo "RAILS_ENV=${RAILS_ENV}"
-  echo "MASTER_KEY=${RAILS_MASTER_KEY}"
   echo "DB_HOST=${DB_HOST}"
 
   # Remove stale PID file if it exists

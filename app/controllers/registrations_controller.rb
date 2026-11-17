@@ -25,7 +25,7 @@ class RegistrationsController < Devise::RegistrationsController
       if strava_client(resource.strava_client_id, resource.strava_client_secret).push_subscriptions.any?
       else
         subscription = strava_client(resource.strava_client_id, resource.strava_client_secret)
-          .create_push_subscription(callback_url: 'https://panel.kw.krakow.pl/activities/api/strava_activities/callback', verify_token: 'strava_token')
+          .create_push_subscription(callback_url: 'https://panel.kw.krakow.pl/activities/api/strava_activities/callback', verify_token: Rails.application.secrets.strava_verify_token)
         resource.update(strava_subscription_id: subscription&.id) unless resource.strava_subscription_id
       end
     else

@@ -51,6 +51,11 @@ jobs:
           export RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_STAGING_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           export POSTGRES_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_POSTGRES_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           export REDIS_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_REDIS_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          # Shared app secrets (bws UUIDs are identifiers, not secrets)
+          export APPSIGNAL_PUSH_API_KEY=$(bws secret get 10b644fb-ce8b-4d58-b0ac-b5050105f27e --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export STRAVA_VERIFY_TOKEN=$(bws secret get e48a96fa-0e1a-42b9-9393-b505010605a2 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          echo "::add-mask::$APPSIGNAL_PUSH_API_KEY"
+          echo "::add-mask::$STRAVA_VERIFY_TOKEN"
           
           # Save to GITHUB_ENV for subsequent steps
           echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" >> $GITHUB_ENV
@@ -58,6 +63,8 @@ jobs:
           echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> $GITHUB_ENV
           echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> $GITHUB_ENV
           echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> $GITHUB_ENV
+          echo "APPSIGNAL_PUSH_API_KEY=$APPSIGNAL_PUSH_API_KEY" >> $GITHUB_ENV
+          echo "STRAVA_VERIFY_TOKEN=$STRAVA_VERIFY_TOKEN" >> $GITHUB_ENV
           
           # Verify secrets are set (without exposing values)
           [[ -n "$KAMAL_REGISTRY_USERNAME" ]] && echo "✅ KAMAL_REGISTRY_USERNAME fetched" || { echo "❌ KAMAL_REGISTRY_USERNAME missing"; exit 1; }
@@ -65,6 +72,8 @@ jobs:
           [[ -n "$RAILS_MASTER_KEY" ]] && echo "✅ RAILS_MASTER_KEY fetched (length: ${#RAILS_MASTER_KEY})" || { echo "❌ RAILS_MASTER_KEY missing"; exit 1; }
           [[ -n "$POSTGRES_PASSWORD" ]] && echo "✅ POSTGRES_PASSWORD fetched" || { echo "❌ POSTGRES_PASSWORD missing"; exit 1; }
           [[ -n "$REDIS_PASSWORD" ]] && echo "✅ REDIS_PASSWORD fetched" || { echo "❌ REDIS_PASSWORD missing"; exit 1; }
+          [[ -n "$APPSIGNAL_PUSH_API_KEY" ]] && echo "✅ APPSIGNAL_PUSH_API_KEY fetched" || { echo "❌ APPSIGNAL_PUSH_API_KEY missing"; exit 1; }
+          [[ -n "$STRAVA_VERIFY_TOKEN" ]] && echo "✅ STRAVA_VERIFY_TOKEN fetched" || { echo "❌ STRAVA_VERIFY_TOKEN missing"; exit 1; }
           
           echo ""
           echo "✅ All secrets fetched successfully from Bitwarden Secrets Manager!"

@@ -122,6 +122,9 @@ Deep-dive knowledge modules for specific patterns:
 | **rails-service-object** | `.agents/skills/rails-service-object/` | Service object architecture |
 | **performance-optimization** | `.agents/skills/performance-optimization/` | N+1 prevention, caching |
 | **kamal-deployment** | `.agents/skills/kamal-deployment/` | Zero-downtime deployment |
+| **scp-transfer** | `.agents/skills/scp-transfer/` | Fetch/verify prod DB dumps, copy files prod → laptop → staging |
+| **bws-secrets** | `.agents/skills/bws-secrets/` | Bitwarden Secrets Manager: list/create/rotate secrets, Kamal + CI wiring, never print values |
+| **prod-db-restore** | `.agents/skills/prod-db-restore/` | Restore latest prod dump 1:1 onto staging/new prod, verify vs dump, migrate rehearsal, swap + rollback |
 
 ---
 

@@ -22,6 +22,8 @@ env:
   secret:
     - RAILS_MASTER_KEY
     - POSTGRES_PASSWORD
+    - APPSIGNAL_PUSH_API_KEY
+    - STRAVA_VERIFY_TOKEN
 
 ssh:
   user: ubuntu

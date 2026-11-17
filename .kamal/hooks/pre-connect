@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Pre-connect hook: Runs before Kamal deployment commands
-# This is intentionally minimal - all secret management is handled
-# by GitHub Actions (CI/CD) or manual exports (local deployments)
+# This is intentionally minimal - secrets are resolved by .kamal/bin/secret
+# (exported env vars from GitHub Actions win, otherwise fetched from bws by UUID)
 
 set -e
 
@@ -10,7 +10,7 @@ if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
   exit 0
 fi
 
-# For local deployments, you can add checks here if needed
-# For now, we trust the user has sourced .kamal/env.staging.example
+# Local deployments: secrets are resolved by .kamal/secrets-common + .kamal/secrets.<dest>
+# via .kamal/bin/secret (needs BWS_ACCESS_TOKEN, bws and jq). See .agents/skills/bws-secrets.
 
 exit 0

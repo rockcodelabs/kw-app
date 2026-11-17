@@ -1,6 +1,8 @@
 module Training
   module Supplementary
     class SendEmailWithPayment
+      include Dry::Monads[:result]
+
       def initialize(repository)
         @repository = repository
       end

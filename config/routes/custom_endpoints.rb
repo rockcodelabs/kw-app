@@ -330,10 +330,6 @@ scope module: 'email_center' do
   end
 end
 
-scope module: 'visiting_card' do
-  resources :profiles, only: :show
-end
-
 get "prezentacje/zglos" => 'club_meetings/ideas#new'
 
 scope module: 'club_meetings' do

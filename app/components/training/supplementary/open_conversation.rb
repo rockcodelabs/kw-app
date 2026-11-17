@@ -1,6 +1,7 @@
 module Training
   module Supplementary
     class OpenConversation
+      include Dry::Monads[:result]
 
       def initialize(repository)
         @repository = repository

@@ -41,7 +41,7 @@
           .large-4.columns
             = f.label :birth_date
             - birh_date = form.birth_date.to_date rescue nil
-            = f.date_field :birth_date, value: birh_date
+            = f.date_field :birth_date, value: birh_date.to_s
 
   .row
     .large-12.columns

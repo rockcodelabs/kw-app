@@ -2,6 +2,7 @@ module Events
   module Competitions
     module SignUps
       class Destroy
+        include Dry::Monads[:result]
 
         def initialize(repository)
           @repository = repository

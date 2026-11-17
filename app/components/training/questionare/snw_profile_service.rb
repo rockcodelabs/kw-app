@@ -1,6 +1,7 @@
 module Training
   module Questionare
     class SnwProfileService
+      include Dry::Monads[:result]
 
       def initialize(repository, form)
         @repository = repository

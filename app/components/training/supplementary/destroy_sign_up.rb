@@ -1,6 +1,7 @@
 module Training
   module Supplementary
     class DestroySignUp
+      include Dry::Monads[:result]
 
       def initialize(repository)
         @repository = repository

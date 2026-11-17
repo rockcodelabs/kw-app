@@ -1,5 +1,5 @@
 prawn_document do |pdf|
-  pdf.define_grid(columns: 3, rows: 10)
+  pdf.define_grid(columns: 3, rows: 10, gutter: 0)
   pdf.grid(0,0).bounding_box do
     pdf.image "#{Rails.root}/app/assets/images/kw-logo.png", position: :center, scale: 0.18
   end

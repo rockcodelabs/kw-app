@@ -40,7 +40,7 @@
 
           .large-3.columns
             = f.label :birth_date
-            = f.date_field :birth_date, value: @reactivation_form.birth_date.to_date
+            = f.date_field :birth_date, value: @reactivation_form.birth_date.to_s.to_date.to_s
 
   .row
     .large-12.columns

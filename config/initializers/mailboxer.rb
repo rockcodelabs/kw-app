@@ -21,6 +21,7 @@ Mailboxer.setup do |config|
   config.subject_max_length = 255
   config.body_max_length = 32000
 end
+end
 
 Rails.application.config.to_prepare do
   Mailboxer::Message.class_eval do
@@ -71,5 +72,4 @@ Rails.application.config.to_prepare do
       end
     end
   end
-end
 end

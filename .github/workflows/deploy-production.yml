@@ -54,8 +54,8 @@ jobs:
         env:
           # bws reads this variable itself, no --access-token on the command line
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN_PRODUCTION }}
-          ID_REGISTRY_USERNAME: 6e77be63-a052-4594-9585-b3da01100ce9
-          ID_REGISTRY_PASSWORD: 6ff8b019-a3e4-4571-85fc-b3da01106838
+          ID_REGISTRY_USERNAME: 196fa1de-77be-49ce-b56e-b50600d4ae49
+          ID_REGISTRY_PASSWORD: 48c626f5-7997-4694-a7bf-b50600d44ca1
           ID_MASTER_KEY: 519419f3-6bb7-4ce6-8132-b3da0119bf76
           ID_POSTGRES_PASSWORD: 9c80203f-f8c2-4b5d-8d4b-b3da0119d394
           ID_REDIS_PASSWORD: 8ca74ff6-e6bd-4884-b45b-b3da0119f2a7

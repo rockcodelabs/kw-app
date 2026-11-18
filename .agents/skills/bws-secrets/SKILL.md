@@ -23,7 +23,7 @@ Single source of truth for deploy-time secrets. Read/write access verified on 20
 | Project `panel` | `155e4846-7d36-468d-9891-b3da010aaf94` (shared with ~10 other apps: Immich, Nextcloud, Home Assistant, sklep-gor ...) |
 | Auth | `BWS_ACCESS_TOKEN` env var (machine account). The CLI reads it automatically |
 | Naming (MANDATORY, the project is shared with ~10 other apps) | every kw-app entry starts with `kw-app-`: `kw-app-<env>-<NAME>`, or `kw-app-<NAME>` when shared by all kw-app envs. Never create unprefixed names |
-| Not ours, never rename | `registry-username`, `registry-password` (Docker Hub `regedarek`, **shared with other apps**; kw-app gets its own `kw-app-registry-*` token in plan P3.8) |
+| Not ours, never rename | `registry-username`, `registry-password` (Docker Hub `regedarek`, **shared with other apps**; kw-app no longer uses them, it has its own `kw-app-registry-*` token since 2026-11-18) |
 | Renamed 2026-11-18 (UUIDs unchanged) | `staging-master-key` -> `kw-app-staging-master-key`, `staging-postgres-password` -> `kw-app-staging-postgres-password`, `staging-redis-password` -> `kw-app-staging-redis-password` |
 
 Only touch entries that start with `kw-app-`. The rest (including `registry-*`) belong to other apps or are shared.
@@ -32,8 +32,8 @@ Only touch entries that start with `kw-app-`. The rest (including `registry-*`) 
 
 | bws name | UUID | Env var | Used by |
 |----------|------|---------|---------|
-| `registry-username` (shared) | `6e77be63-a052-4594-9585-b3da01100ce9` | `KAMAL_REGISTRY_USERNAME` | both |
-| `registry-password` (shared) | `6ff8b019-a3e4-4571-85fc-b3da01106838` | `KAMAL_REGISTRY_PASSWORD` | both |
+| `kw-app-registry-username` | `196fa1de-77be-49ce-b56e-b50600d4ae49` | `KAMAL_REGISTRY_USERNAME` | both |
+| `kw-app-registry-password` (Docker Hub PAT `kw-app-ci`, Read & Write) | `48c626f5-7997-4694-a7bf-b50600d44ca1` | `KAMAL_REGISTRY_PASSWORD` | both |
 | `kw-app-staging-master-key` | `79cdec0b-a73e-4f31-aabe-b3da0110963a` | `RAILS_MASTER_KEY` | staging |
 | `kw-app-staging-postgres-password` | `5f418769-a3ee-46d3-87bf-b3da0110cd71` | `POSTGRES_PASSWORD` | staging |
 | `kw-app-staging-redis-password` | `b4b3b0ce-46fe-4068-a477-b3da0110f721` | `REDIS_PASSWORD` | staging |

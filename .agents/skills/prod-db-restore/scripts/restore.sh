@@ -55,6 +55,19 @@ web_container() {
   [ "$(printf '%s\n' "$n" | grep -c .)" = 1 ] || die "expected exactly one running web container matching '$WEB_FILTER', got: ${n:-none}"
   printf '%s' "$n"
 }
+# Like web_container, but a profile with WEB_OPTIONAL=1 (accessories-only host, e.g. new prod before the first
+# deploy) may have no web container: prints nothing then. More than one is always an error.
+web_container_or_none() {
+  if [ "${WEB_OPTIONAL:-0}" = 1 ]; then
+    local n; n="$(rssh "docker ps --filter name=$WEB_FILTER --format '{{.Names}}'")"
+    case "$(printf '%s\n' "$n" | grep -c .)" in
+      0) return 0;;
+      1) printf '%s' "$n"; return 0;;
+      *) die "more than one running web container matching '$WEB_FILTER': $n";;
+    esac
+  fi
+  web_container
+}
 live_guard() { [ "$1" != "$LIVE_DB" ] || die "refusing to operate on the live DB ($LIVE_DB) with this command"; }
 
 # ---- option parsing (after the command) -------------------------------------
@@ -86,7 +99,8 @@ case "$CMD" in
     log "live DB $LIVE_DB: $(pgq "select pg_size_pretty(pg_database_size('$LIVE_DB'))") (exists: $(db_exists "$LIVE_DB" && echo yes || echo NO))"
     log "role 'deploy' (owner of every object in the dump): $(pgq "select count(*) from pg_roles where rolname='deploy'") (0 = will be created NOLOGIN by restore)"
     log "disk free for PG data: $(rssh "docker exec $PG_CONTAINER df -h /var/lib/postgresql/data | tail -n1 | awk '{print \$4}'")"
-    log "web container: $(web_container)"
+    W="$(web_container_or_none)"
+    if [ -n "$W" ]; then log "web container: $W"; else log "no web container running (accessories-only host; swap will not stop anything)"; fi
     [ "${MAIL_GATE:-0}" = 1 ] && log "WARNING: this target sends real mail; 1:1 data has real member e-mails. swap needs --ack-mail-risk."
     log "preflight ok"
     ;;
@@ -145,7 +159,8 @@ case "$CMD" in
     db_exists "$DB" || die "database $DB does not exist"; db_exists "$LIVE_DB" || die "live DB $LIVE_DB does not exist"
     [ "$DB" != "$LIVE_DB" ] || die "--db is the live DB"
     PREV="${LIVE_DB}_prev_$(date +%Y%m%d%H%M%S)"
-    W=""; if [ "$STOP_APP" = 1 ]; then W="$(web_container)"; log "stopping $W"; rssh "docker stop $W" >/dev/null; fi
+    W=""; if [ "$STOP_APP" = 1 ]; then W="$(web_container_or_none)"; fi
+    if [ -n "$W" ]; then log "stopping $W"; rssh "docker stop $W" >/dev/null; fi
     # from here on, make sure the app is started again whatever happens
     restart() { if [ -n "$W" ]; then log "starting $W"; rssh "docker start $W" >/dev/null; fi; }
     trap restart EXIT
@@ -175,7 +190,8 @@ case "$CMD" in
     need_db "$PREV"; need_yes
     db_exists "$PREV" || die "database $PREV does not exist"
     FAILED="${LIVE_DB}_failed_$(date +%Y%m%d%H%M%S)"
-    W=""; if [ "$STOP_APP" = 1 ]; then W="$(web_container)"; log "stopping $W"; rssh "docker stop $W" >/dev/null; fi
+    W=""; if [ "$STOP_APP" = 1 ]; then W="$(web_container_or_none)"; fi
+    if [ -n "$W" ]; then log "stopping $W"; rssh "docker stop $W" >/dev/null; fi
     pgq "select pg_terminate_backend(pid) from pg_stat_activity where datname in ('$LIVE_DB','$PREV') and pid <> pg_backend_pid()" >/dev/null
     pgq "ALTER DATABASE $LIVE_DB RENAME TO $FAILED"
     pgq "ALTER DATABASE $PREV RENAME TO $LIVE_DB"

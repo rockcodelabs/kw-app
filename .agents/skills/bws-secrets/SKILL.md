@@ -46,7 +46,7 @@ Only touch entries that start with `kw-app-`. The rest (including `registry-*`) 
 | `kw-app-backup-token` (S3 access key of OVH user `kw-app-backup`, 32 hex) | `d7004366-1f3e-47db-8586-b5060151c18c` | `AWS_ACCESS_KEY_ID` (backup role) | new prod backups |
 | `kw-app-backup-secret` (S3 secret key, 32 hex) | `52047e27-db76-4e76-898d-b5060151f629` | `AWS_SECRET_ACCESS_KEY` (backup role) | new prod backups |
 | `kw-app-backup-user-id` (OVH user id, informational, not used by restic) | `01053f00-5df2-4bce-bf81-b5060151946a` | - | - |
-| `kw-app-healthchecks-ping-key` (healthchecks.io project `KW App`, ping-only, 22 chars; URL form `https://hc-ping.com/<key>/<slug>`) | `d37a01b2-04bd-44d1-8f96-b5060154a055` | `HC_PING_KEY` (backup role) | new prod backups |
+| `kw-app-healthchecks-ping-key` (healthchecks.io project `KW App`, ping-only, 22 chars; URL form `https://hc-ping.com/<key>/<slug>`) | `d37a01b2-04bd-44d1-8f96-b5060154a055` | `HC_PING_KEY` (backup role via Ansible; cron role via Kamal: `.kamal/secrets.production`, `servers.cron.env.secret`, `deploy-production.yml`) | new prod backups and cron heartbeats |
 | `kw-app-production-restic-password` (restic repo password; loss = backups unrecoverable, keep a break-glass copy) | `ec37f629-fc33-43c7-bb88-b5060153bc58` | `RESTIC_PASSWORD` (backup role) | new prod backups |
 
 Not in bws (still in `config/credentials/<env>.yml.enc`, read via `ENV.fetch(..) { credentials.dig(..) }`): Mailgun, OpenStack, Dotpay, Strava client, Google OAuth, `secret_key_base`. To move one: create the bws entry, add it to `.kamal/secrets-common` (or the destination file) **and** to `env.secret` in `config/deploy.yml` + `config/deploy.production.yml`, and add it to the "Get Secrets" step of both deploy workflows.

@@ -62,6 +62,7 @@ jobs:
           # bws UUIDs are identifiers, not secrets; the access token is the only secret
           ID_APPSIGNAL: 10b644fb-ce8b-4d58-b0ac-b5050105f27e
           ID_STRAVA: e48a96fa-0e1a-42b9-9393-b505010605a2
+          ID_HC_PING_KEY: d37a01b2-04bd-44d1-8f96-b5060154a055
         run: |
           command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y jq; }
 
@@ -84,6 +85,7 @@ jobs:
           fetch REDIS_PASSWORD          "$ID_REDIS_PASSWORD"
           fetch APPSIGNAL_PUSH_API_KEY  "$ID_APPSIGNAL"
           fetch STRAVA_VERIFY_TOKEN     "$ID_STRAVA"
+          fetch HC_PING_KEY             "$ID_HC_PING_KEY"
 
           echo "✅ All secrets fetched from Bitwarden Secrets Manager"
 

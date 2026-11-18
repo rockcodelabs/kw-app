@@ -168,7 +168,7 @@ javascript:
     = link_to 'Dodaj przejście tradowe',     new_trad_route_path,         class: 'button success large expanded'
 
   .liga-trad-year-nav
-    - current_year = params.fetch(:year).to_i
+    - current_year = @year
     - first_year   = 2018
     - last_year    = Date.current.year
     - prev_year    = current_year - 1
@@ -186,7 +186,7 @@ javascript:
     - else
       span.button.secondary.disabled style="min-width:2.5rem; opacity:0.3; cursor:default;" ›
 
-  .liga-trad-title = "Liga Tradowa #{params.fetch(:year)}"
+  .liga-trad-title = "Liga Tradowa #{@year}"
 
   / ════════════════════════════════
   / Desktop table
@@ -201,11 +201,11 @@ javascript:
           th style="width:18%;" ostatnia droga
           th
           th.text-center.sortable style="width:5.5rem;"
-            = sort_link_for('points', 'punktów', @sort, @sort_dir, params[:year])
+            = sort_link_for('points', 'punktów', @sort, @sort_dir, @year)
           th.text-center.sortable style="width:4.5rem;"
-            = sort_link_for('routes', 'dróg', @sort, @sort_dir, params[:year])
+            = sort_link_for('routes', 'dróg', @sort, @sort_dir, @year)
           th.text-center.sortable style="width:4.5rem;"
-            = sort_link_for('likes', 'bicków', @sort, @sort_dir, params[:year])
+            = sort_link_for('likes', 'bicków', @sort, @sort_dir, @year)
       tbody
         - @season_leaders.each_with_index do |row, index|
           - user         = row[:user]

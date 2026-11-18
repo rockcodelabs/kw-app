@@ -7,6 +7,7 @@ module Activities
       authorize! :see_dziki, ::Db::Activities::MountainRoute
 
       year = Date.new(params.fetch(:year, Date.current.year).to_i, 1, 1)
+      @year = year.year
       @sort = params.fetch(:sort, 'points')
       @sort_dir = params.fetch(:dir, 'desc')
 

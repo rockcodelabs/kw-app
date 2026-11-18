@@ -27,6 +27,8 @@ module StagingHarness
     Settlement::ContractRecord
     Settlement::ContractorRecord
     NotificationCenter::NotificationRecord
+    Db::Activities::MountainRoute
+    Db::Activities::RouteColleagues
     PaperTrail::Version
   ].freeze
 

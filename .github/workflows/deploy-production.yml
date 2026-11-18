@@ -21,7 +21,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     # Required reviewer + branch restriction (main) are configured on this Environment.
-    # It also holds PRODUCTION_SSH_PRIVATE_KEY (secret) and PRODUCTION_KNOWN_HOSTS (variable).
+    # It also holds PRODUCTION_KNOWN_HOSTS (variable). The CI SSH key comes from bws.
     environment: production
     env:
       DOCKER_BUILDKIT: 1
@@ -54,12 +54,12 @@ jobs:
         env:
           # bws reads this variable itself, no --access-token on the command line
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN_PRODUCTION }}
-          ID_REGISTRY_USERNAME: ${{ secrets.BW_SECRET_REGISTRY_USERNAME }}
-          ID_REGISTRY_PASSWORD: ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }}
-          ID_MASTER_KEY: ${{ secrets.BW_SECRET_PRODUCTION_MASTER_KEY }}
-          ID_POSTGRES_PASSWORD: ${{ secrets.BW_SECRET_PRODUCTION_POSTGRES_PASSWORD }}
-          ID_REDIS_PASSWORD: ${{ secrets.BW_SECRET_PRODUCTION_REDIS_PASSWORD }}
-          # Shared app secrets (bws UUIDs are identifiers, not secrets)
+          ID_REGISTRY_USERNAME: 6e77be63-a052-4594-9585-b3da01100ce9
+          ID_REGISTRY_PASSWORD: 6ff8b019-a3e4-4571-85fc-b3da01106838
+          ID_MASTER_KEY: 519419f3-6bb7-4ce6-8132-b3da0119bf76
+          ID_POSTGRES_PASSWORD: 9c80203f-f8c2-4b5d-8d4b-b3da0119d394
+          ID_REDIS_PASSWORD: 8ca74ff6-e6bd-4884-b45b-b3da0119f2a7
+          # bws UUIDs are identifiers, not secrets; the access token is the only secret
           ID_APPSIGNAL: 10b644fb-ce8b-4d58-b0ac-b5050105f27e
           ID_STRAVA: e48a96fa-0e1a-42b9-9393-b505010605a2
         run: |
@@ -102,16 +102,19 @@ jobs:
       - name: Set up SSH
         shell: bash
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_PRIVATE_KEY }}
+          # CI deploy key lives in bws (kw-app-production-ci-deploy-ssh-key)
+          BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN_PRODUCTION }}
+          ID_CI_SSH_KEY: 5bc97855-9316-4444-82b9-b50600cc135b
           SSH_KNOWN_HOSTS: ${{ vars.PRODUCTION_KNOWN_HOSTS }}
         run: |
-          [[ -n "$SSH_PRIVATE_KEY" ]] || { echo "❌ PRODUCTION_SSH_PRIVATE_KEY (Environment secret) is not set"; exit 1; }
           [[ -n "$SSH_KNOWN_HOSTS" ]] || { echo "❌ PRODUCTION_KNOWN_HOSTS (Environment variable) is not set"; exit 1; }
 
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/kamal_production_ed25519
+          umask 077
+          bws secret get "$ID_CI_SSH_KEY" | jq -r '.value' > ~/.ssh/kamal_production_ed25519 \
+            || { echo "❌ could not fetch the CI SSH key from bws"; exit 1; }
           chmod 600 ~/.ssh/kamal_production_ed25519
           ssh-keygen -y -f ~/.ssh/kamal_production_ed25519 > /dev/null 2>&1 \
             || { echo "❌ SSH private key is not valid"; exit 1; }
@@ -148,7 +151,7 @@ jobs:
             echo "SSH authentication working correctly"
           else
             echo "❌ SSH connection failed. Check:"
-            echo "  1. Environment secret PRODUCTION_SSH_PRIVATE_KEY"
+            echo "  1. bws secret kw-app-production-ci-deploy-ssh-key (CI key)"
             echo "  2. the matching public key in /home/${PROD_USER}/.ssh/authorized_keys on the server"
             echo "  3. Environment variable PRODUCTION_KNOWN_HOSTS (host key changed?)"
             exit 1

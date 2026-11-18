@@ -46,11 +46,12 @@ jobs:
           echo "Fetching secrets from Bitwarden Secrets Manager..."
           
           # Fetch each secret by ID and export as environment variable
-          export KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_STAGING_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export POSTGRES_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_POSTGRES_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export REDIS_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_REDIS_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          # (bws UUIDs are identifiers, not secrets; the access token is the only secret)
+          export KAMAL_REGISTRY_USERNAME=$(bws secret get 6e77be63-a052-4594-9585-b3da01100ce9 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export KAMAL_REGISTRY_PASSWORD=$(bws secret get 6ff8b019-a3e4-4571-85fc-b3da01106838 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export RAILS_MASTER_KEY=$(bws secret get 79cdec0b-a73e-4f31-aabe-b3da0110963a --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export POSTGRES_PASSWORD=$(bws secret get 5f418769-a3ee-46d3-87bf-b3da0110cd71 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
+          export REDIS_PASSWORD=$(bws secret get b4b3b0ce-46fe-4068-a477-b3da0110f721 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           # Shared app secrets (bws UUIDs are identifiers, not secrets)
           export APPSIGNAL_PUSH_API_KEY=$(bws secret get 10b644fb-ce8b-4d58-b0ac-b5050105f27e --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
           export STRAVA_VERIFY_TOKEN=$(bws secret get e48a96fa-0e1a-42b9-9393-b505010605a2 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')

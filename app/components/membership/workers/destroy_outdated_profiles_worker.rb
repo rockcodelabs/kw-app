@@ -5,9 +5,12 @@ module Membership
     class DestroyOutdatedProfilesWorker
       include Sidekiq::Worker
 
+      def self.candidates
+        ::Membership::FeesRepository.new.find_outdated_not_prepaided_profiles
+      end
+
       def perform(**)
-        outdated_profiles = ::Membership::FeesRepository.new.find_outdated_not_prepaided_profiles
-        outdated_profiles.map(&:destroy)
+        self.class.candidates.map(&:destroy)
       end
     end
   end

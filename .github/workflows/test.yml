@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - develop
+  # PRs to main run the same check (required status check `test`); a push to main
+  # runs it through deploy-production.yml (workflow_call), so main is not in `push`.
   pull_request:
     branches:
       - develop
+      - main
+  workflow_call:
   workflow_dispatch:
 
 jobs:
@@ -50,10 +54,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@20eb24b0d509e2b9ed9b6d42ddfeb992915e0564 # v1.341.0
         with:
           ruby-version: '3.2.11'
           bundler-cache: true

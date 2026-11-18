@@ -233,7 +233,7 @@ You MUST:
 - Keep production access read-only unless the user explicitly approves a write.
 - **Old prod is frozen (owner decision 2026-11-18):** do NOT deploy to it, do NOT change anything on `51.68.141.247`, and do NOT commit to or push `master`. Only the read-only fetch of the nightly DB dump (`scp-transfer` skill) is allowed. No more `master` -> `develop` syncs; `master` was merged into `develop` once (commit `1e48243a`) and is the final state.
 
-Note: `config/deploy.production.yml`, `.github/workflows/deploy-production.yml`, `bin/migrate-database-to-new-prod` and `bin/verify-migration` all still point at the obsolete `146.59.44.70` and must be repointed to `51.255.38.227` (ask first, deploy config) once SSH works. A push to `main` would deploy to `146.59.44.70`, not to the live server. Update this section when the migration happens.
+Note: `config/deploy.production.yml` and `.github/workflows/deploy-production.yml` now point at new prod `51.255.38.227` (user `deploy`, host `nowypanel.kw.krakow.pl` until cutover); `146.59.44.70` no longer exists. `bin/migrate-database-to-new-prod`, `bin/verify-migration`, `ansible/` and `README.md` still mention it and are cleaned in plan P4.1. `main` is protected (PR required) and deploys to new prod only through the `production` Environment (reviewer approval); never push to `main` directly. Update this section when the migration happens.
 
 ---
 

@@ -11,6 +11,9 @@ class ApplicationUploader < CarrierWave::Uploader::Base
 
   # Always use cloud storage
   storage :fog
+  # Without this CarrierWave 3 caches in the bucket too (cache_dir becomes an object key prefix): an extra remote
+  # write per upload and orphaned cache objects. Cache on local disk (tmp/uploads), only the final store is remote.
+  cache_storage :file
 
   # Override with IMAGE_EXTENSIONS (or another narrower list) in uploaders that only take one kind of file.
   def extension_allowlist

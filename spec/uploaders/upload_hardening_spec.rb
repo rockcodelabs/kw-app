@@ -96,11 +96,31 @@ RSpec.describe 'Upload hardening' do
     end
   end
 
-  describe 'cache directory' do
+  describe 'cache' do
     it 'is outside public/, so cached uploads are never served' do
       cache_dir = Pathname.new(ApplicationUploader.new.cache_dir)
       expect(cache_dir).to eq(Rails.root.join('tmp/uploads'))
       expect(cache_dir.to_s).not_to start_with(Rails.root.join('public').to_s)
+    end
+
+    # storage :fog makes CarrierWave 3 cache in the object-storage bucket too (cache_dir becomes a key prefix there):
+    # an extra remote write per upload, orphaned and publicly readable objects. Caching must stay on local disk.
+    it 'is written to local disk, only the final store goes to object storage' do
+      expect(ApplicationUploader.new.send(:cache_storage)).to be_a(CarrierWave::Storage::File)
+      expect(AttachmentUploader.new.send(:cache_storage)).to be_a(CarrierWave::Storage::File)
+    end
+
+    it 'caches a real file under tmp/uploads' do
+      Tempfile.create(['note', '.txt']) do |source|
+        source.write('hello')
+        source.flush
+        uploader = ApplicationUploader.new
+        uploader.cache!(File.open(source.path))
+        path = Pathname.new(uploader.file.path)
+        expect(path).to exist
+        expect(path.to_s).to start_with(Rails.root.join('tmp/uploads').to_s)
+        FileUtils.rm_rf(path.dirname)
+      end
     end
   end
 end

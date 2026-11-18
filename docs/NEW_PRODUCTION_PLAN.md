@@ -88,7 +88,7 @@ Kamal `web` role + `kw-app-staging-postgres` + `kw-app-staging-redis`. **No Side
 | D3 | Local `public/uploads` | **Investigated: stale, not needed** (see 3.1). | No volume, no rsync, nothing to migrate. Fix the cache location and add upload allow-lists instead (P4). |
 | D4 | Off-host backup target | Not decided, asked for the simplest. | **OVH Object Storage (S3) + restic**, see 3.2. |
 | D5 | SSH exposure | Asked what is better. | **Key-only SSH on 22 + fail2ban now**; optional step to close 22 behind Tailscale later, see 3.3. |
-| D6 | Cutover window / old prod | **Agreed**: weekend early morning (avoid 04:15-04:45 cron slot), keep old prod intact but stopped for 14 days, then wipe. | As written in P8/P9. |
+| D6 | Cutover window / old prod | **Agreed**: weekend early morning (avoid 04:15-04:45 cron slot), keep the **panel app** on old prod intact but stopped for 14 days. **Do not wipe or cancel the VPS**: the other sites on it belong to another developer and stay as they are (decided 2026-11-18, Appendix D.6). | As written in P8/P9. |
 
 ### 3.1 Uploads investigation (D3) [V, read-only on old prod]
 - `shared/public/uploads` contains **only `tmp/`**: 2001 files, 1.7 GB, i.e. CarrierWave's default **cache directory**. No `csv/` or any store directory exists.
@@ -304,7 +304,7 @@ Gate: Phase U complete (or fallback consciously chosen), two clean rehearsals on
 1. Rotation backlog (`bws-secrets` skill, **master key last**, together with re-encrypting `production.yml.enc`). Add: separate OVH Swift users per environment (the staging credentials can currently read **and write** the production container).
 2. Remove `config/master.key` and the `secrets.yml` exposure from `main`; rewrite history only if you decide it is worth it (ask first).
 3. Update `.rules` section 14, `scp-transfer`, `prod-db-restore`, `kamal-deployment` (still describes Ansible/Passenger-era flow), `AGENTS.md`; delete deprecated `ansible/` and the obsolete `146.59.44.70` references.
-4. Decommission old prod after D6: final dump archived off-host encrypted, drop `kw_app_production` data, remove SSH keys, cancel/resize the VPS.
+4. Decommission old prod after D6: final dump archived off-host encrypted, drop `kw_app_production` data, remove the panel's SSH keys. **Do not cancel or resize the VPS**: the ~8 PHP/static sites and their MariaDB/PostgreSQL 12 data are owned by another developer and stay on it (decided 2026-11-18, Appendix D.6). Only the panel parts are retired: the `panel` vhost, `sidekiq.service`, the 10 cron entries, the native Redis if nothing else uses it (check first), the Rails release directory and `kw_app_production` after the final archived dump.**
 5. The Ruby/Rails upgrade is **not** here any more: per D2 it is Phase U and finishes before the rehearsal. After cutover only keep it current (patch/minor bumps, `bundler-audit` + Brakeman gates).
 6. Quarterly: restore test report, Lynis rerun, package and image updates (Postgres/Redis minor tags), SSH key review, bws rotation review.
 
@@ -344,6 +344,7 @@ Gate: Phase U complete (or fallback consciously chosen), two clean rehearsals on
 - [ ] Appendix B green on staging (G16, G17, G19-G22 fixed first), then on both rehearsals, then post-flip (B.3)
 - [ ] P7 two rehearsals green, **on the final Ruby/Rails stack**
 - [ ] Appendix C **[PREP]** items done before P7 (deep health check, `5xx.html` + `error_pages_path`, backup alerting, access list, break-glass)
+- [x] Appendix D host review done 2026-11-18 (open items D.6)
 - [ ] C.10 log reading + rotation [PREP]: `kw-log-archive`, journald limits, `/etc/logrotate.d/kw-app`, `prod-logs` skill, C.10.6 verification passed in P7
 - [ ] P8 cutover (announce, maintenance, restore, flip, verify)
 - [ ] 14-day watch, then P9 decommission, rotation, docs
@@ -743,6 +744,7 @@ Docker's `local` driver rotates by **size** (`max-size 20m x max-file 5` = about
 5. **Nothing writes `log/production.log` in a container.** If a file logger is ever added, it goes through its own volume and logrotate entry first.
 6. **Retention policy (PII)**: app/proxy logs 14 days, journald 30 days, auth/SSH 8 weeks, Docker caps as above. Logs contain emails, names and request parameters, and `filter_parameters` masks only `passw`, `secret`, `token`, `_key`, `crypt`, `salt`, `certificate`, `otp`, `ssn`; extend it for PESEL, phone, e-mail and Dotpay fields in P4 [ASK, develop, TDD]. Archive files are never copied off the host unredacted.
 7. **Optional NAS copy [recommendation, owner offered a NAS]**: useful because an attacker or a full disk can erase logs on the VPS, so an off-host copy is the forensic record. Design: the **NAS pulls, the VPS never pushes** (no NAS credentials or open home-network port on the VPS). A dedicated `logpull` user on the VPS, member of `adm` only, with an SSH key restricted by `command="rrsync -ro /var/log/kw-app",restrict` (read-only rsync of that one directory), and the NAS runs `rsync -a --ignore-existing` daily over SSH. The key lives on the NAS only. Prerequisites: the NAS must reach the VPS SSH port (D5: if SSH is limited to an allowlist, the NAS's public IP or a VPN has to be on it), full-disk/volume encryption and a user-restricted share on the NAS because the logs contain member PII, a NAS retention (e.g. 90 days) that is **written down** (the 14-day rule in item 6 is what the club has agreed; a longer copy needs the owner's explicit decision), and a heartbeat so a silent NAS is noticed. The same pull pattern can later fetch the encrypted restic/dump files (section 3.2 optional second copy). Not needed for go-live: build after T+14.
+   **Decided 2026-11-18:** dedicated `logpull` user on the VPS and **Tailscale** as the path. Steps when built (each needs approval): (a) install Tailscale on the VPS and tag it, ACL allows only the NAS to reach `tcp/22` of the VPS; (b) create `logpull` (no password, no shell besides rsync, member of `adm`) with the restricted `rrsync -ro /var/log/kw-app` key in `authorized_keys`; (c) on the NAS (OpenMediaVault, Debian aarch64) generate the key for the pulling user and run a daily rsync as an OMV scheduled task into an encrypted, access-restricted shared folder; (d) heartbeat to healthchecks.io after each successful pull; (e) verify that `logpull` cannot read anything outside `/var/log/kw-app` and cannot write. Tailscale on the VPS also keeps D5 option B open.
 
 **C.10.4 Reading a week (recipes; read-only; all outputs capped)**
 Access: `deploy` is in the `docker` group, which is already root-equivalent, so reading container logs needs no extra rights. Reading host files/journal needs `ubuntu`, or adding `deploy` to `adm` and `systemd-journal` (read only; open item C.9.7 [ASK]).
@@ -800,6 +802,77 @@ Facts above marked verified come from these pages; everything else is a recommen
 - Rails guides: upgrade one minor at a time, Ruby first (matches Phase U).
 
 ---
+
+## Appendix D. Host review before implementation (2026-11-18)
+
+Read-only review of the four machines, one SSH session each. Nothing was changed anywhere. **[V]** = seen in this review, **[?]** = could not be checked.
+
+### D.1 Summary table
+| | Old prod `51.68.141.247` | Staging Pi `pi5main.local` | New prod `51.255.38.227` | NAS `nas-photoprism` |
+|---|---|---|---|---|
+| Role | live panel **and ~8 other sites** | Kamal staging **plus ~15 other projects** | target, empty, not live | planned log/backup copy |
+| OS | Ubuntu 20.04.6, kernel 5.4 | Debian 13, kernel 6.18 (rpi) | Ubuntu 26.04, kernel 7.0 | OpenMediaVault (Debian, aarch64, kernel 6.1) |
+| CPU / RAM | 1 vCPU / 1.9 GiB (**380 MiB available**, swap 965 MiB used) | 4 cores / 15 GiB (10 GiB available), swap 538 MiB | 2 vCPU / 3.7 GiB, **no swap** | [?] |
+| Disk | 20 GB, **86% used (2.8 GB free)** | 235 GB NVMe, 55% used | 38 GB, 7% used | [?] |
+| Time zone | Europe/Paris, synced | Europe/Warsaw, synced | **UTC**, synced (chrony) | [?] |
+| SSH | key-only, **`PermitRootLogin yes`** | `PermitRootLogin no`, passwordless sudo | **password login enabled**, root `prohibit-password`, X11 forwarding on | 22 open, accepts key and password, **our key not authorized** |
+| Firewall / fail2ban | UFW active, **fail2ban inactive** | **none active** (ufw/nftables/fail2ban inactive) | UFW installed but **not enabled**, fail2ban inactive | [?] |
+| Updates | 11 pending, unattended-upgrades active, Livepatch running | 58 pending, **unattended-upgrades inactive** | 63 pending, **reboot required**, unattended-upgrades + needrestart installed | [?] |
+| Docker | none (native) | 26.1.5, `json-file`, no `daemon.json` | not installed | [?] |
+
+### D.2 Old prod `51.68.141.247` [V]
+- **It is a shared host.** nginx serves 9 vhosts: `panel.kw.krakow.pl` (Rails/Passenger, the only thing we migrate), `kw.krakow.pl` (PHP-FPM 7.4, the club's **main website**), `stara.kw.krakow.pl` and `www.*` (static archive), `mas.kw.krakow.pl`, `strzelecki.kw.krakow.pl`, `snw.kw.krakow.pl` (PHP 7.4), `szkolaalpinizmu.pl` (PHP 7.4) and `taterniczek.pl` (PHP 8.5). Services: MariaDB, PostgreSQL **10 and 12**, two PHP-FPM versions, Redis, Sidekiq, glances, Livepatch.
+- **Consequence 1 (corrected in D6/P9.4):** old prod cannot be wiped or cancelled after the cutover. Only the panel moves. The panel vhost, Sidekiq, the 10 cron jobs and `kw_app_production` are retired; everything else keeps running. **Decided 2026-11-18: leave the other sites alone** (another developer owns them).
+- **Consequence 2:** after the flip the VPS stays on Ubuntu 20.04 (standard support ended; Livepatch/ESM only), 1 vCPU, 86% disk. Its remaining sites need their own plan (D.6.1).
+- **Consequence 3:** the `kw-db-backup` runner covers only `kw_app_production`. Backups of the MariaDB and PostgreSQL 12 data of the other sites are unknown, **out of scope** (their owner's responsibility, decided 2026-11-18). `deploy` cannot read `/etc/letsencrypt` (certs for all domains are managed there by Certbot, status [?]).
+- Capacity: with 380 MiB RAM available and swap in use, **do not run anything heavy on old prod during P8** (final dump, rsync of uploads only; no builds, no restores).
+- `offhost_status: ERROR` on the nightly dump is still open (known); `local_status` is `VERIFIED`, newest dump 2026-11-18 03:18 CET.
+- Old prod has `PermitRootLogin yes` (key only) and no fail2ban: leave as is (read-only rule), mention in the decommission note.
+
+### D.3 Staging Pi `pi5main.local` [V]
+- **Shared home server**, not a dedicated staging box: 21 containers, of which staging kw-app is 4 (`web`, `job`, `redis`, `postgres:16.0`). Neighbours: `sklep-gor` (web, WordPress, PostgreSQL 17, MariaDB), `ismf-race-logger`, `kuzniak-blog`, `balkonowaochrona`, Home Assistant, Gatus, Beszel (+agent), the GitHub Actions runner `rockcodelabs-runner`, a Kamal buildkit container (1.2 GiB RAM) and `kamal-proxy` v0.9.2 shared by all apps.
+- Healthy: 49 C, 10 GiB RAM available, 102 GB free, NTP synced, Warsaw time zone.
+- **Security gaps (home LAN behind a router, so medium, not urgent):** no firewall and no fail2ban; listening on `0.0.0.0`: 22, 80, 443, 111 (rpcbind), 3003, 3307, 5433, 5434, 6381, 8080, 8090, 45877. Several of these are database/Redis ports published on all interfaces. Passwordless sudo for `rege`. `unattended-upgrades` inactive with 58 packages pending. A GitHub runner on the same host as staging secrets means a malicious workflow run could read staging credentials (G26 note).
+- **Logs:** Docker uses `json-file` with no `daemon.json`. Staging and several neighbours have `max-size 10m` (no `max-file`, so 1 rotated file), but `homeassistant`, `gatus`, `beszel`, `beszel-agent`, `kuzniak-blog`, `balkonowaochrona`, `kw-app-redis`, `kw-app-postgres`, `sklep-gor-postgres`, the runner and buildkit have **no cap**. Not a kw-app problem today (102 GB free) but worth a daemon-level default.
+- **Stale:** containers `kw-app-postgres` (postgres:16) and `kw-app-redis` (redis:7-alpine), created 2026-01-20, no Kamal labels, volumes `kw-app-postgres-data` / `kw-app-redis-data`; the first still holds a `kw_app_staging` database. Staging today uses `kw-app-staging-postgres`/`-redis`. Likely pre-Kamal leftovers [verify nothing points at them, then ask before removing].
+- **Pitfall:** `docker system df` hung for more than 40 s twice on the Pi. Use targeted `docker ps`/`docker images` there instead.
+- Reuse for the plan: **Gatus and Beszel already run here.** Gatus on the Pi can be the free "external" uptime monitor for new prod (C.9.4). Limit: it shares the home internet connection, so a home outage looks like a prod outage; pair it with a second signal (healthchecks.io heartbeat from the VPS).
+
+### D.4 New prod `51.255.38.227` [V]
+- Clean Ubuntu 26.04 LTS OVH image, up 17 h, one user (`ubuntu`, passwordless sudo), one authorized key, only port 22 listening (IPv4 and IPv6; a global IPv6 address exists, so UFW needs v6 rules too).
+- **Open exposure right now:** SSH **password authentication is on** (P1.1 turns it off), UFW is installed but not enabled, fail2ban absent, X11 forwarding on, MaxAuthTries 6. The password for `ubuntu` is known to the owner, so this is the first thing to close (P1 batch 1/2, after a snapshot and with a second session open).
+- **63 updates pending and `/var/run/reboot-required` present**: the first batch must patch and reboot before anything else is built. No swap (P1 adds a 2 GB swapfile).
+- Time zone **UTC** while the whole plan assumes `Europe/Warsaw` for cron/healthchecks (A.5, C.10): set `timedatectl set-timezone Europe/Warsaw` in P1, or keep the host in UTC and make only the cron container `TZ=Europe/Warsaw`. **Decided 2026-11-18: the host stays on UTC and containers get an explicit `TZ=Europe/Warsaw`** (cron container, healthchecks.io checks, A.5); `docker logs` and journald stay in UTC (C.10.3).
+- `unattended-upgrades` and `needrestart` are present by default: configure them as in C.4 instead of installing.
+- Ubuntu Pro client says a newer version is available (cosmetic); attach Livepatch only if wanted (free tier).
+- Nothing in this review changed the host. Keep SSH sessions to a minimum (fail2ban resets happened earlier).
+
+### D.5 NAS `nas-photoprism` [V partial]
+- **OS [V, from the owner's own login 2026-11-18]:** OpenMediaVault on Debian, `aarch64`, kernel 6.1.141, hostname `openmediavault`. The owner logs in as `rege` (password) from the Mac; our non-interactive key is still not authorized, so free space, disks, RAID and shares are not reviewed yet.
+- On the tailnet as `100.114.209.9` (Linux, owner `regedarek@`), **direct** connection to LAN address `192.168.0.15`. That is a different subnet from the laptop (`192.168.1.x`) and from the Pi, so the NAS is on another network or site and is reached **through Tailscale**.
+- Open TCP ports from the laptop over Tailscale: 22 (SSH), 80, 445 (SMB), 2283 (looks like a photo-library web UI; service not confirmed) [?].
+- SSH answers `Permission denied (publickey,password)` for `rege` and `regedarek`: **our key is not authorized**, and the right login user is unknown. Nothing else could be reviewed (OS, free space, RAID/encryption, snapshots, what else is stored: photo libraries are personal data too).
+- **Design consequence for the log pull (C.10.3.7):** because the NAS is only reachable over Tailscale, the cleanest path is **Tailscale on the new VPS** with an ACL "NAS may reach VPS tcp/22 only". That also advances option B of D5 (close public 22 later). Fallback: allow the NAS's public IP in UFW (works only if the ISP IP is stable). Either way the NAS pulls with a restricted key; the VPS holds no NAS credentials.
+
+### D.6 Decisions from the review (owner, 2026-11-18)
+1. **Other sites on old prod: leave them.** They belong to another developer; we only move the panel. Old prod therefore stays up long term (Ubuntu 20.04, 1 vCPU). Consequence for us: after the flip we retire only the panel parts (P9.4), never touch the PHP/MariaDB/PostgreSQL 12 side, and keep reading old prod strictly read-only.
+2. **Backups of those sites:** not our scope.
+3. **NAS:** add a dedicated **`logpull`** user and use **Tailscale** (on the new VPS and the NAS) for the pull, see C.10.3 item 7. Still needed from the owner: NAS free space/encryption/shares (or add our key for a read-only review), and the OMV job (rsync/scheduled task) is built by the owner or by us after approval.
+4. **Pi:** approved in principle: enable a firewall with LAN/Tailscale-only rules, turn on `unattended-upgrades`, remove the stale `kw-app-postgres`/`kw-app-redis` containers after verification. Every change is still listed before it runs, with a rollback, and none is started yet (neighbours on the Pi: `sklep-gor`, `ismf-race-logger`, Home Assistant, runner).
+5. **New prod time zone:** host UTC, containers with explicit `TZ=Europe/Warsaw`.
+
+### D.7 Implementation start order (proposal, nothing started)
+| Step | What | Where | Needs from you |
+|------|------|-------|----------------|
+| 1 | D.6 answered. Still open: C.9.1-4 (second operator, downtime window, alert address, uptime monitor) | docs | answers |
+| 2 | OVH **snapshot** of the clean new VPS (restore point) | OVH panel | you click |
+| 3 | P1 batch 1: patch, reboot (the pending one), 2 GB swap, `deploy` user (docker group later), second SSH session kept open | new prod | approval per batch |
+| 4 | P1 batch 2: SSH key-only + `AllowUsers`, UFW (22/80/443, v4+v6), fail2ban, X11 off; test from a second session | new prod | approval per batch |
+| 5 | P2: Docker with `local` log driver (C.10.3), `deploy` in `docker` | new prod | approval |
+| 6 | develop-only PREP items (G-notes, C.1/C.3/C.10): `5xx.html`, deep health check, `filter_parameters`, scrapers removal, TDD | repo | approval to code |
+| 7 | P3/P4: bws wiring, `config/deploy.production.yml` repoint + G28 `$$` fix + job/cron roles | repo, deploy config | approval (deploy config) |
+| 8 | P5/P6: backups with alerting, monitoring (Gatus on the Pi, healthchecks.io), `kw-log-archive` | new prod, Pi | alert address (C.9.3) |
+| 9 | P7 rehearsal with a prod dump, Appendix B checklist, P8 cutover window | all | window (C.9.2) |
 
 ## 8. Approvals needed per `.rules`
 Deploy-config edits (`config/deploy*.yml`, workflows) = ask; gems (`bundler-audit`, `rack-attack`) = ask; any write on old prod = ask (dump with `pg_dump`, maintenance page, stopping Sidekiq); migrations = ask; push to `develop` (auto-deploys staging) and to `main` (deploys production) = ask. Nothing in this plan will be executed without the matching approval.

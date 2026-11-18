@@ -91,7 +91,7 @@
         - if @route.ski?
           = link_to 'zobacz tabelę narciarskich dzików', narciarskie_dziki_path, class: 'button alert'
         - elsif @route.trad_climbing?
-          = link_to 'zobacz tabelę tradowych dzików', tradowe_dziki_path, class: 'button alert'
+          = link_to 'zobacz tabelę tradowych dzików', '/liga-tradowa/2026', class: 'button alert'
         - elsif @route.regular_climbing?
           = link_to 'zobacz tabelę górskich dzików', gorskie_dziki_path, class: 'button alert'
         - if can? :edit, @route

@@ -53,6 +53,7 @@ module Admin
           user.kw_id = @profile.kw_id
           user.first_name = @profile.first_name
           user.last_name = @profile.last_name
+          user.gender = @profile.gender
           user.phone = @profile.phone
           user.email = @profile.email
           user.password = SecureRandom.hex(4)

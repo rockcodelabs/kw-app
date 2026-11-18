@@ -39,6 +39,7 @@ module TradLeague
         climbing_date: period,
         route_type: 'trad_climbing'
       ).where.not(kurtyka_difficulty: nil)
+       .where("climb_style IS NULL OR climb_style != ?", Db::Activities::MountainRoute.climb_styles['Greenpoint'])
     end
   end
 end

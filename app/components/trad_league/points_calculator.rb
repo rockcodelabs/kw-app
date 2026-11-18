@@ -8,6 +8,7 @@ module TradLeague
 
     def call
       return 0 if route.kurtyka_difficulty.nil?
+      return 0 if route.climb_style == 'Greenpoint'
 
       case route.climb_style
       when 'RP'

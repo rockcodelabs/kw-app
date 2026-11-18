@@ -20,7 +20,9 @@ module TradLeague
     end
 
     def routes
-      Db::Activities::MountainRoute.where(user_id: user.id, climbing_date: period, route_type: 'trad_climbing').where.not(kurtyka_difficulty: nil)
+      Db::Activities::MountainRoute.where(user_id: user.id, climbing_date: period, route_type: 'trad_climbing')
+        .where.not(kurtyka_difficulty: nil)
+        .where("climb_style IS NULL OR climb_style != ?", Db::Activities::MountainRoute.climb_styles['Greenpoint'])
     end
   end
 end

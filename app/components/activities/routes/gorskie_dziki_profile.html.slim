@@ -1,0 +1,131 @@
+css:
+  .gp-wrap { max-width: 820px; margin: 0 auto; }
+  .gp-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+  .gp-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .gp-name { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+  .gp-kw { color: #8a8a8a; font-size: 0.95rem; }
+
+  .gp-stat-value { font-size: 1.8rem; font-weight: 800; color: #1779ba; line-height: 1; }
+  .gp-stat-label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8a8a8a; font-weight: 700; margin-top: 0.25rem; }
+  .gp-badges .label { margin: 0 0.25rem 0.25rem 0; font-size: 0.85rem; }
+
+  .gp-section { font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: #8a8a8a; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+
+  .gp-wrap table { font-size: 1rem; }
+  .gp-bars { display: flex; align-items: flex-end; gap: 0.5rem; height: 130px; }
+  .gp-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .gp-bar { width: 70%; background: linear-gradient(180deg,#4b9ce2,#1779ba); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .gp-bar-val { font-size: 0.8rem; color: #8a8a8a; margin-bottom: 0.2rem; }
+  .gp-bar-label { font-size: 0.85rem; color: #666; margin-top: 0.3rem; }
+
+  .gp-bar-row { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+  .gp-bar-name { width: 40%; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gp-bar-row .progress { flex: 1; margin-bottom: 0; height: 16px; border-radius: 999px; background: #eef0f4; }
+  .gp-bar-row .progress-meter { border-radius: 999px; }
+  .gp-bar-rowval { width: 6.5rem; text-align: right; font-size: 0.95rem; color: #666; font-weight: 600; }
+
+.gp-wrap
+  = link_to '‹ powrót do tabeli', gorskie_dziki_path(year: @year), class: 'button tiny hollow secondary'
+
+  .gp-header
+    = image_tag(@user.avatar.present? ? @user.avatar.url : 'default-avatar.png', class: 'gp-avatar')
+    div
+      .gp-name = @user.display_name
+      .gp-kw = "KW ##{@user.kw_id}"
+
+  .button-group.small
+    = link_to "‹", gorskie_dziki_profile_path(kw_id: @user.kw_id, year: @year - 1), class: 'button secondary'
+    span.button.primary style="font-weight:bold;" = "Sezon #{@year}"
+    - if @year < Date.current.year
+      = link_to "›", gorskie_dziki_profile_path(kw_id: @user.kw_id, year: @year + 1), class: 'button secondary'
+    - else
+      span.button.secondary.disabled ›
+
+  .row.small-up-3
+    .column
+      .card.text-center
+        .card-section
+          .gp-stat-value = @profile.total_meters
+          .gp-stat-label metrów
+    .column
+      .card.text-center
+        .card-section
+          .gp-stat-value = @profile.routes_count
+          .gp-stat-label dróg
+    .column
+      .card.text-center
+        .card-section
+          .gp-stat-value = @profile.total_hearts
+          .gp-stat-label bicków
+
+  - if @profile.badges.any?
+    .gp-badges style="margin-top:0.75rem;"
+      - @profile.badges.each do |badge|
+        span.label.secondary title=badge[:title] = "#{badge[:icon]} #{badge[:label]}"
+
+  - if @profile.routes_count.zero?
+    .callout.secondary.text-center style="margin-top:1rem;" W sezonie #{@year} brak przejść zaliczanych do Górskich Dzików.
+  - else
+    / ── Metry po miesiącach ──
+    .gp-section Metry w sezonie #{@year}
+    - month_data = @profile.meters_per_month
+    - max_month = month_data.map { |d| d[:meters] }.max.to_f
+    .gp-bars
+      - month_data.each do |d|
+        .gp-bar-col
+          .gp-bar-val = d[:meters] if d[:meters] > 0
+          .gp-bar style="height:#{max_month > 0 ? (d[:meters] / max_month * 100).round : 0}%;"
+          .gp-bar-label = I18n.t('date.abbr_month_names')[d[:month]]
+
+    / ── Rejony ──
+    - if @profile.areas.any?
+      .gp-section Ulubione rejony
+      - max_area = @profile.areas.map { |a| a[:meters] }.max.to_f
+      - @profile.areas.first(8).each do |area|
+        .gp-bar-row
+          .gp-bar-name title=area[:area] = area[:area]
+          .progress role="progressbar"
+            .progress-meter style="width:#{max_area > 0 ? (area[:meters] / max_area * 100).round : 0}%;"
+          .gp-bar-rowval = "#{area[:meters]} m · #{area[:count]}×"
+
+    / ── Trudności ──
+    - if @profile.difficulties.any?
+      .gp-section Rozkład trudności
+      - max_diff = @profile.difficulties.map { |d| d[:count] }.max.to_f
+      - @profile.difficulties.each do |diff|
+        .gp-bar-row
+          .gp-bar-name = diff[:difficulty]
+          .progress role="progressbar"
+            .progress-meter style="width:#{max_diff > 0 ? (diff[:count] / max_diff * 100).round : 0}%;"
+          .gp-bar-rowval = "#{diff[:count]}×"
+
+    / ── Lista przejść ──
+    .gp-section Przejścia sezonu #{@year}
+    table.hover.stack
+      thead
+        tr
+          th data
+          th droga
+          th trudność
+          th.text-right długość
+          th.text-right bicki
+      tbody
+        - @profile.routes.each do |route|
+          tr
+            td style="white-space:nowrap; color:#8a8a8a;" = route.climbing_date.strftime('%Y-%m-%d')
+            td = link_to route.name, activities_mountain_route_path(route.slug)
+            td = route.difficulty
+            td.text-right = "#{route.length} m"
+            td.text-right = route.hearts_count
+
+  / ── Historia sezonów ──
+  - history = @profile.history.select { |h| h[:meters] > 0 }
+  - if history.any?
+    .gp-section Historia sezonów
+    - max_hist = history.map { |h| h[:meters] }.max.to_f
+    .gp-bars
+      - history.each do |h|
+        .gp-bar-col
+          .gp-bar-val = h[:meters]
+          .gp-bar style="height:#{max_hist > 0 ? (h[:meters] / max_hist * 100).round : 0}%;"
+          .gp-bar-label = link_to h[:year], gorskie_dziki_profile_path(kw_id: @user.kw_id, year: h[:year]), style: 'color:#666;'

@@ -48,7 +48,7 @@ module Db
       #searchkick word_start: %i[name] unless Rails.env.production?
 
       enum climb_style: {
-        'RP': 0, 'Flash': 1, 'OS': 2
+        'RP': 0, 'Flash': 1, 'OS': 2, 'Greenpoint': 3
       }
 
       enum kurtyka_difficulty: {

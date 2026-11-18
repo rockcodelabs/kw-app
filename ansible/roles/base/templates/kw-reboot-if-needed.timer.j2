@@ -1,0 +1,10 @@
+# Managed by Ansible (roles/base). Pause with `systemctl stop kw-reboot-if-needed.timer` during the cutover.
+[Unit]
+Description=Weekly check for a pending reboot (Sunday 05:00 Europe/Warsaw)
+
+[Timer]
+OnCalendar={{ base_reboot_if_needed_calendar }}
+Persistent=false
+
+[Install]
+WantedBy=timers.target

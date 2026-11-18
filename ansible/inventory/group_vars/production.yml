@@ -1,0 +1,22 @@
+---
+# Values below mirror the verified P1 hardening log in docs/NEW_PRODUCTION_PLAN.md.
+ssh_allow_users: [ubuntu, deploy]
+firewall_tcp_ports:
+  - { port: 22, comment: ssh }
+  - { port: 80, comment: http }
+  - { port: 443, comment: https }
+# Fixed IPs that fail2ban must never ban (owner's laptop as seen by the server). Review quarterly.
+fail2ban_ignoreip:
+  - 127.0.0.1/8
+  - "::1"
+  - 37.31.36.3
+base_swap_file: /swapfile
+base_swap_size: 2G
+# Quiet window (host stays on UTC, schedules are written in Europe/Warsaw)
+base_apt_upgrade_calendar: "*-*-* 03:30:00 Europe/Warsaw"
+base_reboot_if_needed_calendar: "Sun *-*-* 05:00:00 Europe/Warsaw"
+
+# Public keys for the `deploy` user. The laptop key is temporary: remove it after the P7 rehearsal proves the CI key.
+deploy_user_authorized_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSIODacfq4bX1GtRPzuDskVULAvgM5UsyY/8Z5xBV9B dariusz.finster@gmail.com"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGHucFWZW6VitMPTga+Iask29LSircyOADtM3SQ+Jcg6 kw-app-ci-github-actions"

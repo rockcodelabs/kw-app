@@ -1,0 +1,7 @@
+# Managed by Ansible (roles/base). Reboots ONLY if a package update asked for it.
+[Unit]
+Description=Reboot if a package update requires it
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'if [ -f /var/run/reboot-required ]; then logger -t kw-reboot "reboot required, rebooting"; systemctl reboot; else logger -t kw-reboot "no reboot required"; fi'

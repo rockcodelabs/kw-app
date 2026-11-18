@@ -1,0 +1,14 @@
+---
+# New production VPS (OVH VPS-1, Ubuntu 26.04). NOT live until the cutover (docs/NEW_PRODUCTION_PLAN.md).
+# Admin access is `ubuntu` (key only, passwordless sudo); Kamal/CI use the `deploy` user, never Ansible.
+all:
+  children:
+    production:
+      hosts:
+        kw-new-prod:
+          ansible_host: 51.255.38.227
+      vars:
+        ansible_user: ubuntu
+        ansible_become: true
+        # Override with -e ansible_ssh_private_key_file=... if your key lives elsewhere
+        ansible_ssh_private_key_file: ~/.ssh/id_main

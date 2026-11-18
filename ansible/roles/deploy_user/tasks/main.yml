@@ -1,0 +1,31 @@
+---
+# Kamal and CI log in as this user. `docker` group = root-equivalent, so: no sudo, key only, no password.
+- name: Deploy group
+  ansible.builtin.group:
+    name: "{{ deploy_user_name }}"
+    gid: "{{ deploy_user_uid }}"
+
+- name: Deploy user (no sudo, locked password, in the docker group)
+  ansible.builtin.user:
+    name: "{{ deploy_user_name }}"
+    uid: "{{ deploy_user_uid }}"
+    group: "{{ deploy_user_name }}"
+    groups: [users, docker]
+    append: true
+    shell: /bin/bash
+    password_lock: true
+
+- name: SSH directory
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user_name }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user_name }}"
+    group: "{{ deploy_user_name }}"
+    mode: "0700"
+
+- name: Authorized keys (exclusive)
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user_name }}"
+    key: "{{ deploy_user_authorized_keys | join('\n') }}"
+    exclusive: true
+  when: deploy_user_authorized_keys | length > 0

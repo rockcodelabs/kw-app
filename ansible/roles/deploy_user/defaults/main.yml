@@ -1,0 +1,5 @@
+---
+deploy_user_name: deploy
+deploy_user_uid: 1001
+# Public keys allowed to log in as the deploy user (exclusive: anything else is removed).
+deploy_user_authorized_keys: []

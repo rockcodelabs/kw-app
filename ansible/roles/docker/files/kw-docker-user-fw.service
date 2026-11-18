@@ -1,0 +1,12 @@
+[Unit]
+Description=Restrict Docker-published ports to 80/443 from the internet
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/kw-docker-user-fw
+
+[Install]
+WantedBy=docker.service

@@ -1,0 +1,35 @@
+---
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Apply the UFW rules to IPv6 as well
+  ansible.builtin.lineinfile:
+    path: /etc/default/ufw
+    regexp: '^IPV6='
+    line: 'IPV6=yes'
+
+# Rules first, enable last: enabling before 22/tcp is allowed would cut this session.
+- name: Default deny incoming
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Default allow outgoing
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+# Plain allow, not limit: ufw limit can block Kamal's parallel SSH connections.
+- name: Allow the public TCP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: tcp
+    comment: "{{ item.comment }}"
+  loop: "{{ firewall_tcp_ports }}"
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled

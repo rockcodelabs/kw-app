@@ -1,0 +1,5 @@
+---
+firewall_tcp_ports:
+  - { port: 22, comment: ssh }
+  - { port: 80, comment: http }
+  - { port: 443, comment: https }

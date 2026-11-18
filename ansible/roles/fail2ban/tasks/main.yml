@@ -1,0 +1,38 @@
+---
+- name: Install fail2ban
+  ansible.builtin.apt:
+    name: fail2ban
+    state: present
+
+- name: Sshd jail (journald backend, nftables, incremental bans)
+  ansible.builtin.template:
+    src: 10-kw-sshd.local.j2
+    dest: /etc/fail2ban/jail.d/10-kw-sshd.local
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart fail2ban
+    - Reload fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Apply fail2ban changes before verifying
+  ansible.builtin.meta: flush_handlers
+
+- name: Read the ignore list of the sshd jail
+  ansible.builtin.command: fail2ban-client get sshd ignoreip
+  register: fail2ban_ignore_list
+  changed_when: false
+  check_mode: false
+
+- name: Every fixed IP must be ignored (guards the restart quirk)
+  ansible.builtin.assert:
+    that:
+      - fail2ban_ignore_list.stdout is search(item | regex_escape)
+    fail_msg: "fail2ban does not ignore {{ item }}"
+  loop: "{{ fail2ban_ignoreip | reject('search', '/') | list }}"

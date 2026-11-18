@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/ssh). Sorts first so it wins over 50-cloud-init.conf (first value wins).
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+AllowUsers {{ ssh_allow_users | join(' ') }}
+MaxAuthTries 3
+LoginGraceTime 20
+X11Forwarding no
+AllowAgentForwarding no

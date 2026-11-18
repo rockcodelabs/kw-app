@@ -1,0 +1,15 @@
+# Managed by Ansible (roles/backup). Run by hand: systemctl start {{ item.name }}.service, read: journalctl -u {{ item.name }}
+[Unit]
+Description={{ item.description }}
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/{{ item.name }}
+TimeoutStartSec={{ item.timeout_sec }}
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true

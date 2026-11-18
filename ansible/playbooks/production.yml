@@ -20,3 +20,6 @@
       tags: [kernel]
     - role: deploy_user
       tags: [deploy_user]
+    # needs bws + jq on the machine running ansible and BWS_ACCESS_TOKEN in its environment
+    - role: backup
+      tags: [backup]

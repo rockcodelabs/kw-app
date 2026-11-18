@@ -1,0 +1,10 @@
+# Managed by Ansible (roles/backup). Persistent: a run missed while the host was down is caught up at boot.
+[Unit]
+Description={{ item.description }} (timer)
+
+[Timer]
+OnCalendar={{ item.calendar }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

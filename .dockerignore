@@ -1,0 +1,40 @@
+# Dockerfile.production runs `COPY . .`: keep secrets, VCS data, tooling and local state out of the image.
+# Guarded by spec/config/dockerignore_spec.rb.
+
+# Version control, CI, agent and infrastructure tooling (not needed at runtime)
+.git
+.github
+.agents
+.ansible
+.zed
+.kamal
+ansible
+docs
+templates
+spec
+.rspec
+AGENTS.md
+CLAUDE.md
+Dockerfile
+docker-compose.yml
+
+# Secrets and local environment (the master key comes from RAILS_MASTER_KEY at runtime)
+.env
+.env.*
+**/*.key
+
+# Local state and build output
+.bundle
+node_modules
+cache
+tmp
+log/*
+!log/.keep
+*.log
+*.dump
+.byebug_history
+tags
+**/.DS_Store
+public/uploads
+public/packs
+public/packs-test

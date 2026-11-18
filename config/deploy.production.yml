@@ -1,15 +1,35 @@
 # Production-specific configuration overrides
 
+# Memory/CPU limits are ceilings so that a runaway process cannot starve Postgres (3.8 GB host). Re-measure with
+# `docker stats` during the P7 rehearsal and adjust.
 servers:
   web:
     hosts:
       - 51.255.38.227
+    options:
+      memory: 640m
   job:
     hosts:
       - 51.255.38.227
     cmd: bundle exec sidekiq -e production -C config/sidekiq.yml
     options:
       network: "kw-app-network"
+      memory: 640m
+      cpus: "1"
+  cron:
+    hosts:
+      - 51.255.38.227
+    cmd: bin/cron
+    options:
+      network: "kw-app-network"
+      memory: 448m
+      cpus: "1"
+    env:
+      clear:
+        TZ: Europe/Warsaw
+        # The role is deployed but idle. Set to "true" in the P8 cutover commit, in the same step that disables
+        # the crontab on old prod (never both).
+        CRON_ENABLED: "false"
 
 # Allow enough time for migrations and deployment (default is 30s)
 deploy_timeout: 300
@@ -17,6 +37,10 @@ deploy_timeout: 300
 proxy:
   ssl: true
   host: nowypanel.kw.krakow.pl
+  forward_headers: true
+  buffering:
+    requests: true
+    max_request_body: 50_000_000
 
 env:
   clear:

@@ -8,7 +8,7 @@ Rails monolith with Sidekiq, PostgreSQL, Redis. Deployed via Docker + Kamal.
 
 - **Development**: Local (Docker Compose)
 - **Staging**: Raspberry Pi (`pi5main.local`) - ARM64, manual deploy
-- **Production**: VPS (`146.59.44.70`) - x86_64, auto-deploy via GitHub Actions
+- **Production**: VPS (`51.255.38.227`, OVH, Ubuntu 26.04) - x86_64, deploy via GitHub Actions (PR `develop` -> `main`, approval in the `production` Environment). Not live until the cutover, see `docs/NEW_PRODUCTION_PLAN.md`
 
 ---
 
@@ -60,7 +60,7 @@ docker-compose exec app bundle exec rails console
 # Staging (SSH first: ssh rege@pi5main.local)
 kamal app exec --reuse -d staging "bundle exec rails console"
 
-# Production (SSH first: ssh ubuntu@146.59.44.70)
+# Production (SSH first: ssh deploy@51.255.38.227)
 kamal app exec --reuse -d production "bundle exec rails console"
 ```
 

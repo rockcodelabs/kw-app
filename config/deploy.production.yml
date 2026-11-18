@@ -3,7 +3,13 @@
 servers:
   web:
     hosts:
-      - 146.59.44.70
+      - 51.255.38.227
+  job:
+    hosts:
+      - 51.255.38.227
+    cmd: bundle exec sidekiq -e production -C config/sidekiq.yml
+    options:
+      network: "kw-app-network"
 
 # Allow enough time for migrations and deployment (default is 30s)
 deploy_timeout: 300
@@ -17,6 +23,7 @@ env:
     RAILS_ENV: production
     RACK_ENV: production
     ASSET_HOST: https://nowypanel.kw.krakow.pl
+    REDIS_URL_SIDEKIQ: redis://kw-app-redis:6379/1
     POSTGRES_USER: production_user
     POSTGRES_DB: kw_app_production
   secret:
@@ -24,14 +31,15 @@ env:
     - POSTGRES_PASSWORD
     - APPSIGNAL_PUSH_API_KEY
     - STRAVA_VERIFY_TOKEN
+    - REDIS_PASSWORD
 
 ssh:
-  user: ubuntu
+  user: deploy
 
 accessories:
   postgres:
     image: postgres:16.0
-    host: 146.59.44.70
+    host: 51.255.38.227
     port: "127.0.0.1:5432:5432"
     cmd: postgres
     options:
@@ -49,13 +57,13 @@ accessories:
 
   redis:
     image: redis:7-alpine
-    host: 146.59.44.70
+    host: 51.255.38.227
     port: "127.0.0.1:6379:6379"
     options:
       network: "kw-app-network"
     env:
       secret:
         - REDIS_PASSWORD
-    cmd: sh -c 'redis-server --requirepass "$$REDIS_PASSWORD" --appendonly yes --dir /data'
+    cmd: sh -c 'redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --dir /data'
     directories:
       - redis-data:/data

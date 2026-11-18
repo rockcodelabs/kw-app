@@ -127,7 +127,7 @@ jobs:
           
           # Add server to known hosts with all key types
           echo "Adding server to known_hosts..."
-          ssh-keyscan -H 146.59.44.70 > ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -H 51.255.38.227 > ~/.ssh/known_hosts 2>/dev/null
           
           echo "✅ Server fingerprints added to known_hosts"
           echo "Known hosts content:"
@@ -136,8 +136,8 @@ jobs:
       - name: Configure SSH for Kamal
         run: |
           cat > ~/.ssh/config << 'EOF'
-          Host 146.59.44.70
-            User ubuntu
+          Host 51.255.38.227
+            User deploy
             IdentityFile ~/.ssh/kamal_production_ed25519
             StrictHostKeyChecking yes
             UserKnownHostsFile ~/.ssh/known_hosts
@@ -165,7 +165,7 @@ jobs:
       - name: Test SSH connection
         run: |
           echo "Testing SSH connection to production server..."
-          if ssh -o ConnectTimeout=10 -o BatchMode=yes ubuntu@146.59.44.70 'echo "✅ SSH connection successful"'; then
+          if ssh -o ConnectTimeout=10 -o BatchMode=yes deploy@51.255.38.227 'echo "✅ SSH connection successful"'; then
             echo "SSH authentication working correctly"
           else
             echo "❌ SSH connection failed"

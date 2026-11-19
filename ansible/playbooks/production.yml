@@ -31,3 +31,7 @@
     # kw-prod-host-health must exist (roles/monitoring/defaults/main.yml)
     - role: monitoring
       tags: [monitoring]
+    # nightly time based archive of container logs (14 days) with a healthchecks.io heartbeat; needs bws + jq on the
+    # controller; the check kw-prod-log-archive must exist (roles/logs/defaults/main.yml)
+    - role: logs
+      tags: [logs]

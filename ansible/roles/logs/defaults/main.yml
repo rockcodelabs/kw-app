@@ -1,0 +1,32 @@
+---
+# Time based log archive (P7 step 0b, C.10 in docs/NEW_PRODUCTION_PLAN.md). Docker rotates container logs by size only;
+# kw-log-archive keeps whole days of them for 14 days. Non-secret settings only: the healthchecks.io ping key is read
+# from Bitwarden Secrets Manager at apply time.
+
+# Where the archive lives. Directory is root:adm, mode 2750 (setgid), so members of adm can read every file.
+logs_dir: /var/log/kw-app
+
+# Archive files older than this are deleted every night. App and proxy logs contain member data (C.10.3 item 6):
+# do not raise this without the owner's decision.
+logs_keep_days: 14
+
+# Containers labelled service=<this> are archived, one file per role label (web, job, cron), stopped ones included.
+logs_service_label: kw-app-production
+
+# Fixed containers: file name -> container name (the proxy and the accessories have no role label).
+logs_fixed_containers:
+  proxy: kamal-proxy
+  postgres: kw-app-postgres
+  redis: kw-app-redis
+
+# Runs once a day, shortly after local midnight, and archives the day that just ended.
+logs_run_at: "00:10:00"
+logs_tz: Europe/Warsaw
+
+# healthchecks.io check that receives the heartbeat (daily, so a period of 1 day with a few hours of grace).
+logs_hc_slug: kw-prod-log-archive
+
+# Secret ID in Bitwarden Secrets Manager (project "panel"). The ID is not secret, the value is. Same ping-only key
+# as the host self-check.
+logs_bws_secret_ids:
+  ping_key: d37a01b2-04bd-44d1-8f96-b5060154a055  # kw-app-healthchecks-ping-key (ping-only)

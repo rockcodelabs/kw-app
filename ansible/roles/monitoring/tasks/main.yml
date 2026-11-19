@@ -1,0 +1,92 @@
+---
+# ---- secret: read on the controller (laptop) from bws, never stored in the repo or in GitHub
+- name: Check the settings are filled in
+  ansible.builtin.assert:
+    that:
+      - monitoring_hc_slug is match('^[a-z0-9_-]+$')
+      - monitoring_disk_path is match('^/[A-Za-z0-9/_.-]*$')
+      - monitoring_disk_max_pct | string is match('^[0-9]+$')
+      - monitoring_inode_max_pct | string is match('^[0-9]+$')
+      - monitoring_mem_min_available_pct | string is match('^[0-9]+$')
+      - monitoring_swap_max_pct | string is match('^[0-9]+$')
+      - monitoring_expected_containers | length > 0
+      - monitoring_expected_containers | select('match', '^[A-Za-z0-9_.-]+$') | list | length == monitoring_expected_containers | length
+      - monitoring_bws_secret_ids.ping_key | length > 0
+    fail_msg: >-
+      A monitoring setting is missing or malformed (roles/monitoring/defaults/main.yml, inventory/group_vars/production.yml).
+
+- name: Read the healthchecks.io ping key from Bitwarden Secrets Manager
+  ansible.builtin.set_fact:
+    monitoring_secrets:
+      ping_key: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ monitoring_bws_secret_ids.ping_key ~ ' | jq -er .value') }}"
+  no_log: true
+
+- name: Check the ping key is present and safe to write into a shell-sourced file
+  ansible.builtin.assert:
+    that:
+      - monitoring_secrets.ping_key is match('^[A-Za-z0-9_-]{16,}$')
+    fail_msg: >-
+      The ping key is missing or has unexpected characters. Check BWS_ACCESS_TOKEN and
+      `bws secret get <id>` for monitoring_bws_secret_ids (the value is not shown here).
+  no_log: true
+
+# ---- script and settings
+- name: Tools the self-check needs
+  ansible.builtin.apt:
+    name: curl
+    state: present
+
+- name: Directory for the self-check settings
+  ansible.builtin.file:
+    path: /etc/kw-monitoring
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write the self-check environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: /etc/kw-monitoring/env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Install the self-check script
+  ansible.builtin.copy:
+    src: kw-host-check
+    dest: /usr/local/sbin/kw-host-check
+    owner: root
+    group: root
+    mode: "0755"
+
+# ---- systemd
+- name: Self-check service unit
+  ansible.builtin.template:
+    src: kw-host-check.service.j2
+    dest: /etc/systemd/system/kw-host-check.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Self-check timer unit
+  ansible.builtin.template:
+    src: kw-host-check.timer.j2
+    dest: /etc/systemd/system/kw-host-check.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Apply systemd changes before enabling the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the self-check timer
+  ansible.builtin.systemd:
+    name: kw-host-check.timer
+    enabled: true
+    state: started
+  # On the very first --check the unit files do not exist yet, so systemd cannot find the timer.
+  ignore_errors: "{{ ansible_check_mode }}"

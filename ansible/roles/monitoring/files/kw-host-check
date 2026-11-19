@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/monitoring). Started every 10 minutes by kw-host-check.timer.
+#
+# The host's self-check. It looks at disk, inodes, memory, swap, containers and failed systemd units and then
+# sends exactly ONE healthchecks.io ping:
+#   all fine -> /<slug>            (the heartbeat; healthchecks.io alerts when it stops = dead or frozen host)
+#   problem  -> /<slug>/fail       (the body lists every problem, so the alert mail says what is wrong)
+# A problem or an undeliverable ping never makes this unit fail (it would then show up as a failed unit and
+# keep the check red); only a broken configuration exits 2, and that means no ping and so a silence alert.
+#
+# Test hooks: KW_HOST_ENV (config file), HC_PING_BASE (ping server).
+set -uo pipefail
+export LC_ALL=C
+
+env_file="${KW_HOST_ENV:-/etc/kw-monitoring/env}"
+if [ ! -r "${env_file}" ]; then
+  echo "cannot read ${env_file}" >&2
+  exit 2
+fi
+set -a
+# shellcheck disable=SC1090
+. "${env_file}"
+set +a
+
+: "${HC_PING_BASE:=https://hc-ping.com}"
+: "${KW_DISK_PATH:=/}"
+: "${KW_DISK_MAX_PCT:=80}"
+: "${KW_INODE_MAX_PCT:=80}"
+: "${KW_MEM_MIN_AVAILABLE_PCT:=8}"
+: "${KW_SWAP_MAX_PCT:=50}"
+: "${KW_EXPECTED_CONTAINERS:=}"
+
+if [[ ! "${HC_PING_KEY:-}" =~ ^[A-Za-z0-9_-]{16,}$ ]] || [[ ! "${KW_HC_SLUG:-}" =~ ^[a-z0-9_-]+$ ]]; then
+  echo "HC_PING_KEY or KW_HC_SLUG is missing or malformed in ${env_file}" >&2
+  exit 2
+fi
+for limit in KW_DISK_MAX_PCT KW_INODE_MAX_PCT KW_MEM_MIN_AVAILABLE_PCT KW_SWAP_MAX_PCT; do
+  if [[ ! "${!limit}" =~ ^[0-9]+$ ]]; then
+    echo "${limit} must be a whole number" >&2
+    exit 2
+  fi
+done
+
+problems=()
+add_problem() { problems+=("$1"); }
+
+# Percentage used of the filesystem holding $1. $2 is the df option set (-P blocks, -Pi inodes).
+used_pct() {
+  df "$2" "$1" 2>/dev/null | awk 'NR == 2 { gsub("%", "", $5); print $5 }'
+}
+
+check_filesystem() {
+  local label=$1 flags=$2 max=$3 pct
+  pct=$(used_pct "${KW_DISK_PATH}" "${flags}")
+  if [[ ! "${pct}" =~ ^[0-9]+$ ]]; then
+    add_problem "${label}: cannot read the usage of ${KW_DISK_PATH} (df failed)"
+  elif [ "${pct}" -ge "${max}" ]; then
+    add_problem "${label}: ${KW_DISK_PATH} is ${pct}% full (limit ${max}%)"
+  fi
+}
+
+check_memory() {
+  local total avail swap_total swap_used
+  read -r total avail < <(free -m 2>/dev/null | awk '/^Mem:/ { print $2, $7 }')
+  read -r swap_total swap_used < <(free -m 2>/dev/null | awk '/^Swap:/ { print $2, $3 }')
+  if [[ ! "${total:-}" =~ ^[0-9]+$ || ! "${avail:-}" =~ ^[0-9]+$ || "${total}" -eq 0 ]]; then
+    add_problem "memory: cannot read memory numbers (free failed)"
+    return
+  fi
+  if [ $((avail * 100)) -lt $((KW_MEM_MIN_AVAILABLE_PCT * total)) ]; then
+    add_problem "memory: only ${avail} MB of ${total} MB available (limit ${KW_MEM_MIN_AVAILABLE_PCT}%)"
+  fi
+  if [[ "${swap_total:-}" =~ ^[0-9]+$ && "${swap_used:-}" =~ ^[0-9]+$ && "${swap_total}" -gt 0 ]] &&
+    [ $((swap_used * 100)) -gt $((KW_SWAP_MAX_PCT * swap_total)) ]; then
+    add_problem "swap: ${swap_used} MB of ${swap_total} MB used (limit ${KW_SWAP_MAX_PCT}%)"
+  fi
+}
+
+check_containers() {
+  local listing name state status expected running
+  if ! listing=$(docker ps -a --format '{{.Names}}|{{.State}}|{{.Status}}' 2>&1); then
+    add_problem "docker: does not answer (${listing})"
+    return
+  fi
+  for expected in ${KW_EXPECTED_CONTAINERS}; do
+    running=0
+    while IFS='|' read -r name state status; do
+      [ -n "${name}" ] || continue
+      # Exact name (accessories) or Kamal's <service>-<role>-<version> naming, never a longer different name.
+      if [ "${name}" = "${expected}" ] || [[ "${name}" == "${expected}-"* ]]; then
+        [ "${state}" = "running" ] && running=1
+      fi
+    done <<<"${listing}"
+    [ "${running}" -eq 1 ] || add_problem "container: ${expected} is not running"
+  done
+  while IFS='|' read -r name state status; do
+    [ -n "${name}" ] || continue
+    if [ "${state}" = "restarting" ]; then
+      add_problem "container: ${name} is restarting"
+    elif [[ "${status}" == *"(unhealthy)"* ]]; then
+      add_problem "container: ${name} is unhealthy"
+    fi
+  done <<<"${listing}"
+}
+
+check_units() {
+  local unit
+  while read -r unit _; do
+    [ -n "${unit}" ] && add_problem "systemd: ${unit} has failed"
+  done < <(systemctl --failed --no-legend --plain 2>/dev/null)
+}
+
+check_filesystem "disk" -P "${KW_DISK_MAX_PCT}"
+check_filesystem "inodes" -Pi "${KW_INODE_MAX_PCT}"
+check_memory
+check_containers
+check_units
+
+url="${HC_PING_BASE}/${HC_PING_KEY}/${KW_HC_SLUG}"
+if [ "${#problems[@]}" -eq 0 ]; then
+  echo "host check ok"
+  body=""
+  suffix=""
+else
+  body=$(printf '%s\n' "${problems[@]}")
+  suffix="/fail"
+  printf 'host check found %d problem(s):\n%s\n' "${#problems[@]}" "${body}" >&2
+fi
+
+curl -fsS -m 15 --retry 3 -o /dev/null --data-raw "${body}" "${url}${suffix}" ||
+  echo "healthchecks ping failed (the check result is unaffected)" >&2
+exit 0

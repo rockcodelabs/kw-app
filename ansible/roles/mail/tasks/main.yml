@@ -1,0 +1,129 @@
+---
+# ---- secrets: read on the controller (laptop) from bws, never stored in the repo or in GitHub
+- name: Check the non-secret settings are filled in
+  ansible.builtin.assert:
+    that:
+      - mail_smtp_host | length > 0
+      - mail_from is match('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$')
+      - mail_to is match('^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+$')
+      - mail_bws_secret_ids.user | length > 0
+      - mail_bws_secret_ids.password | length > 0
+    fail_msg: >-
+      mail_smtp_host, mail_from and mail_bws_secret_ids (user, password) must be set for the mail role
+      (inventory/group_vars/production.yml and roles/mail/defaults/main.yml).
+
+- name: Read the SMTP credentials from Bitwarden Secrets Manager
+  ansible.builtin.set_fact:
+    mail_secrets:
+      user: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ mail_bws_secret_ids.user ~ ' | jq -er .value') }}"
+      password: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ mail_bws_secret_ids.password ~ ' | jq -er .value') }}"
+  no_log: true
+
+- name: Check the credentials are present and safe to write into msmtprc
+  ansible.builtin.assert:
+    that:
+      - mail_secrets.user is match('^[A-Za-z0-9._%+@-]{6,}$')
+      - mail_secrets.password is match('^[A-Za-z0-9+/=_.-]{16,}$')
+    fail_msg: >-
+      An SMTP credential is missing or has unexpected characters. Check BWS_ACCESS_TOKEN and
+      `bws secret get <id>` for the ids in mail_bws_secret_ids (values are not shown here).
+  no_log: true
+
+# ---- relay
+- name: Install the msmtp relay (provides /usr/sbin/sendmail)
+  ansible.builtin.apt:
+    name:
+      - msmtp
+      - msmtp-mta
+    state: present
+
+- name: Directory for the mail settings
+  ansible.builtin.file:
+    path: /etc/kw-mail
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: SMTP password file (read by passwordeval)
+  ansible.builtin.template:
+    src: smtp-password.j2
+    dest: /etc/kw-mail/smtp-password
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: msmtp configuration
+  ansible.builtin.template:
+    src: msmtprc.j2
+    dest: /etc/msmtprc
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Send mail for local users (root, cron, needrestart) to the owner
+  ansible.builtin.template:
+    src: aliases.j2
+    dest: /etc/aliases
+    owner: root
+    group: root
+    mode: "0644"
+
+# ---- unattended-upgrades mails on error only
+- name: Unattended-upgrades mail settings
+  ansible.builtin.template:
+    src: 53-kw-mail.conf.j2
+    dest: /etc/apt/apt.conf.d/53-kw-mail.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+# ---- failure mail for units without a healthchecks heartbeat
+- name: Failure mail settings
+  ansible.builtin.template:
+    src: env.j2
+    dest: /etc/kw-mail/env
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Failure mail script
+  ansible.builtin.copy:
+    src: kw-failure-mail
+    dest: /usr/local/sbin/kw-failure-mail
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Failure mail service template
+  ansible.builtin.template:
+    src: kw-failure-mail@.service.j2
+    dest: /etc/systemd/system/kw-failure-mail@.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Drop-in directories for the watched units
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ mail_failure_units }}"
+
+- name: OnFailure drop-ins for the watched units
+  ansible.builtin.template:
+    src: onfailure.conf.j2
+    dest: "/etc/systemd/system/{{ item }}.d/10-kw-onfailure.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ mail_failure_units }}"
+  notify: Reload systemd
+
+- name: Apply systemd changes
+  ansible.builtin.meta: flush_handlers

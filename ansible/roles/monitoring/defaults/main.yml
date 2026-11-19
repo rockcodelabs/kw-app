@@ -1,0 +1,27 @@
+---
+# Host self-check (P6-B). See docs/NEW_PRODUCTION_PLAN.md, section P6 and C.4 / C.6 for what alerts and why.
+# Non-secret settings only. The healthchecks.io ping key is read from Bitwarden Secrets Manager at apply time.
+
+# healthchecks.io check that receives the heartbeat (created once through the API: period 10 min, grace 20 min).
+monitoring_hc_slug: kw-prod-host-health
+
+# Alert limits. Whole numbers, checked every 10 minutes. Conservative so that normal peaks do not flap.
+monitoring_disk_path: /
+monitoring_disk_max_pct: 80
+monitoring_inode_max_pct: 80
+monitoring_mem_min_available_pct: 8
+monitoring_swap_max_pct: 50
+
+# Containers that must be running. An entry matches the exact name (accessories) or "<entry>-<anything>"
+# (Kamal names app containers <service>-<role>-<version>). Add the app roles after the first deploy (P7):
+#   kw-app-web, kw-app-job, kw-app-cron, kamal-proxy
+monitoring_expected_containers:
+  - kw-app-postgres
+  - kw-app-redis
+
+# Secret ID in Bitwarden Secrets Manager (project "panel"). The ID is not secret, the value is.
+monitoring_bws_secret_ids:
+  ping_key: d37a01b2-04bd-44d1-8f96-b5060154a055  # kw-app-healthchecks-ping-key (ping-only)
+
+# Every 10 minutes, and 3 minutes after boot so that the heartbeat resumes quickly after a reboot.
+monitoring_boot_delay: 3min

@@ -1,0 +1,3 @@
+// Managed by Ansible (roles/mail). unattended-upgrades mails only when something went wrong.
+Unattended-Upgrade::Mail "{{ mail_to }}";
+Unattended-Upgrade::MailReport "only-on-error";

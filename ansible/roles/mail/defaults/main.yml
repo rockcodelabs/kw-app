@@ -1,0 +1,28 @@
+---
+# Host alert mail (P6.5). See docs/NEW_PRODUCTION_PLAN.md, section C.4 / C.6 for what alerts and why.
+# Non-secret settings only. The SMTP credentials are read from Bitwarden Secrets Manager at apply time (tasks/main.yml).
+
+# Every host alert goes to this mailbox (owner decision 2026-11-18). It is on the club's own mail host, not on this VPS.
+mail_to: darek.finster@kw.krakow.pl
+
+# Required, set in inventory/group_vars/production.yml. The role refuses to run while they are empty.
+#   mail_smtp_host: smtp.mailgun.org (US) or smtp.eu.mailgun.org (EU), whichever region the Mailgun domain is in
+#   mail_from:      an address on the Mailgun sending domain, so SPF and DKIM line up
+mail_smtp_host: ""
+mail_smtp_port: 587
+mail_from: ""
+mail_tag: kw-prod
+
+# Secret IDs in Bitwarden Secrets Manager (project "panel"). The IDs are not secret, the values are.
+# Fill in after storing the SMTP credential:
+#   user:     kw-app-production-smtp-user
+#   password: kw-app-production-smtp-password
+mail_bws_secret_ids:
+  user: "50369487-bfaa-443d-9b9b-b50700946180"
+  password: "c084912b-566b-4c49-a516-b507009461ee"
+
+# Units that mail the owner when they fail (OnFailure=). Backup jobs are NOT listed: they alert through
+# healthchecks.io /fail, which already mails the same address.
+mail_failure_units:
+  - apt-daily-upgrade.service
+  - kw-reboot-if-needed.service

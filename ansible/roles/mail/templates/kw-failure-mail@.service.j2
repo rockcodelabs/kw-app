@@ -1,0 +1,14 @@
+# Managed by Ansible (roles/mail). Started by OnFailure= of the units listed in mail_failure_units.
+[Unit]
+Description=Mail an alert about the failed unit %i
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/kw-failure-mail %i
+TimeoutStartSec=120
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true

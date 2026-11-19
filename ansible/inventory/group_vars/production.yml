@@ -20,3 +20,8 @@ base_reboot_if_needed_calendar: "Sun *-*-* 05:00:00 Europe/Warsaw"
 deploy_user_authorized_keys:
   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJSIODacfq4bX1GtRPzuDskVULAvgM5UsyY/8Z5xBV9B dariusz.finster@gmail.com"
   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGHucFWZW6VitMPTga+Iask29LSircyOADtM3SQ+Jcg6 kw-app-ci-github-actions"
+
+# Host alert mail (roles/mail). Mailgun sending domain kw.krakow.pl is in the US region (SMTP host from the
+# Mailgun dashboard, 2026-11-19). The SMTP user alerts@kw.krakow.pl is dedicated to this host.
+mail_smtp_host: smtp.mailgun.org
+mail_from: alerts@kw.krakow.pl

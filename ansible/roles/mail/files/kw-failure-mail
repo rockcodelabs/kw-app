@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/mail). Started by systemd through kw-failure-mail@<unit>.service when <unit> fails
+# (OnFailure=). Mails the owner the unit name and the last journal lines. One mail per failure, no digests.
+#
+#   kw-failure-mail <unit>
+#
+# Test hooks: KW_MAIL_ENV (config file), KW_SENDMAIL (sendmail binary).
+set -euo pipefail
+
+unit="${1:-}"
+# Reject anything that is not a plain unit name, so no header can be injected into the mail.
+if [[ ! "${unit}" =~ ^[A-Za-z0-9@:._-]+$ ]]; then
+  echo "usage: kw-failure-mail <unit>" >&2
+  exit 2
+fi
+
+# shellcheck disable=SC1090
+. "${KW_MAIL_ENV:-/etc/kw-mail/env}"
+: "${KW_MAIL_TO:?}" "${KW_MAIL_FROM:?}" "${KW_MAIL_TAG:?}"
+
+host="$(hostname -s 2>/dev/null || hostname)"
+
+{
+  printf 'To: %s\n' "${KW_MAIL_TO}"
+  printf 'From: %s\n' "${KW_MAIL_FROM}"
+  printf 'Subject: [%s] %s failed on %s\n' "${KW_MAIL_TAG}" "${unit}" "${host}"
+  printf 'Content-Type: text/plain; charset=UTF-8\n\n'
+  printf '%s failed on %s at %s.\n\n' "${unit}" "${host}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  printf 'Last journal lines (journalctl -u %s):\n\n' "${unit}"
+  journalctl -u "${unit}" -n 40 --no-pager -o short-iso 2>&1 || true
+  printf '\nWhat to do: docs/NEW_PRODUCTION_PLAN.md, section C.6 (incident runbooks).\n'
+} | "${KW_SENDMAIL:-/usr/sbin/sendmail}" -t -i

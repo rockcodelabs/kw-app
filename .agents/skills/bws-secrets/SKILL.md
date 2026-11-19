@@ -48,6 +48,8 @@ Only touch entries that start with `kw-app-`. The rest (including `registry-*`) 
 | `kw-app-backup-user-id` (OVH user id, informational, not used by restic) | `01053f00-5df2-4bce-bf81-b5060151946a` | - | - |
 | `kw-app-healthchecks-ping-key` (healthchecks.io project `KW App`, ping-only, 22 chars; URL form `https://hc-ping.com/<key>/<slug>`) | `d37a01b2-04bd-44d1-8f96-b5060154a055` | `HC_PING_KEY` (backup role via Ansible; cron role via Kamal: `.kamal/secrets.production`, `servers.cron.env.secret`, `deploy-production.yml`) | new prod backups and cron heartbeats |
 | `kw-app-production-restic-password` (restic repo password; loss = backups unrecoverable, keep a break-glass copy) | `ec37f629-fc33-43c7-bb88-b5060153bc58` | `RESTIC_PASSWORD` (backup role) | new prod backups |
+| `kw-app-production-smtp-user` (Mailgun SMTP login `alerts@kw.krakow.pl`, host alert mail only) | `50369487-bfaa-443d-9b9b-b50700946180` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
+| `kw-app-production-smtp-password` (its password; reset in Mailgun > SMTP Credentials, then `bws secret edit`) | `c084912b-566b-4c49-a516-b507009461ee` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
 
 Not in bws (still in `config/credentials/<env>.yml.enc`, read via `ENV.fetch(..) { credentials.dig(..) }`): Mailgun, OpenStack, Dotpay, Strava client, Google OAuth, `secret_key_base`. To move one: create the bws entry, add it to `.kamal/secrets-common` (or the destination file) **and** to `env.secret` in `config/deploy.yml` + `config/deploy.production.yml`, and add it to the "Get Secrets" step of both deploy workflows.
 

@@ -23,3 +23,11 @@
     # needs bws + jq on the machine running ansible and BWS_ACCESS_TOKEN in its environment
     - role: backup
       tags: [backup]
+    # needs bws + jq on the machine running ansible; mail_smtp_host / mail_from in group_vars and the SMTP
+    # credentials in bws (see roles/mail/defaults/main.yml)
+    - role: mail
+      tags: [mail]
+    # host self-check timer with a healthchecks.io heartbeat; needs bws + jq on the controller; the check
+    # kw-prod-host-health must exist (roles/monitoring/defaults/main.yml)
+    - role: monitoring
+      tags: [monitoring]

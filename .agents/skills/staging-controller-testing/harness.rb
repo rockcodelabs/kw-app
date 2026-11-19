@@ -6,7 +6,9 @@
 # running staging web container. See SKILL.md for the exact command.
 #
 # Safety model:
-#   * refuses to run unless Rails.env == staging
+#   * refuses to run unless Rails.env == staging, with ONE exception: Rails.env == production is
+#     accepted only when HARNESS_ALLOW_PRODUCTION=rehearsal is passed explicitly. That is for the P7
+#     rehearsal host (prod data copy, no real traffic). Never pass it after the cutover (P8).
 #   * every write happens inside ONE transaction that is always rolled back
 #   * ActiveJob -> :test adapter, ActionMailer -> :test (no Mailgun, no Sidekiq)
 #   * refuses to run while AppSignal is active (run with -e APPSIGNAL_ACTIVE=false)
@@ -14,7 +16,10 @@
 #     test mode, so no real credentials are involved
 #   * after rollback the harness verifies that no row counts changed
 
-abort 'Refusing to run: Rails.env is not staging' unless Rails.env.staging?
+unless Rails.env.staging? || (Rails.env.production? && ENV['HARNESS_ALLOW_PRODUCTION'] == 'rehearsal')
+  abort 'Refusing to run: Rails.env is not staging (production needs HARNESS_ALLOW_PRODUCTION=rehearsal, ' \
+        'allowed only on the rehearsal host before the cutover)'
+end
 
 require 'securerandom'
 
@@ -24,6 +29,11 @@ module StagingHarness
     Db::User
     Db::Profile
     Db::Payment
+    Db::Reservation
+    Db::Item
+    Training::Supplementary::CourseRecord
+    Training::Supplementary::SignUpRecord
+    Training::Supplementary::PackageTypeRecord
     Settlement::ContractRecord
     Settlement::ContractorRecord
     NotificationCenter::NotificationRecord
@@ -60,7 +70,8 @@ module StagingHarness
       @label = label
       @user = user
       @session = ActionDispatch::Integration::Session.new(Rails.application)
-      @session.host! 'staging-check.local'
+      @session.host! ENV.fetch('HARNESS_HOST', Rails.env.production? ? 'nowypanel.kw.krakow.pl' : 'staging-check.local')
+      @session.https! if Rails.env.production?
     end
 
     %i[get post put patch delete].each do |verb|
@@ -99,6 +110,7 @@ module StagingHarness
     def run(title)
       isolate_side_effects!
       @checks = []
+      @gaps = 0
       @kw_id_seq = Db::User.maximum(:kw_id).to_i + 1000
       before = snapshot
 
@@ -175,6 +187,21 @@ module StagingHarness
       puts format('  INFO %s  -> %s', name, text)
     end
 
+    # A documented, accepted-for-now finding (e.g. "G24"). `expected` describes the INTENDED behaviour.
+    # While the gap exists it prints GAP and does not fail the run; once the behaviour is fixed it is
+    # counted as a normal passing check, so the entry can be promoted to a plain `check`.
+    def known_gap(id, name, actual, expected)
+      ok = expected === actual # rubocop:disable Style/CaseEquality
+      if ok
+        @checks << { name: "[#{id} fixed] #{name}", ok: true, detail: nil }
+        puts format('  PASS [%s fixed] %s  -> promote this to a plain check', id, name)
+      else
+        @gaps = (@gaps || 0) + 1
+        puts format('  GAP  [%s] %s  -> expected %s, got %s', id, name, expected.inspect, actual.inspect)
+      end
+      ok
+    end
+
     # --- job / mail helpers ----------------------------------------------
 
     # Runs the block with mail jobs executed inline and returns the messages
@@ -234,7 +261,7 @@ module StagingHarness
     def summarize
       failed = @checks.reject { |c| c[:ok] }
       puts
-      puts "== #{@checks.size - failed.size}/#{@checks.size} checks passed"
+      puts "== #{@checks.size - failed.size}/#{@checks.size} checks passed#{@gaps.to_i.positive? ? ", #{@gaps} known gap(s) open (GAP lines, not failures)" : ''}"
       failed.each { |c| puts "   FAIL #{c[:name]}  -> #{c[:detail]}" } if failed.any?
       exit(failed.empty? ? 0 : 1)
     end

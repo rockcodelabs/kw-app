@@ -7,7 +7,7 @@ module Reservations
         return Failure.new(:form_invalid, form: form) unless form.valid?
         return Failure.new(:user_has_to_be_present) unless user.present?
 
-        if (items_reserved_in_period(form.start_date) & form.item_ids).any?
+        if (items_reserved_in_period(form.start_date) & form.item_ids.map(&:to_i)).any?
           return Failure.new(:item_already_reserved, form: form)
         end
 

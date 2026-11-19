@@ -125,6 +125,26 @@ RSpec.describe Training::Supplementary::CreateCourse do
         expect(created_course.price_non_kw).to eq(150)
       end
 
+      it 'creates a course with packages posted the way the Rails nested form sends them (index-keyed hash)' do
+        raw_inputs = {
+          name: 'Kurs z pakietami',
+          place: 'Tatry',
+          payment_type: 'trainings',
+          packages: '1',
+          package_types_attributes: {
+            '0' => { 'name' => 'Podstawowy', 'cost' => '100' },
+            '1' => { 'name' => 'Pełny', 'cost' => '200' }
+          }
+        }
+
+        result = service.call(raw_inputs: raw_inputs)
+
+        expect(result).to be_success
+        created_course = Training::Supplementary::CourseRecord.find_by!(name: 'Kurs z pakietami')
+        expect(created_course.package_types.map(&:name)).to contain_exactly('Podstawowy', 'Pełny')
+        expect(created_course).to be_packages
+      end
+
       it 'creates a course with date fields' do
         raw_inputs = {
           name: 'Scheduled Course',

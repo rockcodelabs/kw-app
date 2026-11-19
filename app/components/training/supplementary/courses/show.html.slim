@@ -322,7 +322,7 @@
 
           - if current_user.admin? || current_user.roles.include?('events')
             - if all_unpaid.any?
-              = link_to 'Otwórz konwersację', new_conversation_path(subject: @course.name, recipient_id: all_prepaid.map(&:user_id).join(','), messageable_type: 'Training::Supplementary::CourseRecord', messageable_id: @course.id), class: 'button expanded secondary'
+              = link_to 'Otwórz konwersację', new_conversation_path(subject: @course.name, recipient_id: all_unpaid.map(&:user_id).join(','), messageable_type: 'Training::Supplementary::CourseRecord', messageable_id: @course.id), class: 'button expanded secondary'
               .callout
                 = all_unpaid.map(&:email).join(', ')
 

@@ -19,7 +19,9 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
 
   contractor = Settlement::ContractorRecord.create!(name: 'Stg Check Contractor')
   period = Date.new(Date.current.year, 1, 1)
-  seq = 90_000
+  # Unique against whatever the database holds (real numbers on a restored or live DB), see the unique index on
+  # internal_number + period_date.
+  seq = Settlement::ContractRecord.maximum(:internal_number).to_i + 1000
 
   make_contract = lambda do |creator: member, state: 'new', typed: true, **attrs|
     seq += 1
@@ -121,7 +123,7 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
   h.check_denied('anonymous cannot update', res)
   h.check('contract unchanged after anonymous update', theirs.reload.title, 'untouched')
 
-  res = c.('office_king', office_king).put(r.admin_contract_path(theirs), params: { contract: valid_update[:contract].merge(internal_number: '77', user_ids: [member.id.to_s]) })
+  res = c.('office_king', office_king).put(r.admin_contract_path(theirs), params: { contract: valid_update[:contract].merge(internal_number: theirs.internal_number.to_s, user_ids: [member.id.to_s]) })
   h.check_status('office_king updates contract', res, 302)
 
   res = c.('member', member).put(r.admin_contract_path(mine), params: { contract: valid_update[:contract].merge(title: '') })

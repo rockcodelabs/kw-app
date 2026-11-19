@@ -29,17 +29,25 @@ set +a
 : "${KW_MEM_MIN_AVAILABLE_PCT:=8}"
 : "${KW_SWAP_MAX_PCT:=50}"
 : "${KW_EXPECTED_CONTAINERS:=}"
+# Certificate expiry (G42). Off while KW_TLS_CHECK_HOST is empty (no certificate exists before the DNS flip).
+: "${KW_TLS_CHECK_HOST:=}"
+: "${KW_TLS_ADDR:=127.0.0.1:443}"
+: "${KW_TLS_MIN_DAYS:=21}"
 
 if [[ ! "${HC_PING_KEY:-}" =~ ^[A-Za-z0-9_-]{16,}$ ]] || [[ ! "${KW_HC_SLUG:-}" =~ ^[a-z0-9_-]+$ ]]; then
   echo "HC_PING_KEY or KW_HC_SLUG is missing or malformed in ${env_file}" >&2
   exit 2
 fi
-for limit in KW_DISK_MAX_PCT KW_INODE_MAX_PCT KW_MEM_MIN_AVAILABLE_PCT KW_SWAP_MAX_PCT; do
+for limit in KW_DISK_MAX_PCT KW_INODE_MAX_PCT KW_MEM_MIN_AVAILABLE_PCT KW_SWAP_MAX_PCT KW_TLS_MIN_DAYS; do
   if [[ ! "${!limit}" =~ ^[0-9]+$ ]]; then
     echo "${limit} must be a whole number" >&2
     exit 2
   fi
 done
+if [[ ! "${KW_TLS_CHECK_HOST}" =~ ^(([A-Za-z0-9-]+\.)*[A-Za-z0-9-]+)?$ ]] || [[ ! "${KW_TLS_ADDR}" =~ ^[A-Za-z0-9.:-]+$ ]]; then
+  echo "KW_TLS_CHECK_HOST or KW_TLS_ADDR is malformed in ${env_file}" >&2
+  exit 2
+fi
 
 problems=()
 add_problem() { problems+=("$1"); }
@@ -110,11 +118,29 @@ check_units() {
   done < <(systemctl --failed --no-legend --plain 2>/dev/null)
 }
 
+# kamal-proxy renews the Let's Encrypt certificate by itself about 30 days before it expires and nothing else
+# reports a failed renewal, so this looks at the certificate the proxy really serves for the public host name.
+check_certificate() {
+  local pem enddate
+  [ -n "${KW_TLS_CHECK_HOST}" ] || return 0
+  pem=$(timeout 10 openssl s_client -connect "${KW_TLS_ADDR}" -servername "${KW_TLS_CHECK_HOST}" </dev/null 2>/dev/null |
+    openssl x509 2>/dev/null)
+  if [ -z "${pem}" ]; then
+    add_problem "certificate: no certificate served for ${KW_TLS_CHECK_HOST} on ${KW_TLS_ADDR}"
+    return
+  fi
+  if ! printf '%s\n' "${pem}" | openssl x509 -noout -checkend $((KW_TLS_MIN_DAYS * 86400)) >/dev/null 2>&1; then
+    enddate=$(printf '%s\n' "${pem}" | openssl x509 -noout -enddate 2>/dev/null | sed 's/^notAfter=//')
+    add_problem "certificate: ${KW_TLS_CHECK_HOST} expires within ${KW_TLS_MIN_DAYS} days (notAfter ${enddate:-unknown}); automatic renewal is not working"
+  fi
+}
+
 check_filesystem "disk" -P "${KW_DISK_MAX_PCT}"
 check_filesystem "inodes" -Pi "${KW_INODE_MAX_PCT}"
 check_memory
 check_containers
 check_units
+check_certificate
 
 url="${HC_PING_BASE}/${HC_PING_KEY}/${KW_HC_SLUG}"
 if [ "${#problems[@]}" -eq 0 ]; then

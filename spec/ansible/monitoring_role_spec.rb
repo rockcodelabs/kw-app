@@ -45,6 +45,20 @@ RSpec.describe 'ansible monitoring role' do # rubocop:disable RSpec/DescribeClas
       echo "systemctl $*" >> "$STUB_LOG"
       printf '%b' "${STUB_FAILED_UNITS:-}"
     SH
+    write_stub('openssl', <<~'SH')
+      echo "openssl $*" >> "$STUB_LOG"
+      case "$1" in
+        s_client)
+          if [ -n "${STUB_TLS_BROKEN:-}" ]; then exit 1; fi
+          printf -- '-----BEGIN CERTIFICATE-----\nstub\n-----END CERTIFICATE-----\n' ;;
+        x509)
+          case "$*" in
+            *-checkend*) cat > /dev/null; exit "${STUB_TLS_CHECKEND_RC:-0}" ;;
+            *-enddate*) cat > /dev/null; echo 'notAfter=Feb 17 10:00:00 2027 GMT' ;;
+            *) cat ;;
+          esac ;;
+      esac
+    SH
     File.write(conf, <<~ENV)
       HC_PING_KEY='abcdefghijklmnopqrstuv'
       KW_HC_SLUG='kw-prod-host-health'
@@ -273,6 +287,76 @@ RSpec.describe 'ansible monitoring role' do # rubocop:disable RSpec/DescribeClas
 
       expect(out).not_to include('abcdefghijklmnopqrstuv')
     end
+
+    # G42: kamal-proxy renews the Let's Encrypt certificate by itself, but nothing told anyone when that fails.
+    describe 'certificate expiry check' do
+      let(:tls_conf) { "KW_TLS_CHECK_HOST='panel.kw.krakow.pl'\nKW_TLS_MIN_DAYS='21'\n" }
+
+      def enable_tls_check(extra = '')
+        File.write(conf, "#{conf.read}#{tls_conf}#{extra}")
+      end
+
+      it 'does not look at any certificate while the check is off (before the DNS flip)' do
+        out, status = run_script
+
+        expect(status).to be_success, out
+        expect(calls.grep(/^openssl/)).to be_empty
+        expect(pings.first).to end_with(ok_url)
+      end
+
+      it 'asks the local proxy for the certificate of the configured host and stays green when it is valid' do
+        enable_tls_check
+
+        out, status = run_script
+
+        expect(status).to be_success, out
+        expect(calls).to include(a_string_matching(/^openssl s_client .*-connect 127\.0\.0\.1:443 .*-servername panel\.kw\.krakow\.pl/))
+        expect(calls).to include(a_string_matching(/^openssl x509 .*-checkend 1814400/))
+        expect(pings.size).to eq(1)
+        expect(pings.first).to end_with(ok_url)
+      end
+
+      it 'sends /fail naming the host, the limit and the expiry date when the certificate expires too soon' do
+        enable_tls_check
+
+        run_script(env: { 'STUB_TLS_CHECKEND_RC' => '1' })
+
+        expect(pings.size).to eq(1)
+        expect(pings.first).to end_with('/fail')
+        expect(pings.first).to match(/certificate/i)
+        expect(pings.first).to include('panel.kw.krakow.pl', '21 days', 'Feb 17 10:00:00 2027 GMT')
+      end
+
+      it 'sends /fail when no certificate is served at all' do
+        enable_tls_check
+
+        run_script(env: { 'STUB_TLS_BROKEN' => '1' })
+
+        expect(pings.first).to end_with('/fail')
+        expect(pings.first).to match(/certificate.*panel\.kw\.krakow\.pl/i)
+      end
+
+      it 'uses the configured address and day limit' do
+        enable_tls_check("KW_TLS_ADDR='127.0.0.1:8443'\nKW_TLS_MIN_DAYS='10'\n")
+
+        run_script
+
+        expect(calls).to include(a_string_matching(/-connect 127\.0\.0\.1:8443 /))
+        expect(calls).to include(a_string_matching(/-checkend 864000/))
+      end
+
+      it 'rejects a malformed host or day limit instead of silently skipping the check' do
+        enable_tls_check("KW_TLS_CHECK_HOST='panel kw;rm'\n")
+        _out, status = run_script
+        expect(status.exitstatus).to eq(2)
+        expect(pings).to be_empty
+
+        File.write(conf, "#{conf.read}KW_TLS_CHECK_HOST='panel.kw.krakow.pl'\nKW_TLS_MIN_DAYS='soon'\n")
+        _out, status = run_script
+        expect(status.exitstatus).to eq(2)
+        expect(pings).to be_empty
+      end
+    end
   end
 
   describe 'role definition' do
@@ -293,6 +377,14 @@ RSpec.describe 'ansible monitoring role' do # rubocop:disable RSpec/DescribeClas
       expect(defaults['monitoring_hc_slug']).to eq('kw-prod-host-health')
       expect(defaults['monitoring_disk_max_pct']).to eq(80)
       expect(defaults['monitoring_swap_max_pct']).to eq(50)
+    end
+
+    it 'keeps the certificate check off until the flip, with a 21 day limit once it is switched on' do
+      expect(defaults['monitoring_tls_check_host']).to eq('')
+      expect(defaults['monitoring_tls_min_days']).to eq(21)
+      expect(defaults['monitoring_tls_addr']).to eq('127.0.0.1:443')
+      expect(templates.fetch('env.j2')).to include('KW_TLS_CHECK_HOST=', 'KW_TLS_MIN_DAYS=', 'KW_TLS_ADDR=')
+      expect(tasks).to include('monitoring_tls_check_host')
     end
 
     it 'runs every 10 minutes and shortly after boot, as a hardened oneshot' do

@@ -12,6 +12,9 @@
       - monitoring_expected_containers | length > 0
       - monitoring_expected_containers | select('match', '^[A-Za-z0-9_.-]+$') | list | length == monitoring_expected_containers | length
       - monitoring_bws_secret_ids.ping_key | length > 0
+      - monitoring_tls_check_host is match('^([A-Za-z0-9-]+\.)*[A-Za-z0-9-]+$|^$')
+      - monitoring_tls_addr is match('^[A-Za-z0-9.:-]+$')
+      - monitoring_tls_min_days | string is match('^[0-9]+$')
     fail_msg: >-
       A monitoring setting is missing or malformed (roles/monitoring/defaults/main.yml, inventory/group_vars/production.yml).
 
@@ -33,7 +36,9 @@
 # ---- script and settings
 - name: Tools the self-check needs
   ansible.builtin.apt:
-    name: curl
+    name:
+      - curl
+      - openssl
     state: present
 
 - name: Directory for the self-check settings

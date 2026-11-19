@@ -23,5 +23,12 @@ monitoring_expected_containers:
 monitoring_bws_secret_ids:
   ping_key: d37a01b2-04bd-44d1-8f96-b5060154a055  # kw-app-healthchecks-ping-key (ping-only)
 
+# Certificate expiry (G42). kamal-proxy renews the Let's Encrypt certificate by itself; this alerts through the
+# same healthchecks /fail path when the certificate it serves has fewer than monitoring_tls_min_days left.
+# Empty = check off. Set it to panel.kw.krakow.pl at the DNS flip (P8): before that no certificate exists.
+monitoring_tls_check_host: ""
+monitoring_tls_addr: 127.0.0.1:443
+monitoring_tls_min_days: 21
+
 # Every 10 minutes, and 3 minutes after boot so that the heartbeat resumes quickly after a reboot.
 monitoring_boot_delay: 3min

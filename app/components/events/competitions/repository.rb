@@ -34,12 +34,18 @@ module Events
         record
       end
 
+      # The cron task runs every 30 minutes, so anything older than this window is a leftover from before the task
+      # was scheduled (2026-11-19, G41). Those rows are not purged automatically: that would also call the Dotpay
+      # delete API for each of them on the very first run on the new host.
+      EXPIRED_SIGN_UP_WINDOW = 7.days
+
       def expired_sign_ups
         Events::Db::SignUpRecord
           .joins(:payment)
           .where.not(sent_at: nil)
           .where.not(expired_at: nil)
           .where('expired_at < ?', Time.zone.now)
+          .where('expired_at >= ?', EXPIRED_SIGN_UP_WINDOW.ago)
           .where(payments: { state: 'unpaid' })
       end
     end

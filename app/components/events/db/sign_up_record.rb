@@ -47,6 +47,7 @@ module Events
   module Db
     class SignUpRecord < ActiveRecord::Base
       self.table_name = 'events_sign_ups'
+      has_paper_trail
 
       enum participant_country_1: [:pl, :sk, :cz, :de, :ua, :it, :fr, :at, :ch, :esp, :ro, :gr, :other], _prefix: :country_1
       enum participant_country_2: [:pl, :sk, :cz, :de, :ua, :it, :fr, :at, :ch, :esp, :ro, :gr, :other], _prefix: :country_2

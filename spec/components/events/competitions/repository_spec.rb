@@ -14,8 +14,8 @@ RSpec.describe Events::Competitions::Repository do
       expect(sql).not_to include('NOT ("events_sign_ups"."sent_at" IS NULL')
     end
 
-    # G41: the first scheduled run on new prod must not purge the 89 old sign-ups (2022 - May 2026) of the restored
-    # data, nor call the Dotpay delete API for them. Only recently expired sign-ups are returned.
+    # G41 (owner decision 2026-11-19): the 89 old sign-ups (2022 - May 2026) of the restored data are purged by the
+    # first scheduled run on purpose. The destroy is versioned (see the worker spec), so there is no age limit here.
     context 'with rows' do
       let(:competition) do
         Events::Db::CompetitionRecord.create!(
@@ -40,17 +40,11 @@ RSpec.describe Events::Competitions::Repository do
         expect(described_class.new.expired_sign_ups).to contain_exactly(expired)
       end
 
-      it 'returns an unpaid sign-up that expired just inside the window' do
-        expired = sign_up_with_payment(expired_at: described_class::EXPIRED_SIGN_UP_WINDOW.ago + 1.hour)
+      it 'also returns the old backlog, however long ago it expired' do
+        recent = sign_up_with_payment(expired_at: 1.hour.ago)
+        old = sign_up_with_payment(expired_at: Time.zone.local(2022, 3, 4, 18))
 
-        expect(described_class.new.expired_sign_ups).to contain_exactly(expired)
-      end
-
-      it 'leaves a backlog older than the window alone' do
-        sign_up_with_payment(expired_at: described_class::EXPIRED_SIGN_UP_WINDOW.ago - 1.hour)
-        sign_up_with_payment(expired_at: Time.zone.local(2022, 3, 4, 18))
-
-        expect(described_class.new.expired_sign_ups).to be_empty
+        expect(described_class.new.expired_sign_ups).to contain_exactly(recent, old)
       end
 
       it 'leaves a sign-up that has not expired yet alone' do

@@ -5,10 +5,10 @@ module Training
 
       def prepaid_email(sign_up_id)
         @sign_up = ::Training::Supplementary::SignUpRecord.find(sign_up_id)
-        organizer = ::Db::User.find(@sign_up.course.organizator_id)
+        organizer = @sign_up.course.organizer
 
         mail(
-          to: ['wydarzenia@kw.krakow.pl', @sign_up.email, organizer.email],
+          to: ['wydarzenia@kw.krakow.pl', @sign_up.email, organizer&.email].compact,
           from: 'wydarzenia@kw.krakow.pl',
           subject: "Opłaciłes zapis na wydarzenie KW Kraków: #{@sign_up.course.name}!"
         ).tap do |message|
@@ -21,10 +21,10 @@ module Training
 
       def sign_up(sign_up_id)
         @sign_up = ::Training::Supplementary::SignUpRecord.find(sign_up_id)
-        organizer = ::Db::User.find(@sign_up.course.organizator_id)
+        organizer = @sign_up.course.organizer
 
         mail(
-          to: ['wydarzenia@kw.krakow.pl', @sign_up.email, organizer.email],
+          to: ['wydarzenia@kw.krakow.pl', @sign_up.email, organizer&.email].compact,
           from: 'wydarzenia@kw.krakow.pl',
           subject: "Zapisałeś się na wydarzenie KW Kraków: #{@sign_up.course.name}!"
         ).tap do |message|

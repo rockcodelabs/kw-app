@@ -69,13 +69,13 @@ RSpec.describe Training::Supplementary::SignUpMailer, type: :mailer do
       expect(mail.mailgun_options).to include('mailable_id' => sign_up.id, 'mailable_type' => 'Training::Supplementary::SignUpRecord')
     end
 
-    it 'renders without an organizer', pending: 'G29: a course without organizator_id makes the mailer raise RecordNotFound' do
+    it 'renders without an organizer' do
       course.update_column(:organizator_id, nil)
 
       expect { mail.body.encoded }.not_to raise_error
     end
 
-    it 'renders for a course with packages when the sign-up has no package yet', pending: 'G29: package_type is nil' do
+    it 'renders for a course with packages when the sign-up has no package yet' do
       course.update!(packages: true)
 
       expect { mail.body.encoded }.not_to raise_error

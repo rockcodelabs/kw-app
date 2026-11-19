@@ -15,9 +15,6 @@ RSpec.describe 'Reservations module', type: :request do
   let!(:item) { create(:item) }
   let!(:other_item) { create(:item) }
 
-  # Finding G28: delete_item does not check that the reservation belongs to the current user.
-  PENDING_G28_OWNERSHIP = 'G28: any signed-in member can cancel another member\'s reservation item'
-
   before { ActiveJob::Base.queue_adapter = :test }
 
   describe 'member side' do
@@ -106,7 +103,7 @@ RSpec.describe 'Reservations module', type: :request do
         expect(flash[:notice]).to eq('Zrezygnowano z rezerwacji przedmiotu.')
       end
 
-      it "does not let a member cancel another member's reservation item", pending: PENDING_G28_OWNERSHIP do
+      it "does not let a member cancel another member's reservation item" do
         reservation = create(:reservation, start_date: start_date, end_date: end_date, user: other_member)
         reservation.items << item
         reservation.create_payment(dotpay_id: SecureRandom.hex(13))
@@ -114,6 +111,17 @@ RSpec.describe 'Reservations module', type: :request do
         delete delete_item_reservation_path(reservation), params: { item_id: item.id }
 
         expect(reservation.reload.items).to contain_exactly(item)
+      end
+
+      it 'lets the keeper (reservations role) cancel an item of somebody else\'s reservation' do
+        reservation = create(:reservation, start_date: start_date, end_date: end_date, user: other_member)
+        reservation.items << [item, other_item]
+        reservation.create_payment(dotpay_id: SecureRandom.hex(13))
+        sign_in keeper
+
+        delete delete_item_reservation_path(reservation), params: { item_id: item.id }
+
+        expect(reservation.reload.items).to contain_exactly(other_item)
       end
     end
   end

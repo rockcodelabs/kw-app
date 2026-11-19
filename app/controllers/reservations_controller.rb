@@ -28,6 +28,11 @@ class ReservationsController < ApplicationController
   end
 
   def delete_item
+    reservation = Db::Reservation.find_by(id: params[:id])
+    if reservation && reservation.user_id != current_user.id && !can?(:manage, Db::Reservation)
+      return redirect_back(fallback_location: root_path, alert: 'Nie masz uprawnień do tej rezerwacji.')
+    end
+
     result = Reservations::CancelItem.from(reservation_id: params[:id]).delete(item_id: params[:item_id])
     result.success do |start_date:|
       redirect_to reservations_path(start_date: start_date), notice: 'Zrezygnowano z rezerwacji przedmiotu.'

@@ -315,7 +315,7 @@ StagingHarness.run('Post-migration smoke') do |h|
   h.info('G17 expired_sign_ups SQL', sql[/WHERE.*/m].to_s[0, 240])
   h.check('G17 expired_sign_ups is not a NOT(a AND b) predicate', sql =~ /NOT \([^)]*AND/i, nil)
   Rails.application.load_tasks
-  %w[send_prepaid_emails send_reminders send_yearly_fee_reminder destroy_unpaid_reservations destroy_outdated_profiles destroy_expired_sign_ups].each do |t|
+  %w[send_prepaid_emails send_reminders send_yearly_fee_reminder destroy_unpaid_reservations destroy_outdated_profiles destroy_expired_sign_ups destroy_expired_events_sign_ups].each do |t|
     h.check("rake task #{t} is defined", Rake::Task.task_defined?(t), true)
   end
   h.info('cron TZ of this process', "#{Time.zone.name} / ENV TZ=#{ENV['TZ'].inspect}")

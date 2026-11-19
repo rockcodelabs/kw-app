@@ -1,6 +1,5 @@
 # Every scheduled task reports to healthchecks.io through Healthchecks::Monitored (ENV: HC_PING_KEY,
-# HC_PING_PREFIX; set only on the production cron role). The tasks below the scheduled ones are dead
-# code (A.2 in docs/NEW_PRODUCTION_PLAN.md) and report nothing.
+# HC_PING_PREFIX; set only on the production cron role).
 #
 # DRY_RUN=1 bin/rake <task> (or bin/rake cron:dry_run for all of them) prints what a task would process
 # (counts only) and does nothing else: `candidates:` is the read-only selection the real run uses.
@@ -40,9 +39,11 @@ task :destroy_outdated_profiles => :environment do
 end
 
 task :destroy_expired_events_sign_ups => :environment do
-  expired_sign_ups = Events::Competitions::Repository.new.expired_sign_ups
-  expired_sign_ups.each do |sign_up|
-    Events::Competitions::Workers::DestroyExpiredEventSignUpWorker.perform_async(sign_up.id)
+  Healthchecks::Monitored.call(:destroy_expired_events_sign_ups,
+                               candidates: -> { Events::Competitions::Repository.new.expired_sign_ups.to_a.size }) do
+    Events::Competitions::Repository.new.expired_sign_ups.each do |sign_up|
+      Events::Competitions::Workers::DestroyExpiredEventSignUpWorker.perform_async(sign_up.id)
+    end
   end
 end
 

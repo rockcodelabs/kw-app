@@ -31,7 +31,6 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
-    Ascii85 (2.0.1)
     TimezoneParser (0.3.3)
       insensitive_hash
       tzinfo
@@ -115,7 +114,6 @@ GEM
       tzinfo (~> 2.0)
     addressable (2.8.7)
       public_suffix (>= 2.0.2, < 7.0)
-    afm (0.2.2)
     airbrake (13.0.5)
       airbrake-ruby (~> 6.0)
     airbrake-ruby (6.2.2)
@@ -300,7 +298,6 @@ GEM
       griddler (>= 1.5.2)
       mail (>= 2.7.0)
     hashdiff (1.1.2)
-    hashery (2.1.2)
     hashie (5.0.0)
     high_voltage (4.0.0)
     htmlentities (4.3.4)
@@ -420,12 +417,6 @@ GEM
       activerecord (>= 6.1)
       request_store (~> 1.4)
     pdf-core (0.10.0)
-    pdf-reader (2.13.0)
-      Ascii85 (>= 1.0, < 3.0, != 2.0.0)
-      afm (~> 0.2.1)
-      hashery (~> 2.0)
-      ruby-rc4
-      ttfunk
     pg (1.5.9)
     playwright-ruby-client (1.57.1)
       base64
@@ -525,7 +516,6 @@ GEM
       rspec-mocks (~> 3.13)
       rspec-support (~> 3.13)
     rspec-support (3.13.2)
-    ruby-rc4 (0.1.5)
     ruby-vips (2.3.0)
       ffi (~> 1.12)
       logger
@@ -703,7 +693,6 @@ DEPENDENCIES
   nokogiri (= 1.12.5)
   pagy
   paper_trail
-  pdf-reader
   pg (~> 1.1)
   playwright-ruby-client
   polylines

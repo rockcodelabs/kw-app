@@ -41,8 +41,13 @@ RSpec.describe 'config/crontab' do
   it 'chains the tasks of one slot on a single line so they run one after another' do
     half_hourly = entries.find { |entry| entry[1] == '8-23' }
     expect(half_hourly.last.split(';').map { |part| part.strip }).to eq(
-      ['bin/rake send_prepaid_emails', 'bin/rake destroy_expired_sign_ups', 'bin/rake fill_empty_places']
+      ['bin/rake send_prepaid_emails', 'bin/rake destroy_expired_sign_ups',
+       'bin/rake destroy_expired_events_sign_ups', 'bin/rake fill_empty_places']
     )
+  end
+
+  it 'schedules the event sign-up cleanup (club decision 2026-11-19)' do
+    expect(tasks).to include('destroy_expired_events_sign_ups')
   end
 
   it 'runs set_regular_members weekly, on Mondays' do

@@ -109,6 +109,7 @@ RSpec.describe 'periodic rake tasks' do
       end
 
       expect(counts['send_reminders']).to include('count=1')
+      expect(counts['destroy_expired_events_sign_ups']).to include('count=0')
       expect(counts['destroy_unpaid_reservations']).to include('count=1')
       expect(counts['destroy_outdated_profiles']).to include('count=1')
       expect(counts['set_regular_members']).to include('count=1')

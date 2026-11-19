@@ -7,6 +7,10 @@ class PaymentsController < ApplicationController
   end
 
   def refund
+    unless user_signed_in? && (current_user.admin? || current_user.roles.include?('events'))
+      return redirect_back(fallback_location: root_path, alert: 'Nie masz uprawnień')
+    end
+
     payment = Db::Payment.find(params[:id])
 
     result = Payments::Dotpay::GetOperationRequest.new(code: payment.dotpay_id).execute

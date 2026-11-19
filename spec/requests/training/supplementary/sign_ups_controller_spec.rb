@@ -20,11 +20,6 @@ RSpec.describe 'Training::Supplementary::SignUpsController', type: :request do
     { sign_up: { name: member.display_name, email: member.email, user_id: member.id.to_s, course_id: course.id.to_s } }
   end
 
-  # Finding G25: sign-up edit/update/manually have no authorization. Remove the pending flag once fixed.
-  PENDING_SIGN_UP_AUTHZ = 'G25: sign-up edit/update/manually are not authorized'
-  # Finding G26: send_email, cancel_cash_payment and destroy raise NoMethodError for users without the events role.
-  PENDING_SIGN_UP_DENY = 'G26: denied branch dereferences a nil sign_up'
-
   before { ActiveJob::Base.queue_adapter = :test }
 
   describe 'POST create' do
@@ -195,14 +190,14 @@ RSpec.describe 'Training::Supplementary::SignUpsController', type: :request do
 
     before { sign_in other_member }
 
-    it 'does not let a plain member send the payment-link mail', pending: PENDING_SIGN_UP_DENY do
+    it 'does not let a plain member send the payment-link mail' do
       expect { put send_email_supplementary_sign_up_path(sign_up) }
         .not_to have_enqueued_mail(Training::Supplementary::SignUpMailer, :sign_up)
 
       expect(response).to have_http_status(:redirect)
     end
 
-    it 'does not let a plain member cancel a cash payment', pending: PENDING_SIGN_UP_DENY do
+    it 'does not let a plain member cancel a cash payment' do
       sign_up.payment.update!(cash: true, state: 'prepaid')
 
       put cancel_cash_payment_supplementary_sign_up_path(sign_up)
@@ -211,25 +206,71 @@ RSpec.describe 'Training::Supplementary::SignUpsController', type: :request do
       expect(response).to have_http_status(:redirect)
     end
 
-    it 'does not let a plain member destroy a sign-up', pending: PENDING_SIGN_UP_DENY do
+    it 'does not let a plain member destroy a sign-up' do
       expect { delete supplementary_sign_up_path(sign_up) }
         .not_to change(Training::Supplementary::SignUpRecord, :count)
 
       expect(response).to have_http_status(:redirect)
     end
 
-    it 'does not let a plain member sign somebody up manually', pending: PENDING_SIGN_UP_AUTHZ do
+    it 'does not let a plain member sign somebody up manually' do
       expect do
         put manually_supplementary_sign_ups_path,
           params: { manually_sign_up: { name: 'Obcy', email: 'obcy@example.com', course_id: course.id.to_s, link_payment: '1' } }
       end.not_to change(Training::Supplementary::SignUpRecord, :count)
     end
 
-    it "does not let a plain member change somebody else's sign-up", pending: PENDING_SIGN_UP_AUTHZ do
+    it "does not let a plain member change somebody else's sign-up" do
       put supplementary_sign_up_path(sign_up),
         params: { sign_up: { name: 'Zmienione', email: 'zmienione@example.com', course_id: course.id.to_s } }
 
       expect(sign_up.reload.email).to eq('gosc@example.com')
+    end
+
+    it 'does not let a plain member open the edit form of a sign-up' do
+      get edit_supplementary_sign_up_path(sign_up)
+
+      expect(response).to have_http_status(:redirect)
+    end
+
+    it 'does not let anonymous visitors change, destroy or manage sign-ups' do
+      sign_out other_member
+
+      put supplementary_sign_up_path(sign_up), params: { sign_up: { name: 'X', email: 'x@example.com', course_id: course.id.to_s } }
+      expect(sign_up.reload.email).to eq('gosc@example.com')
+
+      expect { delete supplementary_sign_up_path(sign_up) }.not_to change(Training::Supplementary::SignUpRecord, :count)
+      expect { put send_email_supplementary_sign_up_path(sign_up) }
+        .not_to have_enqueued_mail(Training::Supplementary::SignUpMailer, :sign_up)
+      expect(response).to have_http_status(:redirect)
+    end
+
+    context 'when the user organises the course' do
+      before { course.update!(organizator_id: other_member.id) }
+
+      it 'lets them sign a participant up manually' do
+        expect do
+          put manually_supplementary_sign_ups_path,
+            params: { manually_sign_up: { name: 'Obcy', email: 'obcy@example.com', course_id: course.id.to_s, link_payment: '1' } }
+        end.to change(Training::Supplementary::SignUpRecord, :count).by(1)
+      end
+
+      it 'lets them edit a sign-up of their own course' do
+        put supplementary_sign_up_path(sign_up),
+          params: { sign_up: { name: 'Zmienione', email: 'zmienione@example.com', course_id: course.id.to_s } }
+
+        expect(sign_up.reload.email).to eq('zmienione@example.com')
+      end
+
+      it 'does not let them touch sign-ups of a course they do not organise' do
+        elsewhere = Training::Supplementary::CourseRecord.create!(name: 'Inny', place: 'X', state: :published, payment_type: :trainings)
+        foreign = Training::Supplementary::Repository.new
+          .sign_up!(name: 'Obcy', email: 'obcy2@example.com', user_id: nil, course_id: elsewhere.id, question: nil)
+
+        put supplementary_sign_up_path(foreign), params: { sign_up: { name: 'Z', email: 'z@example.com', course_id: elsewhere.id.to_s } }
+
+        expect(foreign.reload.email).to eq('obcy2@example.com')
+      end
     end
   end
 end

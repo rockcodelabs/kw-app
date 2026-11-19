@@ -23,8 +23,6 @@ RSpec.describe 'Payments flow', type: :request do
   PENDING_G23_UNSIGNED = 'G23: unsigned Dotpay callback marks a payment paid'
   # Finding G23b: an unknown control value raises NoMethodError (HTTP 500) instead of a clean response.
   PENDING_G23_UNKNOWN = 'G23b: unknown control raises instead of answering cleanly'
-  # Finding G27: refund has no authentication or authorization.
-  PENDING_G27_REFUND = 'G27: refund is not authenticated or authorized'
 
   before { ActiveJob::Base.queue_adapter = :test }
 
@@ -145,10 +143,37 @@ RSpec.describe 'Payments flow', type: :request do
   end
 
   describe 'POST refund' do
-    it 'does not call Dotpay for an anonymous visitor', pending: PENDING_G27_REFUND do
+    it 'does not call Dotpay for an anonymous visitor' do
       expect(Payments::Dotpay::GetOperationRequest).not_to receive(:new)
 
       post refund_payment_path(payment)
+
+      expect(response).to have_http_status(:redirect)
+      expect(payment.reload.refunded_at).to be_nil
+    end
+
+    it 'does not call Dotpay for a plain member' do
+      sign_in member
+      expect(Payments::Dotpay::GetOperationRequest).not_to receive(:new)
+
+      post refund_payment_path(payment)
+
+      expect(flash[:alert]).to eq('Nie masz uprawnień')
+      expect(payment.reload.refunded_at).to be_nil
+    end
+
+    it 'refunds through Dotpay for an events user' do
+      sign_in events_user
+      payment.update!(state: 'prepaid')
+      lookup = instance_double(Payments::Dotpay::GetOperationRequest, execute: Success.new({ 'results' => [{ 'number' => 'OP1' }] }.to_json))
+      refund = instance_double(Payments::Dotpay::RefundPaymentRequest, execute: Success.new)
+      allow(Payments::Dotpay::GetOperationRequest).to receive(:new).with(code: payment.dotpay_id).and_return(lookup)
+      allow(Payments::Dotpay::RefundPaymentRequest).to receive(:new).with(code: 'OP1').and_return(refund)
+
+      post refund_payment_path(payment)
+
+      expect(flash[:notice]).to eq('Zwrócono')
+      expect(payment.reload.refunded_at).to be_present
     end
   end
 end

@@ -66,6 +66,7 @@ class Ability
     can :index, Training::Activities::ContractRecord
     can :read, Training::Supplementary::CourseRecord
     can :index, Training::Supplementary::CourseRecord
+    can :update, Training::Supplementary::CourseRecord, organizator_id: user.id
     can :create, Settlement::ContractorRecord
 
     can :create, Db::Profile
@@ -114,7 +115,7 @@ class Ability
   end
 
   def admin
-    can :create, Training::Supplementary::CourseRecord
+    can %i[create update destroy], Training::Supplementary::CourseRecord
     can :manage, Db::User
     can :manage, Db::Profile
     can :manage, Events::Db::SignUpRecord

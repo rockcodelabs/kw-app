@@ -19,6 +19,8 @@ module Training
       end
 
       def new
+        authorize! :create, Training::Supplementary::CourseRecord
+
         if params[:dup]
           @course = Training::Supplementary::CourseRecord.new(course_params)
         else
@@ -46,9 +48,12 @@ module Training
 
       def edit
         @course = Training::Supplementary::CourseRecord.friendly.find(params[:id])
+        authorize! :update, @course
       end
 
       def create
+        authorize! :create, Training::Supplementary::CourseRecord
+
         case create_record
         in Success()
           redirect_to wydarzenia_path, flash: { notice: 'Utworzono wydarzenie' }
@@ -64,6 +69,7 @@ module Training
 
       def update
         @course = Training::Supplementary::CourseRecord.friendly.find(params[:id])
+        authorize! :update, @course
 
         if @course.update(course_params)
           redirect_to edit_supplementary_course_path(@course.id), notice: 'Course updated'
@@ -74,6 +80,7 @@ module Training
 
       def destroy
         @course = Training::Supplementary::CourseRecord.friendly.find(params[:id])
+        authorize! :destroy, @course
         if @course.destroy
           redirect_to supplementary_courses_path, notice: 'Course destroyed'
         else

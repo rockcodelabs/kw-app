@@ -10,6 +10,7 @@
   loop:
     - 90-hardening.conf
     - 91-lynis.conf
+    - 92-redis.conf
   notify: Reload sysctl
 
 - name: Blacklist unused network and storage kernel modules

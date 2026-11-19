@@ -1,5 +1,3 @@
-desc "This task is called by the Heroku scheduler add-on"
-
 # Every scheduled task reports to healthchecks.io through Healthchecks::Monitored (ENV: HC_PING_KEY,
 # HC_PING_PREFIX; set only on the production cron role). The tasks below the scheduled ones are dead
 # code (A.2 in docs/NEW_PRODUCTION_PLAN.md) and report nothing.
@@ -12,19 +10,6 @@ task :send_prepaid_emails => :environment do
                                candidates: -> { Training::Supplementary::SendPrepaidEmail.new.candidates.to_a.size }) do
     Training::Supplementary::SendPrepaidEmail.new.send_prepaid_emails
   end
-end
-
-task :store_shmu => :environment do
-  Scrappers::Shmu.new.call
-end
-
-task :store_topr => :environment do
-  Scrappers::Topr.new.call
-end
-
-task :store_weather => :environment do
-  Scrappers::Meteoblue.new.call
-  Scrappers::WeatherStorage.new.call
 end
 
 task :send_reminders => :environment do
@@ -57,7 +42,7 @@ end
 task :destroy_expired_events_sign_ups => :environment do
   expired_sign_ups = Events::Competitions::Repository.new.expired_sign_ups
   expired_sign_ups.each do |sign_up|
-    Events::Competitions::Worker::DestroyExpiredSignUpWorker.perform_async(sign_up.id)
+    Events::Competitions::Workers::DestroyExpiredEventSignUpWorker.perform_async(sign_up.id)
   end
 end
 

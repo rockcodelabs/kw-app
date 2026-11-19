@@ -28,8 +28,6 @@ module Marketing
     mount_uploaders :attachments, Management::AttachmentUploader
     serialize :attachments, JSON
 
-    mount_uploader :image, Scrappers::ImageUploader
-
     friendly_id :slug_candidates, use: :slugged
 
     belongs_to :contractor, class_name: 'Settlement::ContractorRecord'

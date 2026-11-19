@@ -134,10 +134,6 @@
 #                                               PATCH    /exercises/:id(.:format)                                                                 training/bluebook/exercises#update
 #                                               PUT      /exercises/:id(.:format)                                                                 training/bluebook/exercises#update
 #                                               DELETE   /exercises/:id(.:format)                                                                 training/bluebook/exercises#destroy
-#                                     scrappers GET      /warunki(.:format)                                                                       scrappers/scrappers#index
-#                                        graphs GET      /graphs(.:format)                                                                        scrappers/graphs#index
-#                           api_pogodynka_index GET      /api/pogodynka(.:format)                                                                 scrappers/api/pogodynka#index
-#                           api_meteoblue_index GET      /api/meteoblue(.:format)                                                                 scrappers/api/meteoblue#index
 #                    mark_as_read_notifications POST     /notifications/mark_as_read(.:format)                                                    notification_center/notifications#mark_as_read
 #                                 notifications GET      /notifications(.:format)                                                                 notification_center/notifications#index
 #                               email_processor POST     /email_processor(.:format)                                                               griddler/emails#create
@@ -639,7 +635,6 @@
 #                                   pages_rules GET      /pages/rules(.:format)                                                                   pages#show {:id=>"rules"}
 #                                          page GET      /pages/*id                                                                               pages#show
 #                                 admin_dostepy GET      /admin/dostepy(.:format)                                                                 pages#show {:id=>"roles"}
-#                                       warunki GET      /warunki(.:format)                                                                       scrappers/scrappers#index
 #                                 trening_skimo GET      /trening/skimo(.:format)                                                                 pages#show {:id=>"skimo"}
 #                                          root GET      /                                                                                        pages#show {:id=>"home"}
 #                            rails_service_blob GET      /rails/active_storage/blobs/:signed_id/*filename(.:format)                               active_storage/blobs#show
@@ -809,7 +804,6 @@ Rails.application.routes.draw do
   get 'pages/rules' => 'pages#show', id: 'rules'
   get "pages/*id" => 'pages#show', as: :page, format: false
   get 'admin/dostepy' => 'pages#show', id: 'roles'
-  get 'warunki' => 'scrappers/scrappers#index'
   get 'trening/skimo' => 'pages#show', id: 'skimo'
 
   get '/up', to: 'health_check#show'

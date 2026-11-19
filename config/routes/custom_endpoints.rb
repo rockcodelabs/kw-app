@@ -171,15 +171,6 @@ get 'wydarzenia/*id' => 'training/supplementary/courses#show', as: :polish_event
 get 'wydarzenia/*slug' => 'training/supplementary/courses#show', as: :polish_event_slug
 get 'wydarzenie/wypisz/*code' => 'training/supplementary/sign_ups#cancel', as: :polish_event_cancel
 
-scope module: 'scrappers' do
-  resources :scrappers, path: 'warunki', only: :index
-  resources :graphs, only: :index
-  namespace :api do
-    resources :pogodynka, only: [:index]
-    resources :meteoblue, only: [:index]
-  end
-end
-
 scope module: 'marketing' do
   resources :sponsorship_requests
   resources :discounts, path: 'rabaty'

@@ -8,10 +8,6 @@ every '*/30 8-23 * * *' do
   rake :fill_empty_places
 end
 
-every 6.hours do
-  #rake :store_topr
-end
-
 every '30 4 * * *' do
   rake :send_reminders
   rake :open_conversations

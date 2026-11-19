@@ -73,7 +73,6 @@ class Ability
     can :manage, Management::Snw::SnwApplyRecord, kw_id: user.kw_id
     can :read, Management::Voting::CaseRecord, state: ['unactive', 'voting', 'finished'], hidden: false
     can :index, Management::Voting::CaseRecord, state: ['unactive', 'voting', 'finished'], hidden: false
-    can :read, Scrappers::ShmuRecord
     can :manage, Management::ProjectRecord, project_users: { user_id: user.id }
     can :see_user_name, Db::User
     can :create, Settlement::ContractRecord

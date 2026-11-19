@@ -64,7 +64,8 @@ module Activities
         meters = user
           .mountain_routes
           .where(route_type: 'regular_climbing')
-          .where.not(length: nil, difficulty: ClimbingRepository::EXCLUDED_DIFFICULTY)
+          .where.not(length: nil)
+          .where.not(difficulty: ClimbingRepository::EXCLUDED_DIFFICULTY)
           .where(climbing_date: season_range_for(season_year))
           .sum(:length)
           .to_i
@@ -79,7 +80,8 @@ module Activities
         .mountain_routes
         .includes(:photos)
         .where(route_type: 'regular_climbing')
-        .where.not(length: nil, difficulty: ClimbingRepository::EXCLUDED_DIFFICULTY)
+        .where.not(length: nil)
+        .where.not(difficulty: ClimbingRepository::EXCLUDED_DIFFICULTY)
         .where(climbing_date: range)
         .to_a
     end

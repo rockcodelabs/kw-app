@@ -28,7 +28,8 @@ module Activities
     def available_years
       years = ::Db::Activities::MountainRoute
         .where(route_type: route_type)
-        .where.not(length: nil, difficulty: EXCLUDED_DIFFICULTY)
+        .where.not(length: nil)
+        .where.not(difficulty: EXCLUDED_DIFFICULTY)
         .where('EXTRACT(MONTH FROM climbing_date) BETWEEN ? AND ?', SEASON_START_MONTH, SEASON_END_MONTH)
         .distinct
         .pluck(Arel.sql('EXTRACT(YEAR FROM climbing_date)::int'))
@@ -85,7 +86,9 @@ module Activities
 
     def best_route_of_season
       ::Db::Activities::MountainRoute
-        .where.not(id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY)
+        .where.not(id: nil)
+        .where.not(length: nil)
+        .where.not(difficulty: EXCLUDED_DIFFICULTY)
         .where(route_type: route_type, climbing_date: range, created_at: range)
         .select('id, name, slug, MAX(hearts_count) AS max_mountain_routes_hearts_count')
         .group(:id)
@@ -95,7 +98,9 @@ module Activities
     def best_of_season
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
+        .where.not(mountain_routes: { difficulty: EXCLUDED_DIFFICULTY })
         .where(climbing_boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range })
         .select('users.kw_id, users.id, users.avatar, SUM(mountain_routes.hearts_count) AS total_mountain_routes_hearts_count')
         .group(:id)
@@ -105,7 +110,9 @@ module Activities
     def tatra_uniqe
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
+        .where.not(mountain_routes: { difficulty: EXCLUDED_DIFFICULTY })
         .where(climbing_boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range })
         .where("mountain_routes.description LIKE ?", "%#exploratortatr%").uniq
         .sort_by { |u| u.mountain_routes.where("description LIKE '%#exploratortatr%'").count }.reverse!
@@ -128,7 +135,9 @@ module Activities
       users = ::Db::User
         .where(climbing_boars: true)
         .includes(:profile, mountain_routes: :photos)
-        .where.not(mountain_routes: { id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
+        .where.not(mountain_routes: { difficulty: EXCLUDED_DIFFICULTY })
         .where(mountain_routes: { route_type: route_type, climbing_date: climbing_range, created_at: created_range })
 
       users.map do |user|
@@ -168,7 +177,8 @@ module Activities
 
       routes = ::Db::Activities::MountainRoute
         .includes(:colleagues)
-        .where.not(length: nil, difficulty: EXCLUDED_DIFFICULTY)
+        .where.not(length: nil)
+        .where.not(difficulty: EXCLUDED_DIFFICULTY)
         .where(route_type: route_type, climbing_date: climbing_range, created_at: created_range)
 
       pairs = {}
@@ -194,7 +204,9 @@ module Activities
       ::Db::User
         .joins(:mountain_routes)
         .where(climbing_boars: true)
-        .where.not(mountain_routes: { id: nil, length: nil, difficulty: EXCLUDED_DIFFICULTY })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
+        .where.not(mountain_routes: { difficulty: EXCLUDED_DIFFICULTY })
         .where(mountain_routes: { route_type: route_type, climbing_date: climbing_range, created_at: created_range })
         .select('users.id, users.kw_id, users.avatar, users.first_name, users.last_name, SUM(mountain_routes.length) AS total_length')
         .group('users.id')

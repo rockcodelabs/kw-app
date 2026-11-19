@@ -41,7 +41,7 @@ deploy_timeout: 300
 
 proxy:
   ssl: true
-  host: nowypanel.kw.krakow.pl
+  host: panel.kw.krakow.pl
   forward_headers: true
   buffering:
     requests: true
@@ -51,7 +51,7 @@ env:
   clear:
     RAILS_ENV: production
     RACK_ENV: production
-    ASSET_HOST: https://nowypanel.kw.krakow.pl
+    ASSET_HOST: https://panel.kw.krakow.pl
     REDIS_URL_SIDEKIQ: redis://kw-app-redis:6379/1
     POSTGRES_USER: production_user
     POSTGRES_DB: kw_app_production

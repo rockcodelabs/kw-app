@@ -78,7 +78,7 @@ Rails.application.configure do
   # config.active_job.queue_adapter     = :resque
   # config.active_job.queue_name_prefix = "kw_app_#{Rails.env}"
   config.action_mailer.perform_caching = false
-  config.action_mailer.default_url_options = { host: 'https://nowypanel.kw.krakow.pl' }
+  config.action_mailer.default_url_options = { host: 'https://panel.kw.krakow.pl' }
   config.action_mailer.delivery_method = :mailgun
   config.action_mailer.mailgun_settings = {
     api_key: ENV.fetch('MAILGUN_API_KEY') { Rails.application.credentials.dig(:mailgun, :api_key) },
@@ -109,4 +109,4 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 end
-Rails.application.routes.default_url_options[:host] = 'https://nowypanel.kw.krakow.pl'
+Rails.application.routes.default_url_options[:host] = 'https://panel.kw.krakow.pl'

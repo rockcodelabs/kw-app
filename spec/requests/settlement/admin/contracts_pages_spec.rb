@@ -77,6 +77,14 @@ RSpec.describe 'Settlement::Admin::ContractsController pages', type: :request do
       end
     end
 
+    it 'falls back to the default state order for a malformed custom_state sort' do
+      sign_in office_king
+
+      get admin_contracts_path, params: { q: { s: 'custom_state bogus' } }
+
+      expect(response).to have_http_status(:ok)
+    end
+
     it 'exports the list to xlsx' do
       sign_in office_king
 

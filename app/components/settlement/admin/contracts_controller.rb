@@ -142,6 +142,7 @@ module Settlement
         authorize! :accept, Settlement::ContractRecord
 
         return redirect_to edit_admin_contract_path(contract.id), alert: "Wypełnij pola Sekcja, Aktywność i Impreza" unless contract.activity_type && contract.group_type && contract.event_type
+        return transition_not_allowed(contract) unless contract.can_accept?
 
         contract.update(checker_id: current_user.id)
         contract.accept!
@@ -172,6 +173,7 @@ module Settlement
         authorize! :prepayment, Settlement::ContractRecord
 
         return redirect_to edit_admin_contract_path(contract.id), alert: "Wypełnij pola Sekcja, Aktywność i Impreza" unless contract.activity_type && contract.group_type && contract.event_type
+        return transition_not_allowed(contract) unless contract.can_prepayment?
 
         contract.prepayment!
         contract.update(acceptor_id: current_user.id, preclosed_date: Time.current)
@@ -201,7 +203,9 @@ module Settlement
 
         return redirect_to edit_admin_contract_path(contract.id), alert: "Wypełnij pola Rodzaj wydatku, Obszar i Rodzaj działalności" unless contract.substantive_type && contract.area_type && contract.payout_type
 
-        contract.finish! if contract.preclosed?
+        return transition_not_allowed(contract) unless contract.preclosed?
+
+        contract.finish!
         contract.update(closer_id: current_user.id)
         ::Settlement::ContractMailer.state_changed(contract).deliver_later
 
@@ -212,6 +216,10 @@ module Settlement
       end
 
       private
+
+      def transition_not_allowed(contract)
+        redirect_to admin_contract_path(contract.id), alert: 'Ta akcja nie jest możliwa dla rozliczenia w obecnym stanie.'
+      end
 
       def create_record
         Settlement::CreateContract.new(

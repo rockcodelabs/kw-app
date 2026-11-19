@@ -7,18 +7,20 @@
 #
 # Safety model:
 #   * refuses to run unless Rails.env == staging, with ONE exception: Rails.env == production is
-#     accepted only when HARNESS_ALLOW_PRODUCTION=rehearsal is passed explicitly. That is for the P7
-#     rehearsal host (prod data copy, no real traffic). Never pass it after the cutover (P8).
+#     accepted only when HARNESS_ALLOW_PRODUCTION=yes is passed explicitly (P7 rehearsal dry run and the
+#     post-flip check after P8, see bin/post-deploy-check). Production runs are safe because of the
+#     measures below; on a live database the row-count comparison is replaced by a leftover check.
 #   * every write happens inside ONE transaction that is always rolled back
 #   * ActiveJob -> :test adapter, ActionMailer -> :test (no Mailgun, no Sidekiq)
 #   * refuses to run while AppSignal is active (run with -e APPSIGNAL_ACTIVE=false)
 #   * users are throwaway records (*@example.invalid), logged in via Warden
 #     test mode, so no real credentials are involved
-#   * after rollback the harness verifies that no row counts changed
+#   * after rollback the harness verifies that no throwaway row is left (users *@example.invalid and
+#     records named `stg-check*`); outside production it also verifies that no row counts changed.
+#     Scenarios MUST name every record they create `stg-check ...` so this check can see it.
 
-unless Rails.env.staging? || (Rails.env.production? && ENV['HARNESS_ALLOW_PRODUCTION'] == 'rehearsal')
-  abort 'Refusing to run: Rails.env is not staging (production needs HARNESS_ALLOW_PRODUCTION=rehearsal, ' \
-        'allowed only on the rehearsal host before the cutover)'
+unless Rails.env.staging? || (Rails.env.production? && ENV['HARNESS_ALLOW_PRODUCTION'] == 'yes')
+  abort 'Refusing to run: Rails.env is not staging (production needs HARNESS_ALLOW_PRODUCTION=yes)'
 end
 
 require 'securerandom'
@@ -70,7 +72,7 @@ module StagingHarness
       @label = label
       @user = user
       @session = ActionDispatch::Integration::Session.new(Rails.application)
-      @session.host! ENV.fetch('HARNESS_HOST', Rails.env.production? ? 'nowypanel.kw.krakow.pl' : 'staging-check.local')
+      @session.host! ENV.fetch('HARNESS_HOST', Rails.env.production? ? 'panel.kw.krakow.pl' : 'staging-check.local')
       @session.https! if Rails.env.production?
     end
 
@@ -125,8 +127,7 @@ module StagingHarness
         puts e.backtrace.first(8).map { |l| "     #{l}" }
       end
 
-      after = snapshot
-      check('rollback left no data behind', after, before)
+      verify_rollback(before)
       summarize
     end
 
@@ -245,6 +246,10 @@ module StagingHarness
       ActionMailer::Base.delivery_method = :test
       ActionMailer::Base.perform_deliveries = false
       ActionController::Base.allow_forgery_protection = false
+      # Same behaviour on every host: an exception becomes a 500 response and is exposed via
+      # Response#exception instead of propagating into the scenario (the test env disables this).
+      Rails.application.env_config['action_dispatch.show_exceptions'] = true
+      Rails.application.env_config['action_dispatch.show_detailed_exceptions'] = false
       Warden.test_mode!
       Membership::Activement.prepend(ActiveOverride) unless Membership::Activement.ancestors.include?(ActiveOverride)
 
@@ -256,6 +261,26 @@ module StagingHarness
 
     def snapshot
       TRACKED_MODELS.to_h { |name| [name, name.constantize.unscoped.count] }
+    end
+
+    # Rows that only the harness creates. Must be empty after the rollback, on every host.
+    def leftovers
+      {
+        'users' => Db::User.where('email LIKE ?', "%@#{EMAIL_DOMAIN}").count,
+        'courses' => Training::Supplementary::CourseRecord.where("name LIKE 'stg-check%'").count,
+        'sign-ups' => Training::Supplementary::SignUpRecord.where("email LIKE '%@#{EMAIL_DOMAIN}'").count,
+        'contracts' => Settlement::ContractRecord.where("title LIKE 'stg-check%'").count,
+        'items' => Db::Item.where("display_name LIKE 'stg-check%'").count
+      }
+    end
+
+    def verify_rollback(before)
+      check('rollback left no throwaway rows behind', leftovers.select { |_, n| n.positive? }, {})
+      if Rails.env.production?
+        info('row counts', 'not compared on production (live traffic may change them)')
+      else
+        check('rollback left no data behind', snapshot, before)
+      end
     end
 
     def summarize

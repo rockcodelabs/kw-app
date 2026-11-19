@@ -65,6 +65,19 @@ RSpec.describe 'Settlement::Admin::ContractsController workflow', type: :request
 
       expect(contract.reload.state).to eq('new')
     end
+
+    it 'handles accepting an already accepted contract (double click) without an error or a changed checker' do
+      sign_in office_king
+      contract.accept!
+      contract.update!(checker_id: financial.id)
+
+      put accept_admin_contract_path(contract)
+
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to be_present
+      expect(contract.reload.state).to eq('accepted')
+      expect(contract.checker_id).to eq(financial.id)
+    end
   end
 
   describe 'PUT prepayment' do
@@ -90,6 +103,19 @@ RSpec.describe 'Settlement::Admin::ContractsController workflow', type: :request
       put prepayment_admin_contract_path(contract)
 
       expect(contract.reload.state).to eq('accepted')
+    end
+
+    it 'handles prepayment of a contract that is not accepted without an error or stamps' do
+      sign_in financial
+      fresh = build_contract(**classification, internal_number: 12, document_number: 'FV/12')
+
+      put prepayment_admin_contract_path(fresh)
+
+      expect(response).to have_http_status(:redirect)
+      expect(flash[:alert]).to be_present
+      fresh.reload
+      expect(fresh.state).to eq('new')
+      expect(fresh.acceptor_id).to be_nil
     end
   end
 
@@ -123,6 +149,18 @@ RSpec.describe 'Settlement::Admin::ContractsController workflow', type: :request
 
       expect(incomplete.reload.state).to eq('preclosed')
       expect(flash[:alert]).to include('Wypełnij pola')
+    end
+
+    it 'does not record a closer when the contract is not preclosed' do
+      sign_in office_king
+      accepted = build_contract(**classification, **finish_classification, internal_number: 13, document_number: 'FV/13')
+      accepted.accept!
+
+      put finish_admin_contract_path(accepted)
+
+      accepted.reload
+      expect(accepted.state).to eq('accepted')
+      expect(accepted.closer_id).to be_nil
     end
 
     it 'denies a user without the finish ability' do

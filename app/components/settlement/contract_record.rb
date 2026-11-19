@@ -89,7 +89,7 @@ module Settlement
 
     scope :order_by_state, -> (status_order) {
       order_by = ['CASE']
-      STATUSES_ORDER_MAP[status_order].each_with_index do |status, index|
+      STATUSES_ORDER_MAP.fetch(status_order, STATUS_ASC_ORDERS).each_with_index do |status, index|
         order_by << "WHEN state='#{status}' THEN #{index}"
       end
       order_by << 'END'

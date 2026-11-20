@@ -1,0 +1,5 @@
+# Managed by Ansible (roles/base). Upgrades run in the quiet window, not during member hours.
+[Timer]
+OnCalendar=
+OnCalendar={{ base_apt_upgrade_calendar }}
+RandomizedDelaySec=20m

@@ -9,7 +9,8 @@ module Activities
       range_created_at = Time.now.prev_month.beginning_of_month..(Time.now.prev_month.end_of_month + 3.days)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(boars: true, mountain_routes: { route_type: route_type, climbing_date: range_climbing_date, created_at: range_created_at })
         .select('users.kw_id, users.id, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -26,7 +27,8 @@ module Activities
       range_created_at = specific_date.beginning_of_month..(specific_date.end_of_month + 3.days)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(gender: gender, boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range_created_at })
         .select('users.kw_id, users.id, users.first_name, users.last_name, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -43,7 +45,8 @@ module Activities
       range_created_at = specific_date.beginning_of_month..(specific_date.end_of_month + 3.days)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range_created_at })
         .select('users.kw_id, users.id, users.first_name, users.last_name, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -54,7 +57,8 @@ module Activities
       range = Time.now.beginning_of_month..Time.now.end_of_month
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range })
         .select('users.kw_id, users.id, users.first_name, users.last_name, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -68,7 +72,8 @@ module Activities
       prolonged_range = start_day..DateTime.new(year, 5, 3)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(gender: gender, boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: prolonged_range })
         .select('users.kw_id, users.gender, users.id, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -80,7 +85,8 @@ module Activities
       range_created_at = start_day..(DateTime.new(year, 2, 28) + 3.days)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(gender: gender, boars: true, mountain_routes: { route_type: route_type, climbing_date: range_climbing_date, created_at: range_created_at })
         .select('users.kw_id, users.id, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -92,7 +98,8 @@ module Activities
       range_created_at = DateTime.new(year, 3, 1)..(end_day + 4.days)
       ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(gender: gender, boars: true, mountain_routes: { route_type: route_type, climbing_date: range_climbing_date, created_at: range_created_at })
         .select('users.kw_id, users.id, users.avatar, SUM(mountain_routes.boar_length) AS total_mountain_routes_length')
         .group(:id)
@@ -102,7 +109,8 @@ module Activities
       range = start_date..end_date
       us = ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range })
         .select('users.kw_id, users.id, users.avatar, MAX(mountain_routes.hearts_count) AS max_mountain_routes_hearts_count')
         .group(:id)
@@ -114,7 +122,8 @@ module Activities
       range_created_at = start_date..(end_date + 4.days)
       us = ::Db::User
         .joins(:mountain_routes)
-        .where.not(mountain_routes: { id: nil, length: nil })
+        .where.not(mountain_routes: { id: nil })
+        .where.not(mountain_routes: { length: nil })
         .where(boars: true, mountain_routes: { route_type: route_type, climbing_date: range, created_at: range_created_at })
         .select('users.kw_id, users.id, users.avatar, SUM(mountain_routes.hearts_count) AS total_mountain_routes_hearts_count')
         .group(:id)

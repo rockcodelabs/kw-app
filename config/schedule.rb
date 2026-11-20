@@ -5,11 +5,8 @@ set :output, "cron_log.log"
 every '*/30 8-23 * * *' do
   rake :send_prepaid_emails
   rake :destroy_expired_sign_ups
+  rake :destroy_expired_events_sign_ups
   rake :fill_empty_places
-end
-
-every 6.hours do
-  #rake :store_topr
 end
 
 every '30 4 * * *' do

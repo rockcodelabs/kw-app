@@ -374,7 +374,7 @@ zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal <command> -d <env>
 ## Additional Resources
 
 - **Kamal Docs**: https://kamal-deploy.org/
-- **kw-app Ansible Setup**: `ansible/README.md`
+- **kw-app host layer (Ansible)**: `ansible/README.md`
 - **Server Provisioning**: `ansible/playbooks/`
 - **Deploy Configs**: `config/deploy.*.yml`
 

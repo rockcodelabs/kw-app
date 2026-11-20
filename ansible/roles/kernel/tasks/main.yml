@@ -1,0 +1,64 @@
+---
+# Must run AFTER the docker role: the audit rules watch /etc/docker and /run/docker.sock.
+- name: Sysctl hardening files
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/sysctl.d/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - 90-hardening.conf
+    - 91-lynis.conf
+    - 92-redis.conf
+  notify: Reload sysctl
+
+- name: Blacklist unused network and storage kernel modules
+  ansible.builtin.copy:
+    src: kw-blacklist.conf
+    dest: /etc/modprobe.d/kw-blacklist.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install auditd
+  ansible.builtin.apt:
+    name: auditd
+    state: present
+
+- name: Audit rules (identity, ssh, sudo, docker; not immutable)
+  ansible.builtin.copy:
+    src: kw.rules
+    dest: /etc/audit/rules.d/kw.rules
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Load audit rules
+
+# Caps so the audit log can never fill the disk (read with: ausearch -k <key> -ts this-week)
+- name: Cap the audit log size
+  ansible.builtin.lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
+  loop:
+    - { key: max_log_file, value: "20" }
+    - { key: num_logs, value: "5" }
+    - { key: max_log_file_action, value: ROTATE }
+    - { key: space_left_action, value: syslog }
+  notify: Load audit rules
+
+- name: Enable auditd
+  ansible.builtin.service:
+    name: auditd
+    enabled: true
+    state: started
+
+- name: Journald limits
+  ansible.builtin.copy:
+    src: 10-kw.conf
+    dest: /etc/systemd/journald.conf.d/10-kw.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart journald

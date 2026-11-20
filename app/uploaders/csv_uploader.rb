@@ -5,7 +5,7 @@ class CsvUploader < CarrierWave::Uploader::Base
     "uploads/csv/#{mounted_as}"
   end
 
-  def extension_whitelist
+  def extension_allowlist
     %w(csv)
   end
 end

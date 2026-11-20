@@ -3,11 +3,6 @@
 # It allows Rails.application.secrets to fallback to credentials when a secret is not found
 
 module SecretsCompatibility
-  # Meteoblue
-  def meteoblue_key
-    super.presence || ENV.fetch('METEOBLUE_KEY') { Rails.application.credentials.dig(:meteoblue, :api_key) }
-  end
-  
   # Dotpay
   def dotpay_base_url
     super.presence || Rails.application.credentials.dig(:payment, :dotpay_base_url) || 'https://ssl.dotpay.pl/s2/login/api/v1/'

@@ -1,0 +1,114 @@
+---
+# ---- settings
+- name: Check the settings are filled in
+  ansible.builtin.assert:
+    that:
+      - logs_dir is match('^/[A-Za-z0-9/_.-]+$')
+      - logs_keep_days | string is match('^[0-9]+$')
+      - logs_keep_days | int > 0
+      - logs_service_label is match('^[A-Za-z0-9_.-]+$')
+      - logs_fixed_containers | length > 0
+      - logs_fixed_containers.keys() | select('match', '^[a-z0-9_-]+$') | list | length == logs_fixed_containers | length
+      - logs_fixed_containers.values() | select('match', '^[A-Za-z0-9_.-]+$') | list | length == logs_fixed_containers | length
+      - logs_run_at is match('^[0-9]{2}:[0-9]{2}:[0-9]{2}$')
+      - logs_tz is match('^[A-Za-z0-9_+/-]+$')
+      - logs_hc_slug is match('^[a-z0-9_-]+$')
+      - logs_bws_secret_ids.ping_key | length > 0
+    fail_msg: >-
+      A logs setting is missing or malformed (roles/logs/defaults/main.yml, inventory/group_vars/production.yml).
+
+# ---- secret: read on the controller (laptop) from bws, never stored in the repo or in GitHub
+- name: Read the healthchecks.io ping key from Bitwarden Secrets Manager
+  ansible.builtin.set_fact:
+    logs_secrets:
+      ping_key: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ logs_bws_secret_ids.ping_key ~ ' | jq -er .value') }}"
+  no_log: true
+
+- name: Check the ping key is present and safe to write into a shell-sourced file
+  ansible.builtin.assert:
+    that:
+      - logs_secrets.ping_key is match('^[A-Za-z0-9_-]{16,}$')
+    fail_msg: >-
+      The ping key is missing or has unexpected characters. Check BWS_ACCESS_TOKEN and
+      `bws secret get <id>` for logs_bws_secret_ids (the value is not shown here).
+  no_log: true
+
+# ---- script, directory, settings
+- name: Tools the archive needs
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gzip
+      - tzdata
+    state: present
+
+- name: Archive directory (root:adm, setgid so every new file is readable by adm only)
+  ansible.builtin.file:
+    path: "{{ logs_dir }}"
+    state: directory
+    owner: root
+    group: adm
+    mode: "2750"
+
+- name: Directory for the archive settings
+  ansible.builtin.file:
+    path: /etc/kw-log-archive
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write the archive environment file
+  ansible.builtin.template:
+    src: env.j2
+    dest: /etc/kw-log-archive/env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: Install the archive script
+  ansible.builtin.copy:
+    src: kw-log-archive
+    dest: /usr/local/sbin/kw-log-archive
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Rotate plain .log files in the archive directory
+  ansible.builtin.template:
+    src: logrotate-kw-app.j2
+    dest: /etc/logrotate.d/kw-app
+    owner: root
+    group: root
+    mode: "0644"
+
+# ---- systemd
+- name: Archive service unit
+  ansible.builtin.template:
+    src: kw-log-archive.service.j2
+    dest: /etc/systemd/system/kw-log-archive.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Archive timer unit
+  ansible.builtin.template:
+    src: kw-log-archive.timer.j2
+    dest: /etc/systemd/system/kw-log-archive.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Apply systemd changes before enabling the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the archive timer
+  ansible.builtin.systemd:
+    name: kw-log-archive.timer
+    enabled: true
+    state: started
+  # On the very first --check the unit files do not exist yet, so systemd cannot find the timer.
+  ignore_errors: "{{ ansible_check_mode }}"

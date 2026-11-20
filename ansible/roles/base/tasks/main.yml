@@ -1,0 +1,116 @@
+---
+- name: Refresh the apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  changed_when: false
+
+- name: Full upgrade (fresh host only)
+  ansible.builtin.apt:
+    upgrade: dist
+    autoremove: true
+  when: base_full_upgrade | bool
+
+- name: Install unattended-upgrades and needrestart
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - needrestart
+    state: present
+
+# ---- swap (2 GB, see P1.1)
+- name: Create the swap file
+  ansible.builtin.command: "fallocate -l {{ base_swap_size }} {{ base_swap_file }}"
+  args:
+    creates: "{{ base_swap_file }}"
+
+- name: Restrict swap file permissions
+  ansible.builtin.file:
+    path: "{{ base_swap_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Check whether the swap file is formatted
+  ansible.builtin.command: "blkid -p -s TYPE -o value {{ base_swap_file }}"
+  register: base_swap_type
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Format the swap file
+  ansible.builtin.command: "mkswap {{ base_swap_file }}"
+  changed_when: true
+  when: base_swap_type.stdout | default('') != 'swap'
+
+- name: Persist swap in fstab
+  ansible.posix.mount:
+    path: none
+    src: "{{ base_swap_file }}"
+    fstype: swap
+    opts: sw
+    state: present
+
+- name: List active swap
+  ansible.builtin.command: swapon --noheadings --show=NAME
+  register: base_swap_active
+  changed_when: false
+  check_mode: false
+
+- name: Enable the swap file
+  ansible.builtin.command: "swapon {{ base_swap_file }}"
+  changed_when: true
+  when: base_swap_file not in base_swap_active.stdout_lines
+
+# ---- unattended upgrades and the reboot safety net (P1.6)
+- name: Unattended-upgrades settings
+  ansible.builtin.template:
+    src: 52-kw-unattended.conf.j2
+    dest: /etc/apt/apt.conf.d/52-kw-unattended.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create the apt-daily-upgrade timer drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/apt-daily-upgrade.timer.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Move apt-daily-upgrade into the quiet window
+  ansible.builtin.template:
+    src: apt-daily-upgrade-override.conf.j2
+    dest: /etc/systemd/system/apt-daily-upgrade.timer.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Reboot-if-needed service unit
+  ansible.builtin.template:
+    src: kw-reboot-if-needed.service.j2
+    dest: /etc/systemd/system/kw-reboot-if-needed.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Reboot-if-needed timer unit
+  ansible.builtin.template:
+    src: kw-reboot-if-needed.timer.j2
+    dest: /etc/systemd/system/kw-reboot-if-needed.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Apply systemd changes before enabling the timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the reboot-if-needed timer
+  ansible.builtin.systemd:
+    name: kw-reboot-if-needed.timer
+    enabled: true
+    state: started

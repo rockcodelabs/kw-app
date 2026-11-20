@@ -1,0 +1,13 @@
+#!/bin/sh
+# Docker publishes ports around UFW. From the public interface allow only
+# new TCP connections whose ORIGINAL destination port is 80 or 443.
+set -eu
+IF=$(ip -4 route show default | awk '/default/ {print $5; exit}')
+[ -n "$IF" ] || { echo "no default interface" >&2; exit 1; }
+iptables -N DOCKER-USER 2>/dev/null || true
+iptables -F DOCKER-USER
+iptables -A DOCKER-USER -i "$IF" -m conntrack --ctstate RELATED,ESTABLISHED -j RETURN
+iptables -A DOCKER-USER -i "$IF" -p tcp -m conntrack --ctstate NEW --ctorigdstport 80 -j RETURN
+iptables -A DOCKER-USER -i "$IF" -p tcp -m conntrack --ctstate NEW --ctorigdstport 443 -j RETURN
+iptables -A DOCKER-USER -i "$IF" -j DROP
+iptables -A DOCKER-USER -j RETURN

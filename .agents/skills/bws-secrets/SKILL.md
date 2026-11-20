@@ -22,26 +22,34 @@ Single source of truth for deploy-time secrets. Read/write access verified on 20
 |-------|-------|
 | Project `panel` | `155e4846-7d36-468d-9891-b3da010aaf94` (shared with ~10 other apps: Immich, Nextcloud, Home Assistant, sklep-gor ...) |
 | Auth | `BWS_ACCESS_TOKEN` env var (machine account). The CLI reads it automatically |
-| Naming for new secrets | `kw-app-<env>-<NAME>`, or `kw-app-<NAME>` when shared by all envs |
-| Legacy names (kept - CI and Kamal reference them by UUID) | `staging-master-key`, `staging-postgres-password`, `staging-redis-password`, `registry-username`, `registry-password` |
+| Naming (MANDATORY, the project is shared with ~10 other apps) | every kw-app entry starts with `kw-app-`: `kw-app-<env>-<NAME>`, or `kw-app-<NAME>` when shared by all kw-app envs. Never create unprefixed names |
+| Not ours, never rename | `registry-username`, `registry-password` (Docker Hub `regedarek`, **shared with other apps**; kw-app no longer uses them, it has its own `kw-app-registry-*` token since 2026-11-18) |
+| Renamed 2026-11-18 (UUIDs unchanged) | `staging-master-key` -> `kw-app-staging-master-key`, `staging-postgres-password` -> `kw-app-staging-postgres-password`, `staging-redis-password` -> `kw-app-staging-redis-password` |
 
-Only touch entries that start with `kw-app-`, plus the five legacy names above. The rest belong to other apps.
+Only touch entries that start with `kw-app-`. The rest (including `registry-*`) belong to other apps or are shared.
 
 ### kw-app entries (UUID -> env var Kamal injects)
 
 | bws name | UUID | Env var | Used by |
 |----------|------|---------|---------|
-| `registry-username` | `6e77be63-a052-4594-9585-b3da01100ce9` | `KAMAL_REGISTRY_USERNAME` | both |
-| `registry-password` | `6ff8b019-a3e4-4571-85fc-b3da01106838` | `KAMAL_REGISTRY_PASSWORD` | both |
-| `staging-master-key` | `79cdec0b-a73e-4f31-aabe-b3da0110963a` | `RAILS_MASTER_KEY` | staging |
-| `staging-postgres-password` | `5f418769-a3ee-46d3-87bf-b3da0110cd71` | `POSTGRES_PASSWORD` | staging |
-| `staging-redis-password` | `b4b3b0ce-46fe-4068-a477-b3da0110f721` | `REDIS_PASSWORD` | staging |
+| `kw-app-registry-username` | `196fa1de-77be-49ce-b56e-b50600d4ae49` | `KAMAL_REGISTRY_USERNAME` | both |
+| `kw-app-registry-password` (Docker Hub PAT `kw-app-ci`, Read & Write) | `48c626f5-7997-4694-a7bf-b50600d44ca1` | `KAMAL_REGISTRY_PASSWORD` | both |
+| `kw-app-staging-master-key` | `79cdec0b-a73e-4f31-aabe-b3da0110963a` | `RAILS_MASTER_KEY` | staging |
+| `kw-app-staging-postgres-password` | `5f418769-a3ee-46d3-87bf-b3da0110cd71` | `POSTGRES_PASSWORD` | staging |
+| `kw-app-staging-redis-password` | `b4b3b0ce-46fe-4068-a477-b3da0110f721` | `REDIS_PASSWORD` | staging |
 | `kw-app-production-master-key` | `519419f3-6bb7-4ce6-8132-b3da0119bf76` | `RAILS_MASTER_KEY` | production |
 | `kw-app-production-postgres-password` | `9c80203f-f8c2-4b5d-8d4b-b3da0119d394` | `POSTGRES_PASSWORD` | production |
 | `kw-app-production-redis-password` | `8ca74ff6-e6bd-4884-b45b-b3da0119f2a7` | `REDIS_PASSWORD` | production |
 | `kw-app-production-vps-sudo-password` | `45e88671-20f8-4c23-ae00-b3da011bafdc` | (ansible only) | - |
 | `kw-app-appsignal-push-api-key` | `10b644fb-ce8b-4d58-b0ac-b5050105f27e` | `APPSIGNAL_PUSH_API_KEY` | both |
 | `kw-app-strava-verify-token` | `e48a96fa-0e1a-42b9-9393-b505010605a2` | `STRAVA_VERIFY_TOKEN` | both |
+| `kw-app-backup-token` (S3 access key of OVH user `kw-app-backup`, 32 hex) | `d7004366-1f3e-47db-8586-b5060151c18c` | `AWS_ACCESS_KEY_ID` (backup role) | new prod backups |
+| `kw-app-backup-secret` (S3 secret key, 32 hex) | `52047e27-db76-4e76-898d-b5060151f629` | `AWS_SECRET_ACCESS_KEY` (backup role) | new prod backups |
+| `kw-app-backup-user-id` (OVH user id, informational, not used by restic) | `01053f00-5df2-4bce-bf81-b5060151946a` | - | - |
+| `kw-app-healthchecks-ping-key` (healthchecks.io project `KW App`, ping-only, 22 chars; URL form `https://hc-ping.com/<key>/<slug>`) | `d37a01b2-04bd-44d1-8f96-b5060154a055` | `HC_PING_KEY` (backup role via Ansible; cron role via Kamal: `.kamal/secrets.production`, `servers.cron.env.secret`, `deploy-production.yml`) | new prod backups and cron heartbeats |
+| `kw-app-production-restic-password` (restic repo password; loss = backups unrecoverable, keep a break-glass copy) | `ec37f629-fc33-43c7-bb88-b5060153bc58` | `RESTIC_PASSWORD` (backup role) | new prod backups |
+| `kw-app-production-smtp-user` (Mailgun SMTP login `alerts@kw.krakow.pl`, host alert mail only) | `50369487-bfaa-443d-9b9b-b50700946180` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
+| `kw-app-production-smtp-password` (its password; reset in Mailgun > SMTP Credentials, then `bws secret edit`) | `c084912b-566b-4c49-a516-b507009461ee` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
 
 Not in bws (still in `config/credentials/<env>.yml.enc`, read via `ENV.fetch(..) { credentials.dig(..) }`): Mailgun, OpenStack, Dotpay, Strava client, Google OAuth, `secret_key_base`. To move one: create the bws entry, add it to `.kamal/secrets-common` (or the destination file) **and** to `env.secret` in `config/deploy.yml` + `config/deploy.production.yml`, and add it to the "Get Secrets" step of both deploy workflows.
 

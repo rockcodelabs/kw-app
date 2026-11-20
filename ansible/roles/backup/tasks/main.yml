@@ -1,0 +1,143 @@
+---
+# ---- secrets: read on the controller (laptop) from bws, never stored in the repo or in GitHub
+- name: Read the backup secrets from Bitwarden Secrets Manager
+  ansible.builtin.set_fact:
+    backup_secrets:
+      access_key: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ backup_bws_secret_ids.access_key ~ ' | jq -er .value') }}"
+      secret_key: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ backup_bws_secret_ids.secret_key ~ ' | jq -er .value') }}"
+      restic_password: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ backup_bws_secret_ids.restic_password ~ ' | jq -er .value') }}"
+      ping_key: "{{ lookup('ansible.builtin.pipe', 'bws secret get ' ~ backup_bws_secret_ids.ping_key ~ ' | jq -er .value') }}"
+  no_log: true
+
+- name: Check the secrets are present and safe to write into a shell-sourced file
+  ansible.builtin.assert:
+    that:
+      - backup_secrets | dict2items | map(attribute='value') | select('match', '^[A-Za-z0-9+/=_.-]{16,}$') | list | length == 4
+    fail_msg: >-
+      A backup secret is missing or has unexpected characters. Check BWS_ACCESS_TOKEN and
+      `bws secret get <id>` for the ids in backup_bws_secret_ids (values are not shown here).
+  no_log: true
+
+# ---- packages, directories
+- name: Tools the backup jobs need
+  ansible.builtin.apt:
+    name: [bzip2, curl]
+    state: present
+
+- name: Backup directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: /etc/kw-backup, mode: "0700" }
+    - { path: "{{ backup_dir }}", mode: "0700" }
+    - { path: /var/cache/restic, mode: "0700" }
+    - { path: /usr/local/lib/kw-backup, mode: "0755" }
+    - { path: /usr/local/lib/restic, mode: "0755" }
+
+# ---- restic: pinned version, checksum-verified download
+- name: Download restic {{ backup_restic_version }}
+  ansible.builtin.get_url:
+    url: "https://github.com/restic/restic/releases/download/v{{ backup_restic_version }}/restic_{{ backup_restic_version }}_linux_amd64.bz2"
+    dest: "/usr/local/lib/restic/restic_{{ backup_restic_version }}_linux_amd64.bz2"
+    checksum: "sha256:{{ backup_restic_sha256 }}"
+    owner: root
+    group: root
+    mode: "0644"
+  # On the very first --check the target directory does not exist yet (it is only planned above).
+  ignore_errors: "{{ ansible_check_mode }}"
+
+- name: Unpack restic {{ backup_restic_version }}
+  ansible.builtin.shell: >-
+    bzip2 -dc /usr/local/lib/restic/restic_{{ backup_restic_version }}_linux_amd64.bz2
+    > /usr/local/lib/restic/restic-{{ backup_restic_version }}.tmp
+    && chmod 0755 /usr/local/lib/restic/restic-{{ backup_restic_version }}.tmp
+    && mv /usr/local/lib/restic/restic-{{ backup_restic_version }}.tmp /usr/local/lib/restic/restic-{{ backup_restic_version }}
+  args:
+    creates: "/usr/local/lib/restic/restic-{{ backup_restic_version }}"
+
+- name: Point /usr/local/bin/restic at the pinned version
+  ansible.builtin.file:
+    src: "/usr/local/lib/restic/restic-{{ backup_restic_version }}"
+    dest: /usr/local/bin/restic
+    state: link
+    force: true
+
+# ---- scripts
+- name: Install the shared library of the jobs
+  ansible.builtin.copy:
+    src: kw-backup-lib.sh
+    dest: /usr/local/lib/kw-backup/lib.sh
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the table digest checker (single source is the prod-db-restore skill)
+  ansible.builtin.copy:
+    src: "{{ role_path }}/../../../.agents/skills/prod-db-restore/scripts/table_digest.py"
+    dest: /usr/local/lib/kw-backup/table_digest.py
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the job scripts
+  ansible.builtin.copy:
+    src: "{{ item.name }}"
+    dest: "/usr/local/sbin/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ backup_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Write the backup environment file
+  ansible.builtin.template:
+    src: kw-backup.env.j2
+    dest: /etc/kw-backup/env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+# ---- systemd units and timers
+- name: Job service units
+  ansible.builtin.template:
+    src: kw-job.service.j2
+    dest: "/etc/systemd/system/{{ item.name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ backup_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Reload systemd
+
+- name: Job timer units
+  ansible.builtin.template:
+    src: kw-job.timer.j2
+    dest: "/etc/systemd/system/{{ item.name }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ backup_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  notify: Reload systemd
+
+- name: Apply systemd changes before enabling the timers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the job timers
+  ansible.builtin.systemd:
+    name: "{{ item.name }}.timer"
+    enabled: true
+    state: started
+  loop: "{{ backup_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  # On the very first --check the unit files do not exist yet, so systemd cannot find the timers.
+  ignore_errors: "{{ ansible_check_mode }}"

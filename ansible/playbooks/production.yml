@@ -1,0 +1,37 @@
+---
+# Host layer of the new production VPS. The app itself is deployed by Kamal, not here.
+#   ansible-playbook playbooks/production.yml --check --diff     # dry run, must end with changed=0
+#   ansible-playbook playbooks/production.yml                    # apply
+- name: New production host
+  hosts: production
+  roles:
+    - role: base
+      tags: [base]
+    - role: ssh
+      tags: [ssh]
+    - role: firewall
+      tags: [firewall]
+    - role: fail2ban
+      tags: [fail2ban]
+    # docker before kernel: the audit rules watch /etc/docker and the docker socket
+    - role: docker
+      tags: [docker]
+    - role: kernel
+      tags: [kernel]
+    - role: deploy_user
+      tags: [deploy_user]
+    # needs bws + jq on the machine running ansible and BWS_ACCESS_TOKEN in its environment
+    - role: backup
+      tags: [backup]
+    # needs bws + jq on the machine running ansible; mail_smtp_host / mail_from in group_vars and the SMTP
+    # credentials in bws (see roles/mail/defaults/main.yml)
+    - role: mail
+      tags: [mail]
+    # host self-check timer with a healthchecks.io heartbeat; needs bws + jq on the controller; the check
+    # kw-prod-host-health must exist (roles/monitoring/defaults/main.yml)
+    - role: monitoring
+      tags: [monitoring]
+    # nightly time based archive of container logs (14 days) with a healthchecks.io heartbeat; needs bws + jq on the
+    # controller; the check kw-prod-log-archive must exist (roles/logs/defaults/main.yml)
+    - role: logs
+      tags: [logs]

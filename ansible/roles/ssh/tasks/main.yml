@@ -1,0 +1,16 @@
+---
+- name: Refuse to lock out the account Ansible logs in with
+  ansible.builtin.assert:
+    that:
+      - ansible_user in ssh_allow_users
+    fail_msg: "{{ ansible_user }} must be in ssh_allow_users, otherwise sshd would reject this very session"
+
+- name: Sshd hardening drop-in (validated with sshd -t before it is written)
+  ansible.builtin.template:
+    src: 00-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload sshd

@@ -1,0 +1,12 @@
+# Managed by Ansible (roles/logs). Plain *.log files written into {{ logs_dir }} by other jobs. The gzip archive files
+# written by kw-log-archive end in .log.gz and are removed by that script, not by logrotate.
+# Rotation renames files; it never truncates one in place, because something else may be reading it or have a heartbeat on it.
+{{ logs_dir }}/*.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 root adm
+}

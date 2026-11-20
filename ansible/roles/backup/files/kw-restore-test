@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/backup). Weekly proof that the newest dump really restores:
+# load it into a scratch database, compare every table against the dump, drop the scratch database.
+# Pings healthchecks.io slug kw-prod-restore-test. Prints table names and counts only, never row contents.
+set -euo pipefail
+# shellcheck source=kw-backup-lib.sh
+. "${KW_BACKUP_LIB:-/usr/local/lib/kw-backup/lib.sh}"
+kw_load_env
+kw_start kw-prod-restore-test
+
+[ "$RESTORE_DB" != "$PG_DB" ] || { kw_log "refusing: scratch DB equals the live DB"; exit 2; }
+kw_lock
+
+psql_db() { docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$1" -X -q -At -v ON_ERROR_STOP=1; }
+kw_cleanup() { printf 'DROP DATABASE IF EXISTS %s;\n' "$RESTORE_DB" | psql_db postgres; }
+
+dump=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name '*.sql.gz' | sort | tail -n 1)
+[ -n "$dump" ] || { kw_log "no dump in ${BACKUP_DIR}"; exit 1; }
+kw_log "restore test of $(basename "$dump")"
+(cd "$BACKUP_DIR" && sha256sum -c --quiet "$(basename "$dump").sha256")
+
+printf 'DROP DATABASE IF EXISTS %s;\nCREATE DATABASE %s;\n' "$RESTORE_DB" "$RESTORE_DB" | psql_db postgres
+gzip -dc "$dump" |
+  docker exec -i "$PG_CONTAINER" psql -U "$PG_USER" -d "$RESTORE_DB" -X -q -At -o /dev/null \
+    -v ON_ERROR_STOP=1 --single-transaction
+
+python3 "$KW_TABLE_DIGEST" verify "$dump" \
+  --psql "docker exec -i ${PG_CONTAINER} psql -U ${PG_USER} -d ${RESTORE_DB} -X -q -At"

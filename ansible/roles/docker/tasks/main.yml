@@ -1,0 +1,107 @@
+---
+# Official Docker apt repo (key checked in: fingerprint 9DC858229FC7DD38854AE2D88D81803C0EBFCD88),
+# major version pinned so an unattended upgrade can never jump to a new Docker major.
+- name: Docker repository key
+  ansible.builtin.copy:
+    src: docker.asc
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Docker repository
+  ansible.builtin.template:
+    src: docker.sources.j2
+    dest: /etc/apt/sources.list.d/docker.sources
+    owner: root
+    group: root
+    mode: "0644"
+  register: docker_repo
+
+- name: Pin the Docker major versions
+  ansible.builtin.copy:
+    src: docker-major
+    dest: /etc/apt/preferences.d/docker-major
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Unattended-upgrades may take Docker patch releases
+  ansible.builtin.copy:
+    src: 53-kw-docker-origin.conf
+    dest: /etc/apt/apt.conf.d/53-kw-docker-origin.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Refresh the apt cache after a repository change
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_repo is changed  # noqa: no-handler
+
+# Only the engine: CI builds the images, a server needs neither buildx nor compose.
+- name: Install the Docker engine
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+
+- name: Docker daemon settings (capped local logs, live-restore)
+  ansible.builtin.copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Enable and start docker and containerd
+  ansible.builtin.service:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - containerd
+    - docker
+
+# Docker publishes ports around UFW: only 80/443 may reach containers from the internet.
+- name: DOCKER-USER firewall script
+  ansible.builtin.copy:
+    src: kw-docker-user-fw
+    dest: /usr/local/sbin/kw-docker-user-fw
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: DOCKER-USER firewall unit
+  ansible.builtin.copy:
+    src: kw-docker-user-fw.service
+    dest: /etc/systemd/system/kw-docker-user-fw.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd for docker units
+
+- name: Apply unit changes before enabling the firewall unit
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable the DOCKER-USER firewall unit
+  ansible.builtin.systemd:
+    name: kw-docker-user-fw.service
+    enabled: true
+    state: started
+
+# The network name Kamal expects (config/deploy*.yml)
+- name: Look for the Kamal network
+  ansible.builtin.command: "docker network inspect {{ docker_network_name }}"
+  register: docker_net_inspect
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Create the Kamal network
+  ansible.builtin.command: "docker network create {{ docker_network_name }}"
+  changed_when: true
+  when: docker_net_inspect.rc != 0

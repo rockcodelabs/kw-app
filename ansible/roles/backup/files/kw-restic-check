@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/backup). Weekly integrity check of the off-site restic repository:
+# full structure check plus a re-read of a random slice of the stored data (RESTIC_CHECK_SUBSET).
+# Pings healthchecks.io slug kw-prod-restic-check.
+set -euo pipefail
+# shellcheck source=kw-backup-lib.sh
+. "${KW_BACKUP_LIB:-/usr/local/lib/kw-backup/lib.sh}"
+kw_load_env
+kw_start kw-prod-restic-check
+kw_lock
+
+restic check --read-data-subset="$RESTIC_CHECK_SUBSET"

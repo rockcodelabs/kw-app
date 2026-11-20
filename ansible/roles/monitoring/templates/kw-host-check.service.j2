@@ -1,0 +1,14 @@
+# Managed by Ansible (roles/monitoring). Run by hand: systemctl start kw-host-check.service, read: journalctl -u kw-host-check
+[Unit]
+Description=Host self-check (disk, memory, swap, containers, failed units) with a healthchecks.io heartbeat
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/kw-host-check
+TimeoutStartSec=120
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true

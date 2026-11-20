@@ -89,7 +89,7 @@ Run strict `verify` **before** `migrate`; that is the pure 1:1 proof. After migr
 ## Using this for the old-prod -> new-prod migration
 
 1. Keep prod as the source; do not stop it. For a final cut-over a human must decide on a write freeze and a fresh dump (a new dump on prod is a write: ask first; the nightly 03:15 dump is up to ~24 h old).
-2. `bin/migrate-database-to-new-prod` and `bin/verify-migration` already exist and still target the obsolete `146.59.44.70`; repoint to `51.255.38.227`. Compare their approach with this skill before choosing one.
+2. `bin/migrate-database-to-new-prod` was a broken stub and is deleted; use this skill's scripts. `bin/verify-migration` (row counts on new prod, host from `NEW_PROD_SSH`, default `deploy@51.255.38.227`) can serve as an extra check.
 3. Fill in and verify `profiles/new-prod.env` (container, user, DB, web filter) over a working SSH, run `preflight` then `restore` and `verify` into a scratch DB first, exactly as for staging.
 4. New prod is PG 16 like staging; prod is PG 10.23. Plain-SQL dumps from 10 load fine into 16 (tested).
 5. Also migrate uploaded files (OpenStack container) and decide what to do about Redis. The DB dump alone is not the whole app state.

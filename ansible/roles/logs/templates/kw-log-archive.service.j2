@@ -1,0 +1,15 @@
+# Managed by Ansible (roles/logs). Run by hand: systemctl start kw-log-archive.service (archives yesterday), read: journalctl -u kw-log-archive
+[Unit]
+Description=Daily archive of container logs (yesterday, gzip, 14 days) with a healthchecks.io heartbeat
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/kw-log-archive
+TimeoutStartSec=900
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true

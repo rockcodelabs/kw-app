@@ -6,15 +6,22 @@
 # running staging web container. See SKILL.md for the exact command.
 #
 # Safety model:
-#   * refuses to run unless Rails.env == staging
+#   * refuses to run unless Rails.env == staging, with ONE exception: Rails.env == production is
+#     accepted only when HARNESS_ALLOW_PRODUCTION=yes is passed explicitly (P7 rehearsal dry run and the
+#     post-flip check after P8, see bin/post-deploy-check). Production runs are safe because of the
+#     measures below; on a live database the row-count comparison is replaced by a leftover check.
 #   * every write happens inside ONE transaction that is always rolled back
 #   * ActiveJob -> :test adapter, ActionMailer -> :test (no Mailgun, no Sidekiq)
 #   * refuses to run while AppSignal is active (run with -e APPSIGNAL_ACTIVE=false)
 #   * users are throwaway records (*@example.invalid), logged in via Warden
 #     test mode, so no real credentials are involved
-#   * after rollback the harness verifies that no row counts changed
+#   * after rollback the harness verifies that no throwaway row is left (users *@example.invalid and
+#     records named `stg-check*`); outside production it also verifies that no row counts changed.
+#     Scenarios MUST name every record they create `stg-check ...` so this check can see it.
 
-abort 'Refusing to run: Rails.env is not staging' unless Rails.env.staging?
+unless Rails.env.staging? || (Rails.env.production? && ENV['HARNESS_ALLOW_PRODUCTION'] == 'yes')
+  abort 'Refusing to run: Rails.env is not staging (production needs HARNESS_ALLOW_PRODUCTION=yes)'
+end
 
 require 'securerandom'
 
@@ -24,6 +31,11 @@ module StagingHarness
     Db::User
     Db::Profile
     Db::Payment
+    Db::Reservation
+    Db::Item
+    Training::Supplementary::CourseRecord
+    Training::Supplementary::SignUpRecord
+    Training::Supplementary::PackageTypeRecord
     Settlement::ContractRecord
     Settlement::ContractorRecord
     NotificationCenter::NotificationRecord
@@ -60,7 +72,8 @@ module StagingHarness
       @label = label
       @user = user
       @session = ActionDispatch::Integration::Session.new(Rails.application)
-      @session.host! 'staging-check.local'
+      @session.host! ENV.fetch('HARNESS_HOST', Rails.env.production? ? 'panel.kw.krakow.pl' : 'staging-check.local')
+      @session.https! if Rails.env.production?
     end
 
     %i[get post put patch delete].each do |verb|
@@ -99,6 +112,7 @@ module StagingHarness
     def run(title)
       isolate_side_effects!
       @checks = []
+      @gaps = 0
       @kw_id_seq = Db::User.maximum(:kw_id).to_i + 1000
       before = snapshot
 
@@ -113,8 +127,7 @@ module StagingHarness
         puts e.backtrace.first(8).map { |l| "     #{l}" }
       end
 
-      after = snapshot
-      check('rollback left no data behind', after, before)
+      verify_rollback(before)
       summarize
     end
 
@@ -175,6 +188,21 @@ module StagingHarness
       puts format('  INFO %s  -> %s', name, text)
     end
 
+    # A documented, accepted-for-now finding (e.g. "G24"). `expected` describes the INTENDED behaviour.
+    # While the gap exists it prints GAP and does not fail the run; once the behaviour is fixed it is
+    # counted as a normal passing check, so the entry can be promoted to a plain `check`.
+    def known_gap(id, name, actual, expected)
+      ok = expected === actual # rubocop:disable Style/CaseEquality
+      if ok
+        @checks << { name: "[#{id} fixed] #{name}", ok: true, detail: nil }
+        puts format('  PASS [%s fixed] %s  -> promote this to a plain check', id, name)
+      else
+        @gaps = (@gaps || 0) + 1
+        puts format('  GAP  [%s] %s  -> expected %s, got %s', id, name, expected.inspect, actual.inspect)
+      end
+      ok
+    end
+
     # --- job / mail helpers ----------------------------------------------
 
     # Runs the block with mail jobs executed inline and returns the messages
@@ -218,6 +246,10 @@ module StagingHarness
       ActionMailer::Base.delivery_method = :test
       ActionMailer::Base.perform_deliveries = false
       ActionController::Base.allow_forgery_protection = false
+      # Same behaviour on every host: an exception becomes a 500 response and is exposed via
+      # Response#exception instead of propagating into the scenario (the test env disables this).
+      Rails.application.env_config['action_dispatch.show_exceptions'] = true
+      Rails.application.env_config['action_dispatch.show_detailed_exceptions'] = false
       Warden.test_mode!
       Membership::Activement.prepend(ActiveOverride) unless Membership::Activement.ancestors.include?(ActiveOverride)
 
@@ -231,10 +263,30 @@ module StagingHarness
       TRACKED_MODELS.to_h { |name| [name, name.constantize.unscoped.count] }
     end
 
+    # Rows that only the harness creates. Must be empty after the rollback, on every host.
+    def leftovers
+      {
+        'users' => Db::User.where('email LIKE ?', "%@#{EMAIL_DOMAIN}").count,
+        'courses' => Training::Supplementary::CourseRecord.where("name LIKE 'stg-check%'").count,
+        'sign-ups' => Training::Supplementary::SignUpRecord.where("email LIKE '%@#{EMAIL_DOMAIN}'").count,
+        'contracts' => Settlement::ContractRecord.where("title LIKE 'stg-check%'").count,
+        'items' => Db::Item.where("display_name LIKE 'stg-check%'").count
+      }
+    end
+
+    def verify_rollback(before)
+      check('rollback left no throwaway rows behind', leftovers.select { |_, n| n.positive? }, {})
+      if Rails.env.production?
+        info('row counts', 'not compared on production (live traffic may change them)')
+      else
+        check('rollback left no data behind', snapshot, before)
+      end
+    end
+
     def summarize
       failed = @checks.reject { |c| c[:ok] }
       puts
-      puts "== #{@checks.size - failed.size}/#{@checks.size} checks passed"
+      puts "== #{@checks.size - failed.size}/#{@checks.size} checks passed#{@gaps.to_i.positive? ? ", #{@gaps} known gap(s) open (GAP lines, not failures)" : ''}"
       failed.each { |c| puts "   FAIL #{c[:name]}  -> #{c[:detail]}" } if failed.any?
       exit(failed.empty? ? 0 : 1)
     end

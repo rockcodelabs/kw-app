@@ -1,0 +1,12 @@
+# Run by supercronic in the `cron` Kamal role (config/deploy.production.yml, started by bin/cron).
+# Times are Europe/Warsaw (TZ is set on that role). Spec: spec/config/crontab_spec.rb.
+# Tasks of one slot are chained on one line so they run one after another (one Rails boot at a time).
+# Same jobs as config/schedule.rb, except set_regular_members, which runs weekly instead of daily.
+
+*/30 8-23 * * *  bin/rake send_prepaid_emails; bin/rake destroy_expired_sign_ups; bin/rake destroy_expired_events_sign_ups; bin/rake fill_empty_places
+30 4 * * *       bin/rake send_reminders; bin/rake open_conversations
+30 6 * * *       bin/rake destroy_unpaid_reservations
+30 7 * * 1       bin/rake set_regular_members
+30 8 * * *       bin/rake destroy_outdated_profiles
+0 0 1 3 *        bin/rake send_yearly_fee_reminder
+0 0 1 9 *        bin/rake recalculate_cost

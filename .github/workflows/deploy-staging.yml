@@ -38,44 +38,44 @@ jobs:
           
           bws --version
       
-      # Fetch secrets from Bitwarden Secrets Manager
+      # Fetch secrets from Bitwarden Secrets Manager. Every value is masked
+      # BEFORE it is written to GITHUB_ENV (GitHub prints the env of every later
+      # step, so an unmasked value ends up in the public run log).
       - name: Get Secrets from Bitwarden
+        shell: bash
         env:
+          # bws reads this variable itself, no --access-token on the command line
           BWS_ACCESS_TOKEN: ${{ secrets.BW_ACCESS_TOKEN }}
+          # bws UUIDs are identifiers, not secrets; the access token is the only secret
+          ID_REGISTRY_USERNAME: 196fa1de-77be-49ce-b56e-b50600d4ae49
+          ID_REGISTRY_PASSWORD: 48c626f5-7997-4694-a7bf-b50600d44ca1
+          ID_MASTER_KEY: 79cdec0b-a73e-4f31-aabe-b3da0110963a
+          ID_POSTGRES_PASSWORD: 5f418769-a3ee-46d3-87bf-b3da0110cd71
+          ID_REDIS_PASSWORD: b4b3b0ce-46fe-4068-a477-b3da0110f721
+          ID_APPSIGNAL: 10b644fb-ce8b-4d58-b0ac-b5050105f27e
+          ID_STRAVA: e48a96fa-0e1a-42b9-9393-b505010605a2
         run: |
-          echo "Fetching secrets from Bitwarden Secrets Manager..."
-          
-          # Fetch each secret by ID and export as environment variable
-          export KAMAL_REGISTRY_USERNAME=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_USERNAME }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export KAMAL_REGISTRY_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_REGISTRY_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export RAILS_MASTER_KEY=$(bws secret get ${{ secrets.BW_SECRET_STAGING_MASTER_KEY }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export POSTGRES_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_POSTGRES_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export REDIS_PASSWORD=$(bws secret get ${{ secrets.BW_SECRET_STAGING_REDIS_PASSWORD }} --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          # Shared app secrets (bws UUIDs are identifiers, not secrets)
-          export APPSIGNAL_PUSH_API_KEY=$(bws secret get 10b644fb-ce8b-4d58-b0ac-b5050105f27e --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          export STRAVA_VERIFY_TOKEN=$(bws secret get e48a96fa-0e1a-42b9-9393-b505010605a2 --access-token "$BWS_ACCESS_TOKEN" | jq -r '.value')
-          echo "::add-mask::$APPSIGNAL_PUSH_API_KEY"
-          echo "::add-mask::$STRAVA_VERIFY_TOKEN"
-          
-          # Save to GITHUB_ENV for subsequent steps
-          echo "KAMAL_REGISTRY_USERNAME=$KAMAL_REGISTRY_USERNAME" >> $GITHUB_ENV
-          echo "KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD" >> $GITHUB_ENV
-          echo "RAILS_MASTER_KEY=$RAILS_MASTER_KEY" >> $GITHUB_ENV
-          echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> $GITHUB_ENV
-          echo "REDIS_PASSWORD=$REDIS_PASSWORD" >> $GITHUB_ENV
-          echo "APPSIGNAL_PUSH_API_KEY=$APPSIGNAL_PUSH_API_KEY" >> $GITHUB_ENV
-          echo "STRAVA_VERIFY_TOKEN=$STRAVA_VERIFY_TOKEN" >> $GITHUB_ENV
-          
-          # Verify secrets are set (without exposing values)
-          [[ -n "$KAMAL_REGISTRY_USERNAME" ]] && echo "✅ KAMAL_REGISTRY_USERNAME fetched" || { echo "❌ KAMAL_REGISTRY_USERNAME missing"; exit 1; }
-          [[ -n "$KAMAL_REGISTRY_PASSWORD" ]] && echo "✅ KAMAL_REGISTRY_PASSWORD fetched" || { echo "❌ KAMAL_REGISTRY_PASSWORD missing"; exit 1; }
-          [[ -n "$RAILS_MASTER_KEY" ]] && echo "✅ RAILS_MASTER_KEY fetched (length: ${#RAILS_MASTER_KEY})" || { echo "❌ RAILS_MASTER_KEY missing"; exit 1; }
-          [[ -n "$POSTGRES_PASSWORD" ]] && echo "✅ POSTGRES_PASSWORD fetched" || { echo "❌ POSTGRES_PASSWORD missing"; exit 1; }
-          [[ -n "$REDIS_PASSWORD" ]] && echo "✅ REDIS_PASSWORD fetched" || { echo "❌ REDIS_PASSWORD missing"; exit 1; }
-          [[ -n "$APPSIGNAL_PUSH_API_KEY" ]] && echo "✅ APPSIGNAL_PUSH_API_KEY fetched" || { echo "❌ APPSIGNAL_PUSH_API_KEY missing"; exit 1; }
-          [[ -n "$STRAVA_VERIFY_TOKEN" ]] && echo "✅ STRAVA_VERIFY_TOKEN fetched" || { echo "❌ STRAVA_VERIFY_TOKEN missing"; exit 1; }
-          
-          echo ""
+          command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y jq; }
+
+          fetch() {
+            local name="$1" id="$2" value
+            value=$(bws secret get "$id" | jq -r '.value')
+            if [[ -z "$value" || "$value" == "null" || "$value" == *$'\n'* ]]; then
+              echo "❌ $name missing or not a single-line value"; exit 1
+            fi
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+            echo "✅ $name fetched"
+          }
+
+          fetch KAMAL_REGISTRY_USERNAME "$ID_REGISTRY_USERNAME"
+          fetch KAMAL_REGISTRY_PASSWORD "$ID_REGISTRY_PASSWORD"
+          fetch RAILS_MASTER_KEY        "$ID_MASTER_KEY"
+          fetch POSTGRES_PASSWORD       "$ID_POSTGRES_PASSWORD"
+          fetch REDIS_PASSWORD          "$ID_REDIS_PASSWORD"
+          fetch APPSIGNAL_PUSH_API_KEY  "$ID_APPSIGNAL"
+          fetch STRAVA_VERIFY_TOKEN     "$ID_STRAVA"
+
           echo "✅ All secrets fetched successfully from Bitwarden Secrets Manager!"
       
       - name: Install jq

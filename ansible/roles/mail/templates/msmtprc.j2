@@ -1,0 +1,17 @@
+# Managed by Ansible (roles/mail). Root-only: only root services send mail from this host.
+defaults
+auth on
+tls on
+tls_starttls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+syslog on
+aliases /etc/aliases
+
+account mailgun
+host {{ mail_smtp_host }}
+port {{ mail_smtp_port }}
+from {{ mail_from }}
+user {{ mail_secrets.user }}
+passwordeval cat /etc/kw-mail/smtp-password
+
+account default : mailgun

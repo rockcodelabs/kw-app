@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
+# Row counts on the NEW production database (read-only SELECTs).
+# New prod is 51.255.38.227; Kamal logs in there as the `deploy` user (docker group, no sudo).
+NEW_PROD_SSH="${NEW_PROD_SSH:-deploy@51.255.38.227}"
 echo "=== Database Migration Verification ==="
 echo ""
 echo "1. Table Count:"
-ssh ubuntu@146.59.44.70 "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='\''public'\'';'"
+ssh "$NEW_PROD_SSH" "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='\''public'\'';'"
 echo ""
 echo "2. User Count:"
-ssh ubuntu@146.59.44.70 "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM users;'"
+ssh "$NEW_PROD_SSH" "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM users;'"
 echo ""
 echo "3. Photos Count:"
-ssh ubuntu@146.59.44.70 "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM photos;'"
+ssh "$NEW_PROD_SSH" "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT COUNT(*) FROM photos;'"
 echo ""
 echo "4. Database Size:"
-ssh ubuntu@146.59.44.70 "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT pg_size_pretty(pg_database_size('\''kw_app_production'\''));'"
+ssh "$NEW_PROD_SSH" "docker exec kw-app-postgres psql -U production_user -d kw_app_production -t -c 'SELECT pg_size_pretty(pg_database_size('\''kw_app_production'\''));'"
 echo ""
 echo "5. Latest User:"
-ssh ubuntu@146.59.44.70 "docker exec kw-app-postgres psql -U production_user -d kw_app_production -c 'SELECT id, email, created_at FROM users ORDER BY id DESC LIMIT 1;'"
+ssh "$NEW_PROD_SSH" "docker exec kw-app-postgres psql -U production_user -d kw_app_production -c 'SELECT id, email, created_at FROM users ORDER BY id DESC LIMIT 1;'"
 echo ""
 echo "6. Health Check:"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://nowypanel.kw.krakow.pl/up)

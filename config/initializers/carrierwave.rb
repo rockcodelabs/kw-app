@@ -3,6 +3,12 @@
 # Always use local storage in test environment
 USE_LOCAL_STORAGE = (ENV['USE_LOCAL_STORAGE'] == 'true' && Rails.env.development?) || Rails.env.test?
 
+# CarrierWave's default cache is public/uploads/tmp, which the app serves as static files and which is never
+# cleaned. Keep it under tmp/ (outside public/, discarded with the container on every deploy).
+CarrierWave.configure do |config|
+  config.cache_dir = Rails.root.join('tmp/uploads').to_s
+end
+
 if USE_LOCAL_STORAGE
   # Use local file storage for development and test
   CarrierWave.configure do |config|

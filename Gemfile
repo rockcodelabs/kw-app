@@ -16,7 +16,6 @@ gem 'caxlsx_rails'
 gem 'flag-icons-rails'
 gem 'uglifier'
 gem 'coffee-rails'
-gem 'pdf-reader'
 gem 'nokogiri', '1.12.5'
 gem "loofah"
 gem 'jquery-rails'

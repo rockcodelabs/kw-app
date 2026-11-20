@@ -1,0 +1,7 @@
+Package: docker-ce docker-ce-cli
+Pin: version 5:29.*
+Pin-Priority: 900
+
+Package: containerd.io
+Pin: version 2.*
+Pin-Priority: 900

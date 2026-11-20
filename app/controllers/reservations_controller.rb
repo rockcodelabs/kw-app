@@ -22,12 +22,17 @@ class ReservationsController < ApplicationController
    form = Reservations::Form.new(params[:reservations_form])
    result = Reservations::CreateReservation.create(form: form, user: current_user)
    result.success { redirect_to reservations_path(start_date: form.start_date.to_s), notice: 'Zarezerwowano przedmiot.' }
-   result.form_invalid { |form:| redirect_to home_path, alert: "Nie dodano z powodu: #{form.errors.messages}" }
+   result.form_invalid { |form:| redirect_to root_path, alert: "Nie dodano z powodu: #{form.errors.messages}" }
    result.item_already_reserved { |form:| redirect_to reservations_path(start_date: form.start_date.to_s), alert: 'Przedmiot został już zarezerwowany w tym okresie.'}
    result.else_fail!
   end
 
   def delete_item
+    reservation = Db::Reservation.find_by(id: params[:id])
+    if reservation && reservation.user_id != current_user.id && !can?(:manage, Db::Reservation)
+      return redirect_back(fallback_location: root_path, alert: 'Nie masz uprawnień do tej rezerwacji.')
+    end
+
     result = Reservations::CancelItem.from(reservation_id: params[:id]).delete(item_id: params[:item_id])
     result.success do |start_date:|
       redirect_to reservations_path(start_date: start_date), notice: 'Zrezygnowano z rezerwacji przedmiotu.'

@@ -6,11 +6,13 @@ module Training
 
       def edit
         @sign_up = Training::Supplementary::SignUpRecord.find(params[:id])
+        authorize_sign_up_management!(@sign_up.course)
         @limiter = Training::Supplementary::Limiter.new(@sign_up.course)
       end
 
       def update
         @sign_up = Training::Supplementary::SignUpRecord.find(params[:id])
+        authorize_sign_up_management!(@sign_up.course)
         @limiter = Training::Supplementary::Limiter.new(@sign_up.course)
         either(update_record) do |result|
           result.success do
@@ -25,6 +27,8 @@ module Training
       end
 
       def manually
+        authorize_sign_up_management!(Training::Supplementary::CourseRecord.find(manually_sign_up_params[:course_id]))
+
         either(manually_sign_up) do |result|
           result.success do
             redirect_back(fallback_location: root_path, notice: 'Zapisałeś uczestnika i wysłałeś link do płatności!')
@@ -68,7 +72,7 @@ module Training
 
           redirect_back(fallback_location: polish_event_path(sign_up.course.id))
         else
-          redirect_to polish_event_path(sign_up.course.id), alert: 'Nie masz uprawnień!'
+          redirect_back(fallback_location: wydarzenia_path, alert: 'Nie masz uprawnień!')
         end
       end
 
@@ -84,7 +88,7 @@ module Training
 
           redirect_to polish_event_path(sign_up.course.id), notice: 'Wysłano e-mail z linkiem do płatności!'
         else
-          redirect_to polish_event_path(sign_up.course.id), alert: 'Nie masz uprawnień!'
+          redirect_back(fallback_location: wydarzenia_path, alert: 'Nie masz uprawnień!')
         end
       end
 
@@ -100,11 +104,17 @@ module Training
 
           redirect_to polish_event_path(course_id), notice: 'Usunięto zapis!'
         else
-          redirect_to polish_event_path(course_id), alert: 'Nie usunięto zapisu!'
+          redirect_back(fallback_location: wydarzenia_path, alert: 'Nie usunięto zapisu!')
         end
       end
 
       private
+
+      def authorize_sign_up_management!(course)
+        return if user_signed_in? && (current_user.admin? || current_user.roles.include?('events') || course.organizator_id == current_user.id)
+
+        raise CanCan::AccessDenied, 'Nie masz uprawnień!'
+      end
 
       def manually_sign_up
         Training::Supplementary::ManuallySignUp.new(

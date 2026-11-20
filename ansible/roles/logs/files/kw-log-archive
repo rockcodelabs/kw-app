@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/logs). Started every night at 00:10 Europe/Warsaw by kw-log-archive.timer.
+#
+# Docker rotates container logs by SIZE, so on a busy day "the last 7 days" is not guaranteed. This keeps a time
+# based archive on the host: it writes YESTERDAY (local midnight to midnight, Europe/Warsaw) of
+#   - every container labelled service=<KW_LOG_SERVICE_LABEL>, one file per role label (web, job, cron), running
+#     AND stopped ones, because a deploy leaves several containers behind and a day spans them,
+#   - the fixed containers in KW_LOG_FIXED (kamal-proxy and the accessories), one file each,
+# into <KW_LOG_DIR>/<name>-YYYYMMDD.log.gz (mode 0640, group adm through the setgid directory), deletes archive
+# files older than KW_LOG_KEEP_DAYS and sends ONE healthchecks.io ping:
+#   all fine -> /<slug>        (the heartbeat; healthchecks.io alerts when it stops)
+#   problem  -> /<slug>/fail   (the body lists every problem)
+# A problem exits 1 (the unit shows as failed, which kw-host-check also reports); a broken configuration exits 2
+# and sends no ping, which becomes a silence alert. Docker timestamps are UTC and stay UTC inside the files.
+# Read a week with: zcat /var/log/kw-app/web-2026111{1..7}.log.gz | grep ...
+#
+# Test hooks: KW_LOG_ENV (config file), KW_LOG_TODAY (YYYY-MM-DD, "today"; also lets you re-run one past day),
+# HC_PING_BASE (ping server).
+set -uo pipefail
+export LC_ALL=C
+umask 027
+
+env_file="${KW_LOG_ENV:-/etc/kw-log-archive/env}"
+if [ ! -r "${env_file}" ]; then
+  echo "cannot read ${env_file}" >&2
+  exit 2
+fi
+set -a
+# shellcheck disable=SC1090
+. "${env_file}"
+set +a
+
+: "${HC_PING_BASE:=https://hc-ping.com}"
+: "${KW_LOG_DIR:=/var/log/kw-app}"
+: "${KW_LOG_KEEP_DAYS:=14}"
+: "${KW_LOG_SERVICE_LABEL:=kw-app-production}"
+: "${KW_LOG_FIXED:=proxy=kamal-proxy postgres=kw-app-postgres redis=kw-app-redis}"
+: "${KW_LOG_TZ:=Europe/Warsaw}"
+
+fixed_re='^([a-z0-9_-]+=[A-Za-z0-9_.-]+( [a-z0-9_-]+=[A-Za-z0-9_.-]+)*)?$'
+if [[ ! "${HC_PING_KEY:-}" =~ ^[A-Za-z0-9_-]{16,}$ ]] || [[ ! "${KW_HC_SLUG:-}" =~ ^[a-z0-9_-]+$ ]]; then
+  echo "HC_PING_KEY or KW_HC_SLUG is missing or malformed in ${env_file}" >&2
+  exit 2
+fi
+if [[ ! "${KW_LOG_KEEP_DAYS}" =~ ^[0-9]+$ ]]; then
+  echo "KW_LOG_KEEP_DAYS must be a whole number" >&2
+  exit 2
+fi
+if [[ ! "${KW_LOG_SERVICE_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]] || [[ ! "${KW_LOG_FIXED}" =~ ${fixed_re} ]]; then
+  echo "KW_LOG_SERVICE_LABEL or KW_LOG_FIXED is malformed in ${env_file}" >&2
+  exit 2
+fi
+if [[ ! "${KW_LOG_TZ}" =~ ^[A-Za-z0-9_+/-]+$ ]] || [ ! -f "/usr/share/zoneinfo/${KW_LOG_TZ}" ]; then
+  echo "KW_LOG_TZ is not a known time zone" >&2
+  exit 2
+fi
+if [ ! -d "${KW_LOG_DIR}" ]; then
+  echo "log directory ${KW_LOG_DIR} does not exist (Ansible creates it)" >&2
+  exit 2
+fi
+
+today="${KW_LOG_TODAY:-$(TZ="${KW_LOG_TZ}" date +%F)}"
+if [[ ! "${today}" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || ! TZ="${KW_LOG_TZ}" date -d "${today} 00:00:00" >/dev/null 2>&1; then
+  echo "KW_LOG_TODAY must be a valid date like 2026-11-19" >&2
+  exit 2
+fi
+until_ts=$(TZ="${KW_LOG_TZ}" date -d "${today} 00:00:00" --iso-8601=seconds)
+since_ts=$(TZ="${KW_LOG_TZ}" date -d "${today} -1 day" --iso-8601=seconds)
+stamp=$(TZ="${KW_LOG_TZ}" date -d "${today} -1 day" +%Y%m%d)
+
+problems=()
+add_problem() { problems+=("$1"); }
+
+work=$(mktemp -d "${KW_LOG_DIR}/.tmp.XXXXXX") || {
+  echo "cannot create a temporary directory in ${KW_LOG_DIR}" >&2
+  exit 2
+}
+trap 'rm -rf "${work}"' EXIT
+
+declare -A members=()
+
+collect_containers() {
+  local listing line name service role pair logname cname
+  if ! listing=$(docker ps -a --format '{{.Names}}|{{.Label "service"}}|{{.Label "role"}}' 2>&1); then
+    add_problem "docker: does not answer (${listing})"
+    return
+  fi
+  # docker ps lists the newest first; the archive reads oldest first.
+  while IFS= read -r line; do
+    [ -n "${line}" ] || continue
+    IFS='|' read -r name service role <<<"${line}"
+    if [ "${service}" = "${KW_LOG_SERVICE_LABEL}" ]; then
+      if [[ "${role}" =~ ^[a-z0-9_-]+$ ]]; then
+        members["${role}"]+=" ${name}"
+      else
+        add_problem "container ${name}: unusable role label, not archived"
+      fi
+    fi
+    for pair in ${KW_LOG_FIXED}; do
+      logname="${pair%%=*}"
+      cname="${pair#*=}"
+      [ "${name}" = "${cname}" ] && members["${logname}"]+=" ${name}"
+    done
+  done < <(printf '%s\n' "${listing}" | tac)
+  if [ "${#members[@]}" -eq 0 ] && [ "${#problems[@]}" -eq 0 ]; then
+    add_problem "no container found to archive (service label ${KW_LOG_SERVICE_LABEL}, fixed: ${KW_LOG_FIXED})"
+  fi
+}
+
+# One file per name. Written in a temporary directory and moved into place only when every container of that
+# name was read completely, so a half-written file can never be mistaken for a complete day.
+archive_one() {
+  local logname=$1 cname part="${work}/part" out="${work}/${logname}.log.gz" note
+  shift
+  : >"${out}"
+  for cname in "$@"; do
+    if ! docker logs --timestamps --since "${since_ts}" --until "${until_ts}" "${cname}" >"${part}" 2>&1; then
+      add_problem "logs: cannot read ${cname} ($(head -c 200 "${part}" | tr '\n' ' '))"
+      return
+    fi
+    note=""
+    [ -s "${part}" ] || note=" (no log lines in this window)"
+    if ! { printf '## container %s %s .. %s%s\n' "${cname}" "${since_ts}" "${until_ts}" "${note}"; cat "${part}"; } |
+      gzip -n >>"${out}"; then
+      add_problem "logs: cannot write the archive of ${cname}"
+      return
+    fi
+  done
+  if ! mv -f "${out}" "${KW_LOG_DIR}/${logname}-${stamp}.log.gz"; then
+    add_problem "logs: cannot move ${logname} into ${KW_LOG_DIR}"
+  fi
+}
+
+collect_containers
+if [ "${#members[@]}" -gt 0 ]; then
+  while read -r logname; do
+    # shellcheck disable=SC2086
+    archive_one "${logname}" ${members[${logname}]}
+  done < <(printf '%s\n' "${!members[@]}" | sort)
+fi
+
+# Retention runs even when the archive step failed: a broken docker must not make the disk fill up.
+if ! find "${KW_LOG_DIR}" -maxdepth 1 -type f -name '*-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].log.gz' \
+  -mtime +"${KW_LOG_KEEP_DAYS}" -delete 2>/dev/null; then
+  add_problem "retention: could not delete old archive files in ${KW_LOG_DIR}"
+fi
+
+url="${HC_PING_BASE}/${HC_PING_KEY}/${KW_HC_SLUG}"
+if [ "${#problems[@]}" -eq 0 ]; then
+  echo "log archive ok (${stamp}: ${#members[@]} files)"
+  body=""
+  suffix=""
+  rc=0
+else
+  body=$(printf '%s\n' "${problems[@]}")
+  suffix="/fail"
+  rc=1
+  printf 'log archive found %d problem(s):\n%s\n' "${#problems[@]}" "${body}" >&2
+fi
+
+curl -fsS -m 15 --retry 3 -o /dev/null --data-raw "${body}" "${url}${suffix}" ||
+  echo "healthchecks ping failed (the archive result is unaffected)" >&2
+exit "${rc}"

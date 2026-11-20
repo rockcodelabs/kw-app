@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+# Command of the `cron` Kamal role. Stays idle until CRON_ENABLED=true so that deploying the role
+# (rehearsal host, staging copies) never sends mail or pings production monitors. Flip it at cutover only.
+if [ "${CRON_ENABLED:-false}" != "true" ]; then
+  echo "cron disabled (CRON_ENABLED is not 'true'); idling"
+  exec sleep infinity
+fi
+
+# The crontab commands are relative to the app root.
+cd "$(dirname "$0")/.."
+exec "${SUPERCRONIC_BIN:-supercronic}" "$PWD/config/crontab"

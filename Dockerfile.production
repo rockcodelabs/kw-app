@@ -19,6 +19,21 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y curl libjemalloc2 libpq-dev postgresql-client build-essential bash bash-completion git pkg-config tzdata imagemagick libsodium-dev libxml2-dev zlib1g-dev nodejs && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# supercronic runs config/crontab in the `cron` Kamal role (bin/cron). Pinned version, checksum verified per
+# architecture (amd64 = production VPS, arm64 = staging Pi); a mismatch fails the build.
+ARG TARGETARCH
+ARG SUPERCRONIC_VERSION=v0.2.51
+ARG SUPERCRONIC_SHA256_AMD64=cc232108374e8e2b537045f2d5eaa1229f619db314c3ba6a14d38b35dc0aa123
+ARG SUPERCRONIC_SHA256_ARM64=4ae22576a78223d8ccdf5f3b3660a5cbb5288416bf0ca96afc4a36d195932b94
+RUN case "${TARGETARCH}" in \
+      amd64) sha256="${SUPERCRONIC_SHA256_AMD64}" ;; \
+      arm64) sha256="${SUPERCRONIC_SHA256_ARM64}" ;; \
+      *) echo "unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL -o /usr/local/bin/supercronic "https://github.com/aptible/supercronic/releases/download/${SUPERCRONIC_VERSION}/supercronic-linux-${TARGETARCH}" && \
+    echo "${sha256}  /usr/local/bin/supercronic" | sha256sum -c - && \
+    chmod +x /usr/local/bin/supercronic
+
 # Set production environment
 ENV RAILS_ENV="production" \
     BUNDLE_DEPLOYMENT="1" \

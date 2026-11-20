@@ -66,6 +66,7 @@ class Ability
     can :index, Training::Activities::ContractRecord
     can :read, Training::Supplementary::CourseRecord
     can :index, Training::Supplementary::CourseRecord
+    can :update, Training::Supplementary::CourseRecord, organizator_id: user.id
     can :create, Settlement::ContractorRecord
 
     can :create, Db::Profile
@@ -73,7 +74,6 @@ class Ability
     can :manage, Management::Snw::SnwApplyRecord, kw_id: user.kw_id
     can :read, Management::Voting::CaseRecord, state: ['unactive', 'voting', 'finished'], hidden: false
     can :index, Management::Voting::CaseRecord, state: ['unactive', 'voting', 'finished'], hidden: false
-    can :read, Scrappers::ShmuRecord
     can :manage, Management::ProjectRecord, project_users: { user_id: user.id }
     can :see_user_name, Db::User
     can :create, Settlement::ContractRecord
@@ -115,7 +115,7 @@ class Ability
   end
 
   def admin
-    can :create, Training::Supplementary::CourseRecord
+    can %i[create update destroy], Training::Supplementary::CourseRecord
     can :manage, Db::User
     can :manage, Db::Profile
     can :manage, Events::Db::SignUpRecord

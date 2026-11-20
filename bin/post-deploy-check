@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Post-deploy business-flow gate, layer 2 (see docs/NEW_PRODUCTION_PLAN.md Appendix B, row B-BUS-9).
+#
+# Streams the harness scenarios of .agents/skills/staging-controller-testing into the RUNNING web container
+# (`bin/rails runner -`). Everything runs in one transaction that is rolled back, as throwaway users
+# (*@example.invalid), with mail and jobs stubbed. See that skill's SKILL.md for the safety model.
+#
+# Usage:
+#   bin/post-deploy-check staging    [--only a,b] [--dry-run] [--verbose]
+#   bin/post-deploy-check production [--host panel.kw.krakow.pl] [--only a,b] [--dry-run] [--verbose] --confirm
+#
+#   --host      request host used inside the runner (production default: panel.kw.krakow.pl, which is
+#               also right before the DNS flip because the requests never leave the container)
+#   --only      comma separated scenario names (default: the three production-safe business scenarios)
+#   --dry-run   print the exact commands and exit, run nothing
+#   --verbose   print every check line, not only FAIL / GAP / INFO / summary lines
+#   --confirm   required to execute against production (not needed for --dry-run)
+#
+# Environment overrides:
+#   POST_DEPLOY_SSH_STAGING     ssh destination for staging, default: pi5main.local
+#   POST_DEPLOY_SSH_PRODUCTION  ssh destination for production, default: ubuntu@51.255.38.227
+#   POST_DEPLOY_SSH_OPTS        extra ssh options (production default: -i ~/.ssh/id_main -o IdentitiesOnly=yes)
+#   POST_DEPLOY_DOCKER          default: docker  (set to "sudo docker" if the SSH user needs it)
+#
+# Exit code: 0 when every scenario passed (open GAP lines are known findings, not failures), 1 otherwise.
+# Only scenarios that are safe on a live database are allowed on production: the default three.
+
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SKILL_DIR="$ROOT/.agents/skills/staging-controller-testing"
+SAFE_SCENARIOS="settlement_admin_contracts training_supplementary_courses_signups reservations_module"
+
+target="${1:-}"
+shift || true
+host=""
+only=""
+dry_run=0
+verbose=0
+confirm=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --host) host="${2:-}"; shift 2 ;;
+    --only) only="${2:-}"; shift 2 ;;
+    --dry-run) dry_run=1; shift ;;
+    --verbose) verbose=1; shift ;;
+    --confirm) confirm=1; shift ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
+SSH_MUX="-o BatchMode=yes -o ConnectTimeout=15 -o ControlMaster=auto -o ControlPath=/tmp/kw-pdc-%C -o ControlPersist=120"
+DOCKER="${POST_DEPLOY_DOCKER:-docker}"
+
+case "$target" in
+  staging)
+    ssh_dest="${POST_DEPLOY_SSH_STAGING:-pi5main.local}"
+    ssh_opts="${POST_DEPLOY_SSH_OPTS:-}"
+    filters="--filter label=service=kw-app-staging --filter label=role=web --filter status=running"
+    env_flags="-e APPSIGNAL_ACTIVE=false"
+    ;;
+  production)
+    ssh_dest="${POST_DEPLOY_SSH_PRODUCTION:-ubuntu@51.255.38.227}"
+    ssh_opts="${POST_DEPLOY_SSH_OPTS:--i $HOME/.ssh/id_main -o IdentitiesOnly=yes}"
+    filters="--filter label=service=kw-app --filter label=role=web --filter status=running"
+    env_flags="-e APPSIGNAL_ACTIVE=false -e HARNESS_ALLOW_PRODUCTION=yes -e HARNESS_HOST=${host:-panel.kw.krakow.pl}"
+    ;;
+  *)
+    sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'
+    exit 2
+    ;;
+esac
+
+ssh_cmd="ssh $ssh_opts $SSH_MUX $ssh_dest"
+scenarios="${only:-$SAFE_SCENARIOS}"
+scenarios="${scenarios//,/ }"
+
+for s in $scenarios; do
+  [ -f "$SKILL_DIR/scenarios/$s.rb" ] || { echo "no such scenario: $s" >&2; exit 2; }
+  if [ "$target" = production ] && ! echo " $SAFE_SCENARIOS " | grep -q " $s "; then
+    echo "refusing: scenario '$s' is not safe on production (registers users, uploads files or calls webhooks)" >&2
+    exit 2
+  fi
+done
+
+remote_cmd="$DOCKER exec $env_flags -i \$($DOCKER ps -q $filters | head -n1) bin/rails runner -"
+
+echo "target:    $target"
+[ "$target" = production ] && echo "host:      ${host:-panel.kw.krakow.pl}"
+echo "scenarios: $scenarios"
+echo "ssh:       $ssh_cmd"
+echo "remote:    $remote_cmd"
+for s in $scenarios; do
+  echo "run:       cd .agents/skills/staging-controller-testing && cat harness.rb scenarios/$s.rb | $ssh_cmd '$remote_cmd'"
+done
+
+if [ "$dry_run" = 1 ]; then
+  echo "(dry run, nothing executed)"
+  exit 0
+fi
+
+if [ "$target" = production ] && [ "$confirm" != 1 ]; then
+  echo "refusing to run against production without --confirm (use --dry-run to only print the commands)" >&2
+  exit 2
+fi
+
+# Fail early and clearly when there is no running web container.
+container="$($ssh_cmd "$DOCKER ps -q $filters | head -n1" </dev/null 2>&1)" || { echo "cannot reach the host: $container" >&2; exit 1; }
+[ -n "$container" ] || { echo "no running web container found ($filters)" >&2; exit 1; }
+echo "container: $container"
+
+failed=0
+summary=""
+for s in $scenarios; do
+  echo
+  out="$(mktemp)"
+  (cd "$SKILL_DIR" && cat harness.rb "scenarios/$s.rb" | $ssh_cmd "$remote_cmd") >"$out" 2>&1
+  code=$?
+  if [ "$verbose" = 1 ]; then
+    cat "$out"
+  else
+    grep -vE '^\s+PASS' "$out"
+  fi
+  result="$(grep -E '^== [0-9]+/[0-9]+ checks passed' "$out" | tail -n1)"
+  rm -f "$out"
+  if [ "$code" -ne 0 ] || [ -z "$result" ]; then
+    failed=1
+    summary="$summary\n  FAIL  $s  (exit $code) ${result:-no summary line, the runner aborted}"
+  else
+    summary="$summary\n  ok    $s  ${result#== }"
+  fi
+done
+
+$ssh_cmd -O exit >/dev/null 2>&1 || true
+
+echo
+echo "== post-deploy check ($target)"
+printf "%b\n" "$summary"
+if [ "$failed" = 0 ]; then
+  echo "RESULT: PASS (GAP lines above are known open findings)"
+else
+  echo "RESULT: FAIL"
+fi
+exit "$failed"

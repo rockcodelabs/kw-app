@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/backup). Nightly: plain-SQL dump -> local copy -> encrypted off-site copy (restic).
+# Pings healthchecks.io slug kw-prod-backup-nightly. Restore: see docs/NEW_PRODUCTION_PLAN.md (C.4).
+set -euo pipefail
+# shellcheck source=kw-backup-lib.sh
+. "${KW_BACKUP_LIB:-/usr/local/lib/kw-backup/lib.sh}"
+kw_load_env
+kw_start kw-prod-backup-nightly
+kw_lock
+
+part=""
+kw_cleanup() { [ -z "$part" ] || rm -f -- "$part"; }
+
+umask 077
+install -d -m 0700 "$BACKUP_DIR"
+find "$BACKUP_DIR" -maxdepth 1 -name '*.partial' -delete
+
+dump="${BACKUP_DIR}/${PG_DB}-$(date -u +%Y%m%dT%H%M%SZ).sql.gz"
+part="${dump}.partial"
+
+kw_log "dumping ${PG_DB} from ${PG_CONTAINER}"
+docker exec "$PG_CONTAINER" pg_dump -U "$PG_USER" "$PG_DB" | gzip -c >"$part"
+
+# A dump that is cut short must never become the "latest good" one.
+gzip -t "$part"
+gzip -dc "$part" | tail -n 5 | grep 'PostgreSQL database dump complete' >/dev/null ||
+  { kw_log "dump has no completion marker"; exit 1; }
+
+mv -- "$part" "$dump"
+part=""
+(cd "$BACKUP_DIR" && sha256sum "$(basename "$dump")" >"$(basename "$dump").sha256")
+kw_log "wrote ${dump} ($(stat -c %s "$dump") bytes)"
+
+kw_prune_local "$BACKUP_DIR" "$KEEP_DAILY" "$KEEP_WEEKLY" "$KEEP_MONTHLY"
+
+# Off-site copy. Each snapshot holds one dump; group by host+tag so retention counts nights, not file names.
+if ! restic cat config >/dev/null 2>&1; then
+  kw_log "restic repository not found, initialising"
+  restic init
+fi
+restic backup --host kw-prod --tag nightly "$dump" "${dump}.sha256"
+restic forget --host kw-prod --tag nightly --group-by host,tags \
+  --keep-daily "$KEEP_DAILY" --keep-weekly "$KEEP_WEEKLY" --keep-monthly "$KEEP_MONTHLY" --prune

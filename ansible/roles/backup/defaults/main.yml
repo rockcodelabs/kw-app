@@ -1,0 +1,53 @@
+---
+# Backups of the production database (P5.3). See docs/NEW_PRODUCTION_PLAN.md, section C.4 for the runbook.
+# Non-secret settings only. Secrets are read from Bitwarden Secrets Manager at apply time (tasks/main.yml).
+
+# Off-site repository: OVH Object Storage (S3), bucket reachable only by the dedicated kw-app-backup user
+backup_bucket: kw-app-backup-production
+backup_s3_endpoint: https://s3.waw.io.cloud.ovh.net
+backup_s3_region: waw
+
+# restic: pinned. To upgrade, change both values (sha256 from the release's SHA256SUMS file).
+backup_restic_version: "0.19.1"
+backup_restic_sha256: f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c
+
+# What is backed up (the Postgres accessory container that Kamal runs)
+backup_dir: /var/backups/kw-app
+backup_pg_container: kw-app-postgres
+backup_pg_user: production_user
+backup_pg_db: kw_app_production
+backup_restore_scratch_db: kw_restore_test
+
+# Retention, identical locally and in restic
+backup_keep_daily: 7
+backup_keep_weekly: 4
+backup_keep_monthly: 6
+backup_restic_check_subset: "5%"
+
+# Schedules (host is on UTC, so the zone is spelled out). Chosen to avoid the 03:30 apt upgrades,
+# the Sunday 05:00 reboot and the app cron jobs (04:30 and later).
+backup_nightly_calendar: "*-*-* 03:15:00 Europe/Warsaw"
+backup_restore_test_calendar: "Sat *-*-* 04:00:00 Europe/Warsaw"
+backup_check_calendar: "Sat *-*-* 04:15:00 Europe/Warsaw"
+
+# Secret IDs in Bitwarden Secrets Manager (project "panel"). The IDs are not secret, the values are.
+backup_bws_secret_ids:
+  access_key: d7004366-1f3e-47db-8586-b5060151c18c       # kw-app-backup-token (S3 access key)
+  secret_key: 52047e27-db76-4e76-898d-b5060151f629       # kw-app-backup-secret (S3 secret key)
+  restic_password: ec37f629-fc33-43c7-bb88-b5060153bc58  # kw-app-production-restic-password
+  ping_key: d37a01b2-04bd-44d1-8f96-b5060154a055         # kw-app-healthchecks-ping-key (ping-only)
+
+# One systemd service + timer per job. The script of the same name is installed to /usr/local/sbin.
+backup_jobs:
+  - name: kw-backup
+    description: Nightly database dump and encrypted off-site copy
+    calendar: "{{ backup_nightly_calendar }}"
+    timeout_sec: 3600
+  - name: kw-restore-test
+    description: Weekly proof that the newest dump restores and matches
+    calendar: "{{ backup_restore_test_calendar }}"
+    timeout_sec: 3600
+  - name: kw-restic-check
+    description: Weekly integrity check of the off-site repository
+    calendar: "{{ backup_check_calendar }}"
+    timeout_sec: 3600

@@ -1,0 +1,2 @@
+---
+ssh_allow_users: [ubuntu, deploy]

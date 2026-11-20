@@ -26,8 +26,8 @@ No deploy and no commit is needed: the code under test is whatever is already de
 
 | Risk | Mitigation |
 |------|------------|
-| Running on the wrong env | `abort` unless `Rails.env.staging?` |
-| Persisting test data | One outer transaction, always `ActiveRecord::Rollback`; afterwards row counts of users/contracts/contractors/notifications/versions are compared and a failing check is emitted on drift |
+| Running on the wrong env | `abort` unless `Rails.env.staging?`; production is accepted only with `-e HARNESS_ALLOW_PRODUCTION=yes` (P7 rehearsal dry run, post-flip check after P8, see "Post-deploy gate") |
+| Persisting test data | One outer transaction, always `ActiveRecord::Rollback`; afterwards the harness checks that no throwaway row is left (users `*@example.invalid`, records named `stg-check*`); outside production it also compares row counts of the `TRACKED_MODELS`. On production counts are not compared (live traffic changes them) |
 | Real emails (Mailgun) | `ActionMailer` → `:test`, `perform_deliveries = false`; aborts if `MailDeliveryJob` is not on the test adapter |
 | Jobs hitting Redis/Sidekiq or the async adapter running after rollback | `ActiveJob::Base.queue_adapter = :test`; inspect with `h.enqueued_jobs` |
 | Real credentials | Users are `stg-check+<role>-<hex>@example.invalid`, logged in via `Warden.test_mode!` `login_as` (process-local) |
@@ -39,7 +39,8 @@ All overrides live only in the short-lived runner process; the serving app proce
 **Still your responsibility:**
 - Endpoints that read files from the container (e.g. `download_attachment`) must be probed with harmless paths such as `/etc/hostname`.
 - Anything that writes outside Postgres (files via CarrierWave, S3/fog, external HTTP) is **not** rolled back. Do not upload files or call endpoints that hit external APIs. Use `document_type: 'charities'` style params to avoid required uploads.
-- Never point this at production (the harness aborts outside `staging`, and that guard must stay).
+- Production is allowed **only** through `bin/post-deploy-check production` (the production-safe scenarios, throwaway data, rolled back). Never run `post_migration_smoke.rb` there: it registers users, touches files and calls webhooks.
+- **Name every record a scenario creates `stg-check ...`** (users already are `*@example.invalid`). The leftover check can only see rows with these markers.
 
 ## Prerequisites
 
@@ -106,6 +107,7 @@ end
 | `h.check(name, actual, expected)` | `expected === actual`: value, Range (`1..`), Regexp. Arrays are compared exactly |
 | `h.enqueued_jobs` / `h.clear_enqueued_jobs!` | Inspect jobs/mails that `deliver_later` queued |
 | `h.capture_mail { ... }` | Runs the block with mail jobs performed inline into the `:test` delivery; returns the deliveries. Aborts if the delivery method is not `:test` |
+| `h.known_gap(id, name, actual, expected)` | A documented open finding (e.g. `G23`). Prints `GAP` and does not fail the run while open; once the behaviour is fixed it counts as a pass and says `promote this to a plain check` |
 | `h.info(name, text)` | Prints an `INFO` line (hosts, counts). Never pass secret values |
 | `h.routes` | URL helpers |
 
@@ -126,7 +128,8 @@ end
 - Harness requests are written to the real `log/staging.log` (request host `staging-check.local`, runner pid, source IP `127.0.0.1`). Use the `staging-logs-appsignal` skill to read them.
 - **Class-level `authorize!` ignores CanCan conditions.** `authorize! :finish, Settlement::ContractRecord` passes for any role with `can :manage, ContractRecord, state: [...]`, so state conditions in `Ability` do not protect collection/member actions unless the controller authorizes the *instance*.
 - **Actions without `authorize!`** are open to anonymous users (no `authenticate_user!` in `Admin::BaseController`). Always include an anonymous check.
-- Staging `config.hosts` is cleared; the harness uses `staging-check.local` as the request host.
+- Staging `config.hosts` is cleared; the harness uses `staging-check.local` as the request host. On production the host is `HARNESS_HOST` (default `panel.kw.krakow.pl`, right also before the DNS flip because the requests never leave the container) and requests are https.
+- The harness forces `show_exceptions` on, so an exception is a 500 response with `Response#exception`, on every environment (also when trying a scenario locally with `RAILS_ENV=test`, which needs a temporary harness copy without the env guard and `HARNESS_HOST=www.example.com`).
 - `dry-validation` is 1.x: `Contract` classes need `.new`/`.call` on an instance. Code written for 0.x (`Form.call`, `.with`) raises `NoMethodError` on staging.
 - **A client that registers or signs in stays signed in.** Use a fresh `h.client('fresh-anon')` for every anonymous check that follows a registration or login.
 - Devise sign-out is **GET** `/users/sign_out`; admin accept is **PUT**.
@@ -145,8 +148,26 @@ end
 
 | Scenario | Purpose |
 |----------|---------|
-| `scenarios/settlement_admin_contracts.rb` | Authorization matrix for `Settlement::Admin::ContractsController` |
+| `scenarios/settlement_admin_contracts.rb` | Authorization matrix and workflow (accept, prepayment, finish) for `Settlement::Admin::ContractsController`. Production-safe. Open `known_gap` G37 (role boundary policy) |
+| `scenarios/training_supplementary_courses_signups.rb` | Courses/events, sign-ups, cash payment, Dotpay callback, expiry cron code path (`B-CRS`, `B-SUP`, `B-PAY`). Production-safe. Open `known_gap` G23/G23b (unsigned or unknown Dotpay callback) |
+| `scenarios/reservations_module.rb` | Gear reservations: availability, booking, double booking, cancel (own vs foreign), keeper actions, unpaid-cleanup candidates (`B-RES`). Production-safe, uses throwaway items |
 | `scenarios/post_migration_smoke.rb` | Post-migration smoke checks (`B-xx` IDs) for login, profiles, mail, notifications, Dotpay callback, Strava webhook, files, cron code paths. Results are mapped in `docs/NEW_PRODUCTION_PLAN.md` Appendix B. Some checks FAIL by design to document known vulnerabilities (G23) |
+
+## Post-deploy gate (`bin/post-deploy-check`)
+
+One command runs the three production-safe scenarios (contracts, courses and sign-ups, reservations) and prints a summary with an exit code. Use it as one step of the first 30 minutes after the P8 flip (plan Appendix B.3) and once as a dry run on the P7 rehearsal.
+
+```bash
+bin/post-deploy-check staging    --dry-run          # prints the exact ssh/docker commands, runs nothing
+bin/post-deploy-check staging
+bin/post-deploy-check production --confirm   # works before the flip too: it runs inside the container
+bin/post-deploy-check production --confirm                                  # after the flip, host panel.kw.krakow.pl
+```
+
+- Production needs `--confirm` and only accepts the three safe scenarios; `--only a,b` narrows the list.
+- It uses one multiplexed SSH connection (fail2ban friendly). SSH destination and options are overridable with `POST_DEPLOY_SSH_STAGING`, `POST_DEPLOY_SSH_PRODUCTION`, `POST_DEPLOY_SSH_OPTS`; `POST_DEPLOY_DOCKER="sudo docker"` if the SSH user needs it.
+- `GAP` lines are known open findings and do not fail the run. Anything else that is not `PASS` does: read it with the `staging-logs-appsignal` skill.
+- Why this is safe on a live database: one transaction that is always rolled back, throwaway users and items, mail and jobs stubbed (`:test`), AppSignal off, no Dotpay call, leftover check afterwards. It cannot prove that real credentials work (Dotpay, Mailgun): those stay manual rows in Appendix B.
 
 ## Related
 

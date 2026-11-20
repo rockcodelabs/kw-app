@@ -4,8 +4,21 @@
 # Automatically detects and stores MIME type on upload to avoid reading
 # file content from OpenStack on every page render (which causes EOFError)
 class ApplicationUploader < CarrierWave::Uploader::Base
+  IMAGE_EXTENSIONS = %w[jpg jpeg jfif png gif webp heic heif bmp tif tiff].freeze
+  # Everything members and admins upload today (checked against the restored production data), nothing executable
+  # or renderable as a page (no html, svg, js, php, archives).
+  ALLOWED_EXTENSIONS = (IMAGE_EXTENSIONS + %w[pdf doc docx xls xlsx odt ods rtf txt gpx tcx eml mp4 mov]).freeze
+
   # Always use cloud storage
   storage :fog
+  # Without this CarrierWave 3 caches in the bucket too (cache_dir becomes an object key prefix): an extra remote
+  # write per upload and orphaned cache objects. Cache on local disk (tmp/uploads), only the final store is remote.
+  cache_storage :file
+
+  # Override with IMAGE_EXTENSIONS (or another narrower list) in uploaders that only take one kind of file.
+  def extension_allowlist
+    ALLOWED_EXTENSIONS
+  end
   
   # Automatically detect and store content type after upload
   # This prevents EOFError by avoiding file reads during rendering

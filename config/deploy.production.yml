@@ -1,28 +1,57 @@
 # Production-specific configuration overrides
 
+# Memory/CPU limits are ceilings so that a runaway process cannot starve Postgres (3.8 GB host). Re-measure with
+# `docker stats` during the P7 rehearsal and adjust.
 servers:
   web:
     hosts:
       - 51.255.38.227
+    options:
+      memory: 640m
   job:
     hosts:
       - 51.255.38.227
     cmd: bundle exec sidekiq -e production -C config/sidekiq.yml
     options:
       network: "kw-app-network"
+      memory: 640m
+      cpus: "1"
+  cron:
+    hosts:
+      - 51.255.38.227
+    cmd: bin/cron
+    options:
+      network: "kw-app-network"
+      memory: 448m
+      cpus: "1"
+    env:
+      clear:
+        TZ: Europe/Warsaw
+        # The role is deployed but idle. Set to "true" in the P8 cutover commit, in the same step that disables
+        # the crontab on old prod (never both).
+        CRON_ENABLED: "false"
+        # Healthchecks.io heartbeats: <HC_PING_KEY>/<HC_PING_PREFIX>-<job>. Cron role only,
+        # so web and Sidekiq runs never ping.
+        HC_PING_PREFIX: kw-prod
+      secret:
+        - HC_PING_KEY
 
 # Allow enough time for migrations and deployment (default is 30s)
 deploy_timeout: 300
 
 proxy:
   ssl: true
-  host: nowypanel.kw.krakow.pl
+  host: panel.kw.krakow.pl
+  forward_headers: true
+  buffering:
+    requests: true
+    max_request_body: 50_000_000
 
 env:
   clear:
     RAILS_ENV: production
     RACK_ENV: production
-    ASSET_HOST: https://nowypanel.kw.krakow.pl
+    ASSET_HOST: https://panel.kw.krakow.pl
     REDIS_URL_SIDEKIQ: redis://kw-app-redis:6379/1
     POSTGRES_USER: production_user
     POSTGRES_DB: kw_app_production
@@ -38,32 +67,39 @@ ssh:
 
 accessories:
   postgres:
-    image: postgres:16.0
+    image: postgres:16.16-bookworm
     host: 51.255.38.227
-    port: "127.0.0.1:5432:5432"
-    cmd: postgres
+    # No published port: reachable only on kw-app-network (and via docker exec).
+    cmd: >-
+      postgres
+      -c shared_buffers=768MB
+      -c effective_cache_size=2GB
+      -c work_mem=8MB
+      -c maintenance_work_mem=128MB
+      -c max_connections=60
+      -c log_min_duration_statement=500
     options:
       network: "kw-app-network"
+      memory: 1536m
     env:
       clear:
         POSTGRES_USER: production_user
         POSTGRES_DB: kw_app_production
       secret:
         - POSTGRES_PASSWORD
-    files:
-      - config/init.sql:/docker-entrypoint-initdb.d/setup.sql
     directories:
       - data:/var/lib/postgresql/data
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.12-alpine
     host: 51.255.38.227
-    port: "127.0.0.1:6379:6379"
+    # No published port: reachable only on kw-app-network.
     options:
       network: "kw-app-network"
+      memory: 384m
     env:
       secret:
         - REDIS_PASSWORD
-    cmd: sh -c 'redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --dir /data'
+    cmd: sh -c 'redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --dir /data --maxmemory 256mb --maxmemory-policy noeviction'
     directories:
       - redis-data:/data

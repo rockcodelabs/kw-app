@@ -52,11 +52,18 @@ Rails.application.configure do
   # config.action_cable.allowed_request_origins = [ 'http://example.com', /http:\/\/example.*/ ]
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  # config.force_ssl = true
+  # kamal-proxy terminates TLS and forwards X-Forwarded-Proto (proxy.forward_headers). Its health probe hits /up over
+  # plain HTTP with the container id as Host, so /up is exempt from the redirect and from host authorization.
+  config.force_ssl = true
+  config.ssl_options = { redirect: { exclude: ->(request) { request.path == '/up' } } }
 
-  # Use the lowest log level to ensure availability of diagnostic information
-  # when problems arise.
-  config.log_level = :debug
+  # Both panel hostnames are allowed so the cutover (nowypanel -> panel) needs no change here.
+  config.hosts << 'nowypanel.kw.krakow.pl'
+  config.hosts << 'panel.kw.krakow.pl'
+  config.host_authorization = { exclude: ->(request) { request.path == '/up' } }
+
+  # :info keeps request and error lines but drops SQL/param debug noise (and personal data) from the logs.
+  config.log_level = :info
 
   # Prepend all log lines with the following tags.
   config.log_tags = [ :request_id ]
@@ -71,7 +78,7 @@ Rails.application.configure do
   # config.active_job.queue_adapter     = :resque
   # config.active_job.queue_name_prefix = "kw_app_#{Rails.env}"
   config.action_mailer.perform_caching = false
-  config.action_mailer.default_url_options = { host: 'https://nowypanel.kw.krakow.pl' }
+  config.action_mailer.default_url_options = { host: 'https://panel.kw.krakow.pl' }
   config.action_mailer.delivery_method = :mailgun
   config.action_mailer.mailgun_settings = {
     api_key: ENV.fetch('MAILGUN_API_KEY') { Rails.application.credentials.dig(:mailgun, :api_key) },
@@ -91,7 +98,8 @@ Rails.application.configure do
   # Use default logging formatter so that PID and timestamp are not suppressed.
   config.log_formatter = ::Logger::Formatter.new
 
-  config.logger = Logger.new(STDOUT)
+  # A custom logger ignores config.log_level, so the level is set on it explicitly.
+  config.logger = Logger.new(STDOUT, level: Logger::INFO)
 
 
   # Use a different logger for distributed setups.
@@ -101,4 +109,4 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 end
-Rails.application.routes.default_url_options[:host] = 'https://nowypanel.kw.krakow.pl'
+Rails.application.routes.default_url_options[:host] = 'https://panel.kw.krakow.pl'

@@ -1,0 +1,15 @@
+# Managed by Ansible (roles/fail2ban).
+[DEFAULT]
+backend = systemd
+banaction = nftables
+banaction_allports = nftables[type=allports]
+bantime = 1h
+bantime.increment = true
+bantime.factor = 2
+bantime.maxtime = 1w
+findtime = 10m
+maxretry = 4
+ignoreip = {{ fail2ban_ignoreip | join(' ') }}
+
+[sshd]
+enabled = true

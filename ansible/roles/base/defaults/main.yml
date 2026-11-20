@@ -1,0 +1,7 @@
+---
+base_swap_file: /swapfile
+base_swap_size: 2G
+base_apt_upgrade_calendar: "*-*-* 03:30:00 Europe/Warsaw"
+base_reboot_if_needed_calendar: "Sun *-*-* 05:00:00 Europe/Warsaw"
+# Set to true only when building a fresh host (-e base_full_upgrade=true); normal runs leave patching to unattended-upgrades
+base_full_upgrade: false

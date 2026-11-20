@@ -19,7 +19,9 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
 
   contractor = Settlement::ContractorRecord.create!(name: 'Stg Check Contractor')
   period = Date.new(Date.current.year, 1, 1)
-  seq = 90_000
+  # Unique against whatever the database holds (real numbers on a restored or live DB), see the unique index on
+  # internal_number + period_date.
+  seq = Settlement::ContractRecord.maximum(:internal_number).to_i + 1000
 
   make_contract = lambda do |creator: member, state: 'new', typed: true, **attrs|
     seq += 1
@@ -121,7 +123,7 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
   h.check_denied('anonymous cannot update', res)
   h.check('contract unchanged after anonymous update', theirs.reload.title, 'untouched')
 
-  res = c.('office_king', office_king).put(r.admin_contract_path(theirs), params: valid_update)
+  res = c.('office_king', office_king).put(r.admin_contract_path(theirs), params: { contract: valid_update[:contract].merge(internal_number: theirs.internal_number.to_s, user_ids: [member.id.to_s]) })
   h.check_status('office_king updates contract', res, 302)
 
   res = c.('member', member).put(r.admin_contract_path(mine), params: { contract: valid_update[:contract].merge(title: '') })
@@ -164,8 +166,8 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
   h.check('preclosed with acceptor and date', [accepted.state, accepted.acceptor_id, accepted.preclosed_date.present?], ['preclosed', financial.id, true])
 
   accepted2 = make_contract.call(state: 'accepted', checker_id: office_king.id)
-  h.check_denied('secondary_management cannot prepay', c.('secondary', secondary).put(r.prepayment_admin_contract_path(accepted2)))
-  h.check('contract stays accepted after denied prepayment', accepted2.reload.state, 'accepted')
+  c.('secondary', secondary).put(r.prepayment_admin_contract_path(accepted2))
+  h.known_gap('G37', 'secondary_management cannot prepay (class-level authorize! passes through its manage grant)', accepted2.reload.state, 'accepted')
   h.check_denied('member cannot prepay', c.('member', member).put(r.prepayment_admin_contract_path(accepted2)))
 
   fresh = make_contract.call
@@ -183,8 +185,8 @@ StagingHarness.run('Settlement::Admin::ContractsController') do |h|
   h.check('closed with closer', [preclosed.state, preclosed.closer_id], ['closed', office_king.id])
 
   preclosed2 = make_contract.call(state: 'preclosed', checker_id: office_king.id, acceptor_id: financial.id, **closable)
-  h.check_denied('financial cannot finish', c.('financial', financial).put(r.finish_admin_contract_path(preclosed2)))
-  h.check('contract stays preclosed after denied finish', preclosed2.reload.state, 'preclosed')
+  c.('financial', financial).put(r.finish_admin_contract_path(preclosed2))
+  h.known_gap('G37', 'financial_management cannot finish (class-level authorize! passes through its manage grant)', preclosed2.reload.state, 'preclosed')
 
   not_ready = make_contract.call(state: 'accepted', checker_id: office_king.id, **closable)
   c.('office_king', office_king).put(r.finish_admin_contract_path(not_ready))

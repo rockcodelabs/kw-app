@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/logs). Persistent: a run missed because the host was down at 00:10 is made up at boot.
+[Unit]
+Description=Daily archive of container logs (timer)
+
+[Timer]
+OnCalendar=*-*-* {{ logs_run_at }} {{ logs_tz }}
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

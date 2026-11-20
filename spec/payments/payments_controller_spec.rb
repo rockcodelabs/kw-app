@@ -126,7 +126,7 @@ RSpec.describe PaymentsController, type: :controller do
   end
 
   describe 'POST #refund' do
-    let(:user) { create(:user) }
+    let(:user) { create(:user, roles: ['events']) }
     let(:get_operation_service) { instance_double(Payments::Dotpay::GetOperationRequest) }
     let(:refund_service) { instance_double(Payments::Dotpay::RefundPaymentRequest) }
     

@@ -1,0 +1,10 @@
+---
+- name: Restart fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+
+# After a restart fail2ban 1.1.0 can forget ignoreip until it is reloaded (seen on the live host).
+- name: Reload fail2ban
+  ansible.builtin.command: fail2ban-client reload
+  changed_when: true

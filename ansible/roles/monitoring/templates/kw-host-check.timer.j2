@@ -1,0 +1,11 @@
+# Managed by Ansible (roles/monitoring). Not Persistent on purpose: a heartbeat is about now, not catching up.
+[Unit]
+Description=Host self-check (timer)
+
+[Timer]
+OnCalendar=*:0/10
+OnBootSec={{ monitoring_boot_delay }}
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

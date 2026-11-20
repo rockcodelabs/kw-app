@@ -63,6 +63,7 @@ jobs:
           ID_APPSIGNAL: 10b644fb-ce8b-4d58-b0ac-b5050105f27e
           ID_STRAVA: e48a96fa-0e1a-42b9-9393-b505010605a2
           ID_HC_PING_KEY: d37a01b2-04bd-44d1-8f96-b5060154a055
+          ID_MAILGUN: 811383ff-53d0-4742-b48f-b508016cdc6e
         run: |
           command -v jq >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y jq; }
 
@@ -86,6 +87,7 @@ jobs:
           fetch APPSIGNAL_PUSH_API_KEY  "$ID_APPSIGNAL"
           fetch STRAVA_VERIFY_TOKEN     "$ID_STRAVA"
           fetch HC_PING_KEY             "$ID_HC_PING_KEY"
+          fetch MAILGUN_API_KEY         "$ID_MAILGUN"
 
           echo "✅ All secrets fetched from Bitwarden Secrets Manager"
 

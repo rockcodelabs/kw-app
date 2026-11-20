@@ -61,6 +61,7 @@ env:
     - APPSIGNAL_PUSH_API_KEY
     - STRAVA_VERIFY_TOKEN
     - REDIS_PASSWORD
+    - MAILGUN_API_KEY
 
 ssh:
   user: deploy

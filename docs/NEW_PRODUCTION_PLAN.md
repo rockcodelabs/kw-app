@@ -412,7 +412,7 @@ Gate: `kamal config -d production` OK, both deploy files list the same secret na
    By design there is **no alert** for fail2ban bans and auditd events (read on demand, see item 5), and none for the Sidekiq dead set (weekly look).
 
 ### P7. Rehearsal on the new VPS (no real traffic)
-1. `kamal setup -d production` (the proxy host is already the final `panel.kw.krakow.pl`, DNS still on old prod, so there is no public HTTPS until the flip; the deploy health check talks to the container, not the proxy). This boots kamal-proxy, Postgres, Redis, web, job, cron.
+1. First deploy through the workflow (`kamal deploy -d production`; **not** `kamal setup`: the Postgres and Redis accessories already run since P5.1; the proxy host is already the final `panel.kw.krakow.pl`, DNS still on old prod, so there is no public HTTPS until the flip; the deploy health check talks to the container, not the proxy). This boots kamal-proxy, web, job, cron (idle). Restore and swap the DB **before** this deploy, see P8-NIGHT A5/A6.
 2. Restore the latest prod dump with the skill (`preflight`, `restore`, `verify`, `migrate`, `verify --after-migrate`), then run **Appendix B (see B.0)** against the rehearsal host (automated scenario plus the manual rows) and smoke-test through the real UI as admin and as a normal member: login, sign-up for an event, a payment sandbox flow, file upload/download, PDF generation, an e-mail send **to a safe address**, Sidekiq UI, one cron task run by hand, Strava webhook verification (token from bws).
 3. **Mail safety**: new prod has real Mailgun credentials and real member e-mails after a 1:1 restore. During rehearsal run with delivery redirected (`MAILGUN` interceptor to a test inbox or `config.action_mailer.perform_deliveries = false` via env), and keep the cron role **stopped** until cutover.
 4. Performance baseline: 20 concurrent users on the heaviest pages (e.g. `ab`/`k6`) against the 2 vCPU box; compare with old prod AppSignal p95. Check memory with `docker stats` under load.
@@ -445,6 +445,86 @@ Gate: two clean rehearsals on the cutover stack (Ruby 3.2.11 / Rails 7.0.10; Pha
 5. The Ruby/Rails upgrade is **not** part of the cutover: per the revised D2 (2026-11-18) it is Phase U and starts after P8 on the new host. Until then only patch bumps, `bundler-audit` + Brakeman gates.
 6. Quarterly: restore test report, Lynis rerun, package and image updates (Postgres/Redis minor tags), SSH key review, bws rotation review.
 7. **Gatus uptime check (deferred here by the owner, 2026-11-19).** Facts: `gatus` runs on the Pi from `/home/rege/monitoring` (compose project), config `gatus.yml` is a read-only bind mount, so edit the file and `docker restart gatus`. The file has **no kw-app endpoint yet and no `alerting:` block** (dashboard only); alerting by e-mail to `darek.finster@kw.krakow.pl` needs SMTP settings and is a separate decision. Add a `kw-app` group: `https://panel.kw.krakow.pl/up` (`[STATUS] == 200`, `[RESPONSE_TIME] < 3000`, 1 m) and the same URL hourly with `[CERTIFICATE_EXPIRATION] > 14d`. Back up the file first; touch only the kw-app entries (neighbouring apps share Gatus). After the flip `/up` is served by new prod, so the check is meaningful and green from day one.
+
+### P8-NIGHT. Cutover night runbook (start Fri 2026-11-20, 22:00 Europe/Warsaw)
+
+Written 2026-11-20 from the repo, the workflows and the live state (not from memory). `[A]` = needs the owner's explicit approval at that moment (frozen host, server write, GitHub, bws, deploy config). `[O]` = the owner does it (UI, DNS, merge, approve the Environment). Everything not marked is read-only. **After each executed step: dated log line in "Execution log" below and tick section 7.**
+
+#### Honest status: what P7 asked for and what tonight skips
+P7 wants two clean rehearsals, failure drills, a load baseline and a reboot test. **None was done: the app has never been deployed on `51.255.38.227`** (only the Postgres and Redis accessories run there). Tonight compresses P7 into Part A (daytime, nothing public) and Part C (the real thing). What that costs:
+
+| Skipped or compressed | Risk tonight | Mitigation |
+|-----------------------|--------------|------------|
+| Second full rehearsal, stopwatch timings | Downtime will be longer than the 30 min target (expect 45-60 min, first run) | Part A is a full dry run of deploy + restore + checks; record real timings |
+| Let's Encrypt issuance never exercised (staging runs `ssl: false`) | HTTPS may fail at the flip | Watch `kamal proxy logs`; ports 80/443 open; max 5 failed validations per hour, so do NOT hammer it; failure after 10 min = no-go, DNS back |
+| Reboot test, failure drills, load baseline | A container or boot problem shows up only later | Do the reboot test and kill-web drill on Saturday daytime (Part E); baseline from AppSignal after one day |
+| Callback inventory (P0.5) unticked | Dotpay, SendGrid Inbound Parse or Strava could still point at old prod | Gate A1 below |
+| Friday night, no 48 h announcement (C.2 recommended Sunday 05:00) | Members hit the maintenance page, payments in flight | Gate A1 (announce now), Dotpay retries URLC on 5xx |
+| `BW_ACCESS_TOKEN_PRODUCTION` is the 2026-01-22 secret, P3.9 (own machine account) unticked | First workflow run may fail at "Get Secrets" | Harmless, fails before any deploy; decided by the first Part A run |
+| No Let's Encrypt fallback cert in bws | No second path if issuance fails | Rollback by DNS, nothing else |
+
+#### Gate A0: owner answers needed before Part A (one at a time)
+1. **Callbacks (P0.5):** SendGrid Inbound Parse (`/email_processor`) points at the hostname `panel.kw.krakow.pl`, not an IP; Dotpay URLC and return URLs use the hostname; Strava webhook callback URL uses the hostname; no OAuth redirect URIs elsewhere; no outbound IP allow-list (Dotpay API, Mailgun) that names `51.68.141.247`. If every one is hostname-based, the DNS flip moves them all and nothing else changes.
+2. **Who changes DNS at the flip**, from where, and does it work (login tested). TTL is 150 s: acceptable, no change needed.
+3. **Announcement**: panel banner or club mail "Friday 22:00-23:30 the panel is unavailable". Decide yes/no and send it now.
+4. **Rollback owner and chat channel**, second operator if any (C.9.1 is still open).
+5. Accept the skipped items in the table above.
+
+#### Part A. Daytime, nothing public (new prod is a dark VPS: DNS still on old prod)
+| # | Step | Command / check | Gate |
+|---|------|-----------------|------|
+| A1 | Gate A0 answered | see above | all 5 |
+| A2 | Repo and Ansible drift | `git status` clean, `develop` == `origin/develop`; `cd ansible && ansible-playbook playbooks/production.yml --check --diff` | `changed=0` |
+| A3 | New prod health, fresh restore point | `df -h /`, `docker ps`, `free -m`; healthchecks `host-health`, `backup`, `restic-check` green; **[O]** OVH snapshot "before first deploy" | all green |
+| A4 | Fetch the latest nightly dump (read-only on old prod) **[A]** | `.agents/skills/scp-transfer/scripts/fetch-latest-prod-dump.sh` | manifest sha256 OK, age under 36 h |
+| A5 | Restore into a scratch DB and verify **[A]** | `S=.agents/skills/prod-db-restore/scripts/restore.sh; $S -t new-prod preflight <dump>`, then `restore`, `verify <dump> --db <scratch>` | `verify` PASS 100% |
+| A6 | Swap it in as `kw_app_production` **[A, explicit: `--yes --ack-mail-risk`]** | `$S -t new-prod swap --db <scratch> --yes --ack-mail-risk` (say which DB is renamed; the empty live DB becomes `_prev_<ts>`). Safe now: cron idle, Redis empty, nothing public. Swap BEFORE the first deploy, otherwise the first boot's `db:prepare` loads an empty schema | `/up` not required yet (`WEB_OPTIONAL=1`) |
+| A7 | Enable the deploy workflow **[A]** | `gh workflow enable deploy-production.yml` | listed `active` |
+| A8 | **First deploy** **[O]** | PR `develop` -> `main`, `test` green, owner merges, owner approves Environment `production`. The workflow runs **`kamal deploy -d production`** (boots kamal-proxy, web, job, cron; accessories are already running, so NOT `kamal setup`; P7 step 1 was corrected). First boot runs `db:prepare` and migrates the restored DB | workflow green; "Get Secrets" step passes (else P3.9) |
+| A9 | Verify inside the container | `kamal app details -d production`; `kamal app logs -d production -r web -n 100`; `kamal app logs -d production -r cron` says "cron disabled ... idling"; `bin/post-deploy-check production --confirm` (mail forced to `:test`, rolled back, 1-2 min); `DRY_RUN=1 bin/rake cron:dry_run` in the container and compare with the staging counts (same order of magnitude, not identical: `send_prepaid_emails` 5, `destroy_expired_events_sign_ups` ~89, `destroy_outdated_profiles` 1, `send_yearly_fee_reminder` ~143) | `PASS`; only the known `GAP` lines (G23, G23b, G37); no 5xx in logs |
+| A10 | Monitoring knows the new containers **[A]** | add `kw-app-web`, `kw-app-job`, `kw-app-cron`, `kamal-proxy` to `monitoring_expected_containers` (names match by prefix), `--check --diff`, `--tags monitoring`; **[O]** unpause healthcheck `kw-prod-log-archive` | next ping green |
+| A11 | Prepare the second deploy, do NOT merge | branch with only `CRON_ENABLED: "true"` in `config/deploy.production.yml` (deploy-config change **[A]**), PR open | PR exists, not merged |
+| A12 | **GO / NO-GO #1 (21:45)** | A2-A10 green, rollback owner present | any red = postpone the night, nothing on old prod has changed yet |
+
+If A8/A9 fail, fix on `develop` and redeploy: nothing public is affected, this is the rehearsal.
+
+#### Part C. The cutover (clock starts at C1)
+| # | Step | Command / check | Gate |
+|---|------|-----------------|------|
+| C1 | Old prod to maintenance, panel vhost only **[A, frozen host]** | nginx maintenance page for the `panel` vhost; other sites untouched; copy the nginx config aside first | the page answers 503, other sites still 200 |
+| C2 | Drain and stop writers on old prod **[A]** | wait for Sidekiq queues = 0, record `scheduled` and `retry` set sizes, then `systemctl stop sidekiq`; save `crontab -l` to a file, then comment out the 10 cron entries | queues 0, no `deploy` crontab line active, no app DB writes in `pg_stat_activity` |
+| C3 | Final dump **[A]** | as `deploy`: `/usr/local/lib/kw-db-backup/runner.py run` (the same producer as the 03:15 job, manifest included, about 20 MB, there is room); then `fetch-latest-prod-dump.sh` | `status.json` `local_status` = VERIFIED, manifest sha256 OK, `started_utc` after C2 |
+| C4 | Stop writers on new prod | `kamal app stop -d production -r job` (cron is idle, web stays for the swap) | job not running |
+| C5 | Restore, verify, swap **[A, explicit: `--yes --ack-mail-risk`]** | `$S -t new-prod restore <final dump>`, `verify` (must be 100%), `swap`; web restarts and `db:prepare` migrates the older schema (expected, staging did the same); then `verify --after-migrate` | PASS, `/up` 200 |
+| C6 | Start the job | `kamal app boot -d production -r job` | Sidekiq up, no crash loop |
+| C7 | Last pre-flip proof, still inside the container | `bin/post-deploy-check production --confirm`; this is the best gate before real traffic | `PASS` |
+| C8 | **GO / NO-GO #2** | C5-C7 green; callbacks confirmed (A1); DNS access works | no-go: remove maintenance on old prod, restart Sidekiq, restore cron: the old state, no data lost |
+| C9 | **Flip DNS** `panel.kw.krakow.pl` A -> `51.255.38.227` **[O]** | no AAAA until IPv6 80/443 was tested from outside; check `dig +short panel.kw.krakow.pl @1.1.1.1` and `@8.8.8.8` | both answer the new IP |
+| C10 | First HTTPS request, then watch issuance | one `curl -sI https://panel.kw.krakow.pl/up`; `kamal proxy logs -d production`. **No `curl --resolve` over HTTPS before C9** | 200 with a valid certificate within 5 min; failure after 10 min = no-go |
+| C11 | **The 30 min window opens (clock = C9)**: Appendix B.3 order | B-INF-1..3, B-LOG-1/2, B-PAY-8, B-PAY-6/7, `bin/post-deploy-check production --confirm`, B-NOT-3, B-MSG-2, B-FIL-2, B-PRO-2, B-JOB-1/3, B-OBS-1 | steps 1-4 green; any red is a rollback input |
+| C12 | **GO / NO-GO #3 at C9 + 30 min** | AppSignal clean, one real mail delivered, one real payment confirmed and refunded in the Dotpay panel | after this: roll forward only |
+| C13 | Second deploy: cron on **[O]** | merge the A11 PR, approve the Environment; then `kamal app logs -d production -r cron` shows supercronic started with the 7-line crontab. Never enabled together with old prod's cron (C2 already stopped it). Cron slots between 22:00 and the deploy are missed: harmless, the next one is at 04:30 (`send_reminders`, `open_conversations`); finish before then | cron container running, the first slot logged |
+| C14 | Certificate alert on **[A]** | `monitoring_tls_check_host: panel.kw.krakow.pl` (ansible), drift gate, `--check --diff`, `--tags monitoring`, one green ping | green |
+| C15 | Leave old prod as it is | maintenance page stays up, Sidekiq stopped, cron off, DB and app intact (D7). Keeping the page up prevents split-brain writes from clients with stale DNS | nothing writes on old prod |
+
+Expected order of magnitude (targets, record the real ones): C1-C3 about 15 min, C4-C7 about 15 min, C9-C12 30 min. Members see the maintenance page from C1 to the end of C9's propagation (150 s TTL), so plan for 45-60 min.
+
+#### Rollback
+| When | Do | Data |
+|------|----|------|
+| Before C9 (DNS not flipped) | remove the maintenance page, `systemctl start sidekiq`, restore the saved crontab on old prod | nothing lost; new prod is left as it is |
+| C9 to C12 (first 30 min) | take a read-only `pg_dump` of new prod first (for reconciliation), then point DNS A back to `51.68.141.247`, remove maintenance, start Sidekiq, restore the crontab | everything written on new prod after C9 is lost: list sign-ups and payments created since C9 and re-enter them; reconcile payments in the Dotpay panel |
+| After C12 | no rollback, fix forward on new prod | |
+
+#### Part E. After tonight (Saturday and following)
+1. Saturday daytime: **reboot test** (everything must come back by itself), `kill` the web container drill, record `docker stats`; run `post-deploy-check` again.
+2. First `kw-log-archive` (00:10), first nightly backup and the first cron slots (04:30, 06:30, then every 30 min from 08:00) watched; the first `*/30` run purges about 89 expired event sign-ups, each with a `destroy` version (G41).
+3. Then C.8 (T+1, T+3, T+7, T+14) and P9 (Gatus on the Pi, G23/G23b, G37, G40, rotation backlog, Phase U). Drop the old scratch DB `kw_restore_20261118211638` and the `_prev_*` DBs only after T+14.
+
+#### Execution log (P8-NIGHT)
+- 2026-11-20: runbook written. Nothing executed yet.
+- 2026-11-20: owner: members already know the panel is off after 22:00 (Gate A0 item 3 answered: announcement done, no dry run of the maintenance page on the live vhost; it is applied for the first time at C1).
+- 2026-11-20: old-prod maintenance facts checked read-only over SSH (nothing changed). nginx 1.18 + Passenger; vhost `/etc/nginx/sites-enabled/panel` (root `/home/deploy/kw-app/current/public`, `passenger_enabled on`, a Certbot 443 block and a port-80 block that redirects); `deploy` is in the `sudo` group but **sudo asks for a password** (`sudo -n` refused), so the agent cannot edit nginx, run `nginx -t`/reload or `systemctl stop sidekiq`: **the owner runs those lines in a terminal** (the agent prepares the exact text). Without sudo the agent can do: create `/home/deploy/maintenance/index.html` (deploy-owned, same readable path style as the app root), `crontab -l`/`crontab` edits, the dump. `sidekiq.service` is a system unit (`/lib/systemd/system`). **The `deploy` crontab also holds the 03:15 `kw-db-backup` line: comment out only the 10 Rails lines (they point at `releases/20261117224844`), keep the backup line** (C3 uses its `runner.py`). Plan: a `location / { return 503; }` + `error_page 503` pointing at the static page in the 443 block of `panel`, `Retry-After` header, backup of the vhost first, `sudo nginx -t` then `sudo systemctl reload nginx` (reload, not restart: the other 8 vhosts are not interrupted). `/assets` and `/packs` locations stay served (harmless static).
 
 ---
 
@@ -541,6 +621,8 @@ Gate: two clean rehearsals on the cutover stack (Ruby 3.2.11 / Rails 7.0.10; Pha
 - [x] Appendix D host review done 2026-11-18 (open items D.6)
 - [ ] C.10 log reading + rotation [PREP] (`logs` role code DONE 2026-11-19, apply pending): `kw-log-archive`, journald limits, `/etc/logrotate.d/kw-app`, `prod-logs` skill, C.10.6 verification passed in P7
 - [ ] P8 cutover (announce, maintenance, restore, flip, verify)
+  - [x] P8-NIGHT runbook written (2026-11-20, section after P9); execution log lives there
+  - [ ] P8-NIGHT Part A (daytime: restore, first deploy, checks), Part C (cutover), Part E (after)
 - [ ] 14-day watch, then P9 decommission, rotation, docs
 
 ## Appendix A. Cron / whenever review (2026-11-17)

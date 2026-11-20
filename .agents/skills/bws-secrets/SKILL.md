@@ -50,6 +50,7 @@ Only touch entries that start with `kw-app-`. The rest (including `registry-*`) 
 | `kw-app-production-restic-password` (restic repo password; loss = backups unrecoverable, keep a break-glass copy) | `ec37f629-fc33-43c7-bb88-b5060153bc58` | `RESTIC_PASSWORD` (backup role) | new prod backups |
 | `kw-app-production-smtp-user` (Mailgun SMTP login `alerts@kw.krakow.pl`, host alert mail only) | `50369487-bfaa-443d-9b9b-b50700946180` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
 | `kw-app-production-smtp-password` (its password; reset in Mailgun > SMTP Credentials, then `bws secret edit`) | `c084912b-566b-4c49-a516-b507009461ee` | read by Ansible `mail` role at apply time, not Kamal | new prod host |
+| `kw-app-production-mailgun-webhook-signing-key` (Mailgun HTTP webhook signing key, 32 chars; verifies the inbound Route POST to `/email_processor`) | `3515b7b9-ee89-471c-8d4e-b5080181ae32` | `MAILGUN_WEBHOOK_SIGNING_KEY` (production web: `.kamal/secrets.production`, `env.secret`, deploy-production workflow) | new prod |
 
 Not in bws (still in `config/credentials/<env>.yml.enc`, read via `ENV.fetch(..) { credentials.dig(..) }`): Mailgun, OpenStack, Dotpay, Strava client, Google OAuth, `secret_key_base`. To move one: create the bws entry, add it to `.kamal/secrets-common` (or the destination file) **and** to `env.secret` in `config/deploy.yml` + `config/deploy.production.yml`, and add it to the "Get Secrets" step of both deploy workflows.
 

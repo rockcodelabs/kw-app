@@ -307,7 +307,7 @@ get "/osemka/:year/zgloszenie/:request_id/edit" => "yearly_prize/editions/reques
 patch "/osemka/:year/zgloszenie/:request_id" => "yearly_prize/editions/requests#update"
 put "/osemka/:year/zgloszenie/:request_id" => "yearly_prize/editions/requests#update"
 
-mount_griddler
+post "/email_processor" => "email_center/inbound_emails#create", as: :email_processor
 
 scope module: 'email_center' do
   namespace :admin do

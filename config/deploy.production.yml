@@ -61,6 +61,7 @@ env:
     - STRAVA_VERIFY_TOKEN
     - REDIS_PASSWORD
     - MAILGUN_API_KEY
+    - MAILGUN_WEBHOOK_SIGNING_KEY
 
 ssh:
   user: deploy

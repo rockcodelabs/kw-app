@@ -83,3 +83,6 @@ docs/current_env_backup.txt
 /config/credentials/development.key
 /config/credentials/staging.key
 .ansible-secrets-reference.txt
+
+# Scratch probes and undo files from the P8 cutover night (local only)
+/.agents/tmp-maint/

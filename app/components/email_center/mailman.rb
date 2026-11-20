@@ -8,7 +8,7 @@ module EmailCenter
     end
 
     def handle_it
-      conversation_code = @to[:token]&.split('+')&.last
+      conversation_code = @to&.dig(:token)&.split('+')&.last
       return true unless conversation_code
 
       conversation = ::Mailboxer::Conversation.find_by(code: conversation_code)

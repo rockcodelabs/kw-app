@@ -294,9 +294,8 @@ GEM
     griddler (1.6.0)
       htmlentities
       rails (>= 3.2.0)
-    griddler-sendgrid (1.2.0)
-      griddler (>= 1.5.2)
-      mail (>= 2.7.0)
+    griddler-mailgun (1.1.1)
+      griddler
     hashdiff (1.1.2)
     hashie (5.0.0)
     high_voltage (4.0.0)
@@ -519,7 +518,6 @@ GEM
     ruby-vips (2.3.0)
       ffi (~> 1.12)
       logger
-    ruby_http_client (3.5.5)
     rubyzip (2.3.2)
     sass (3.4.25)
     sass-rails (6.0.0)
@@ -542,8 +540,6 @@ GEM
       sass (>= 3.3.0, < 3.5)
       select2-rails (~> 4.0)
     select2-rails (4.0.13)
-    sendgrid-ruby (6.7.0)
-      ruby_http_client (~> 3.4)
     shoulda-matchers (6.5.0)
       activesupport (>= 5.2.0)
     sidekiq (7.3.7)
@@ -674,7 +670,7 @@ DEPENDENCIES
   friendly_id (~> 5.2.4)
   google_calendar
   griddler
-  griddler-sendgrid
+  griddler-mailgun
   high_voltage
   jqplot-rails
   jquery-rails
@@ -709,7 +705,6 @@ DEPENDENCIES
   sass-rails
   searchkick
   select2-foundation
-  sendgrid-ruby
   shoulda-matchers (~> 6.4)
   sidekiq
   sidekiq-failures

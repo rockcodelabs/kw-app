@@ -27,9 +27,8 @@ servers:
     env:
       clear:
         TZ: Europe/Warsaw
-        # The role is deployed but idle. Set to "true" in the P8 cutover commit, in the same step that disables
-        # the crontab on old prod (never both).
-        CRON_ENABLED: "false"
+        # Enabled in the P8 cutover (2026-11-21), after old prod's crontab was commented out (C2); never both.
+        CRON_ENABLED: "true"
         # Healthchecks.io heartbeats: <HC_PING_KEY>/<HC_PING_PREFIX>-<job>. Cron role only,
         # so web and Sidekiq runs never ping.
         HC_PING_PREFIX: kw-prod

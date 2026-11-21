@@ -21,15 +21,17 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
   let(:ping_base) { 'https://hc.example.test' }
   let(:today) { '2026-11-19' }
   let(:ok_url) { "#{ping_base}/abcdefghijklmnopqrstuv/kw-prod-log-archive" }
-  # docker ps lists the newest container first. Format: name|service label|role label
+  # docker ps lists the newest container first. Format: name|service label|destination label|role label
+  # (the real Kamal labels are service=kw-app, destination=production, role=web|job|cron).
   let(:default_containers) do
-    "kw-app-web-new111|kw-app-production|web\n" \
-      "kw-app-web-old000|kw-app-production|web\n" \
-      "kw-app-job-new111|kw-app-production|job\n" \
-      "kamal-proxy||\n" \
-      "kw-app-postgres||\n" \
-      "kw-app-redis||\n" \
-      "unrelated-app|other-service|web\n"
+    "kw-app-web-new111|kw-app|production|web\n" \
+      "kw-app-web-old000|kw-app|production|web\n" \
+      "kw-app-job-new111|kw-app|production|job\n" \
+      "kamal-proxy|||\n" \
+      "kw-app-postgres|||\n" \
+      "kw-app-redis|||\n" \
+      "kw-app-web-staging1|kw-app|staging|web\n" \
+      "unrelated-app|other-service||web\n"
   end
 
   after { FileUtils.remove_entry(tmp) }
@@ -59,7 +61,8 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
       KW_HC_SLUG='kw-prod-log-archive'
       KW_LOG_DIR='#{log_dir}'
       KW_LOG_KEEP_DAYS='14'
-      KW_LOG_SERVICE_LABEL='kw-app-production'
+      KW_LOG_SERVICE_LABEL='kw-app'
+      KW_LOG_DESTINATION='production'
       KW_LOG_FIXED='proxy=kamal-proxy postgres=kw-app-postgres redis=kw-app-redis'
       KW_LOG_TZ='Europe/Warsaw'
     ENV
@@ -140,12 +143,14 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
       expect(archive('web', '20260329')).to exist
     end
 
-    it 'selects app containers by label and includes stopped ones' do
+    it 'selects app containers by service and destination label and includes stopped ones' do
       run_script
 
       expect(calls).to include(a_string_matching(/^docker ps .*-a/))
-      expect(calls.grep(/^docker logs/).map { |c| c.split.last }).to include('kw-app-web-old000')
-      expect(calls.grep(/^docker logs/).map { |c| c.split.last }).not_to include('unrelated-app')
+      logged = calls.grep(/^docker logs/).map { |c| c.split.last }
+      expect(logged).to include('kw-app-web-old000')
+      expect(logged).not_to include('unrelated-app')
+      expect(logged).not_to include('kw-app-web-staging1')
     end
 
     it 'puts the containers of one role into one file, oldest first, with stderr merged in and a header per container' do
@@ -180,7 +185,7 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
     end
 
     it 'skips an accessory that does not exist yet without failing' do
-      containers = default_containers.sub("kamal-proxy||\n", '')
+      containers = default_containers.sub("kamal-proxy|||\n", '')
       out, status = run_script(env: { 'STUB_CONTAINERS' => containers })
 
       expect(status).to be_success, out
@@ -217,7 +222,7 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
     end
 
     it 'never writes outside the log directory, whatever a label says' do
-      containers = "#{default_containers}kw-app-evil-1|kw-app-production|../../evil\n"
+      containers = "#{default_containers}kw-app-evil-1|kw-app|production|../../evil\n"
       _out, status = run_script(env: { 'STUB_CONTAINERS' => containers })
 
       expect(status.exitstatus).to eq(1)
@@ -352,7 +357,11 @@ RSpec.describe 'ansible logs role' do # rubocop:disable RSpec/DescribeClass
     it 'keeps 14 days of the app, proxy and accessory logs under /var/log/kw-app' do
       expect(defaults['logs_dir']).to eq('/var/log/kw-app')
       expect(defaults['logs_keep_days']).to eq(14)
-      expect(defaults['logs_service_label']).to eq('kw-app-production')
+      expect(defaults['logs_service_label']).to eq('kw-app')
+      expect(defaults['logs_destination']).to eq('production')
+      env_template = templates.fetch('env.j2')
+      expect(env_template).to include("KW_LOG_SERVICE_LABEL='{{ logs_service_label }}'",
+                                      "KW_LOG_DESTINATION='{{ logs_destination }}'")
       expect(defaults['logs_fixed_containers']).to eq(
         'proxy' => 'kamal-proxy', 'postgres' => 'kw-app-postgres', 'redis' => 'kw-app-redis'
       )

@@ -7,6 +7,7 @@
       - logs_keep_days | string is match('^[0-9]+$')
       - logs_keep_days | int > 0
       - logs_service_label is match('^[A-Za-z0-9_.-]+$')
+      - logs_destination is match('^[A-Za-z0-9_.-]+$')
       - logs_fixed_containers | length > 0
       - logs_fixed_containers.keys() | select('match', '^[a-z0-9_-]+$') | list | length == logs_fixed_containers | length
       - logs_fixed_containers.values() | select('match', '^[A-Za-z0-9_.-]+$') | list | length == logs_fixed_containers | length

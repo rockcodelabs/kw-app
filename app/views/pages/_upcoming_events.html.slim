@@ -1,0 +1,14 @@
+- events_limit = 3
+- events = Training::Supplementary::CourseRecord.published.upcoming.limit(events_limit + 1).to_a
+
+.upcoming-events
+  - events.first(events_limit).each do |event|
+    - starts_at = event.start_date.in_time_zone('Europe/Warsaw')
+    = link_to supplementary_course_path(event.id), class: 'upcoming-event' do
+      .upcoming-event-date title=starts_at.to_date
+        .upcoming-event-month = l(starts_at.to_date, format: '%b')
+        .upcoming-event-day = starts_at.day
+      .upcoming-event-name = event.name
+      .upcoming-event-arrow &gt;
+  - if events.size > events_limit
+    = link_to 'Więcej', supplementary_courses_path, class: 'upcoming-events-more'

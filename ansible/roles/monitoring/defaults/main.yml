@@ -13,11 +13,15 @@ monitoring_mem_min_available_pct: 8
 monitoring_swap_max_pct: 50
 
 # Containers that must be running. An entry matches the exact name (accessories) or "<entry>-<anything>"
-# (Kamal names app containers <service>-<role>-<version>). Add the app roles after the first deploy (P7):
-#   kw-app-web, kw-app-job, kw-app-cron, kamal-proxy
+# (Kamal names app containers <service>-<role>-<version>). The app roles and the proxy were added at the P8
+# cutover (2026-11-21), after confirming the real names on the host.
 monitoring_expected_containers:
   - kw-app-postgres
   - kw-app-redis
+  - kw-app-web
+  - kw-app-job
+  - kw-app-cron
+  - kamal-proxy
 
 # Secret ID in Bitwarden Secrets Manager (project "panel"). The ID is not secret, the value is.
 monitoring_bws_secret_ids:
@@ -25,8 +29,8 @@ monitoring_bws_secret_ids:
 
 # Certificate expiry (G42). kamal-proxy renews the Let's Encrypt certificate by itself; this alerts through the
 # same healthchecks /fail path when the certificate it serves has fewer than monitoring_tls_min_days left.
-# Empty = check off. Set it to panel.kw.krakow.pl at the DNS flip (P8): before that no certificate exists.
-monitoring_tls_check_host: ""
+# Empty = check off. Switched on at the DNS flip (P8, 2026-11-21): before that no certificate existed.
+monitoring_tls_check_host: panel.kw.krakow.pl
 monitoring_tls_addr: 127.0.0.1:443
 monitoring_tls_min_days: 21
 

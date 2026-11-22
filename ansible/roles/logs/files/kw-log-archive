@@ -3,7 +3,8 @@
 #
 # Docker rotates container logs by SIZE, so on a busy day "the last 7 days" is not guaranteed. This keeps a time
 # based archive on the host: it writes YESTERDAY (local midnight to midnight, Europe/Warsaw) of
-#   - every container labelled service=<KW_LOG_SERVICE_LABEL>, one file per role label (web, job, cron), running
+#   - every container labelled service=<KW_LOG_SERVICE_LABEL> AND destination=<KW_LOG_DESTINATION> (Kamal's
+#     labels, e.g. kw-app / production), one file per role label (web, job, cron), running
 #     AND stopped ones, because a deploy leaves several containers behind and a day spans them,
 #   - the fixed containers in KW_LOG_FIXED (kamal-proxy and the accessories), one file each,
 # into <KW_LOG_DIR>/<name>-YYYYMMDD.log.gz (mode 0640, group adm through the setgid directory), deletes archive
@@ -33,7 +34,8 @@ set +a
 : "${HC_PING_BASE:=https://hc-ping.com}"
 : "${KW_LOG_DIR:=/var/log/kw-app}"
 : "${KW_LOG_KEEP_DAYS:=14}"
-: "${KW_LOG_SERVICE_LABEL:=kw-app-production}"
+: "${KW_LOG_SERVICE_LABEL:=kw-app}"
+: "${KW_LOG_DESTINATION:=production}"
 : "${KW_LOG_FIXED:=proxy=kamal-proxy postgres=kw-app-postgres redis=kw-app-redis}"
 : "${KW_LOG_TZ:=Europe/Warsaw}"
 
@@ -46,8 +48,9 @@ if [[ ! "${KW_LOG_KEEP_DAYS}" =~ ^[0-9]+$ ]]; then
   echo "KW_LOG_KEEP_DAYS must be a whole number" >&2
   exit 2
 fi
-if [[ ! "${KW_LOG_SERVICE_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]] || [[ ! "${KW_LOG_FIXED}" =~ ${fixed_re} ]]; then
-  echo "KW_LOG_SERVICE_LABEL or KW_LOG_FIXED is malformed in ${env_file}" >&2
+if [[ ! "${KW_LOG_SERVICE_LABEL}" =~ ^[A-Za-z0-9_.-]+$ ]] || [[ ! "${KW_LOG_DESTINATION}" =~ ^[A-Za-z0-9_.-]+$ ]] ||
+  [[ ! "${KW_LOG_FIXED}" =~ ${fixed_re} ]]; then
+  echo "KW_LOG_SERVICE_LABEL, KW_LOG_DESTINATION or KW_LOG_FIXED is malformed in ${env_file}" >&2
   exit 2
 fi
 if [[ ! "${KW_LOG_TZ}" =~ ^[A-Za-z0-9_+/-]+$ ]] || [ ! -f "/usr/share/zoneinfo/${KW_LOG_TZ}" ]; then
@@ -80,16 +83,16 @@ trap 'rm -rf "${work}"' EXIT
 declare -A members=()
 
 collect_containers() {
-  local listing line name service role pair logname cname
-  if ! listing=$(docker ps -a --format '{{.Names}}|{{.Label "service"}}|{{.Label "role"}}' 2>&1); then
+  local listing line name service destination role pair logname cname
+  if ! listing=$(docker ps -a --format '{{.Names}}|{{.Label "service"}}|{{.Label "destination"}}|{{.Label "role"}}' 2>&1); then
     add_problem "docker: does not answer (${listing})"
     return
   fi
   # docker ps lists the newest first; the archive reads oldest first.
   while IFS= read -r line; do
     [ -n "${line}" ] || continue
-    IFS='|' read -r name service role <<<"${line}"
-    if [ "${service}" = "${KW_LOG_SERVICE_LABEL}" ]; then
+    IFS='|' read -r name service destination role <<<"${line}"
+    if [ "${service}" = "${KW_LOG_SERVICE_LABEL}" ] && [ "${destination}" = "${KW_LOG_DESTINATION}" ]; then
       if [[ "${role}" =~ ^[a-z0-9_-]+$ ]]; then
         members["${role}"]+=" ${name}"
       else
@@ -103,7 +106,7 @@ collect_containers() {
     done
   done < <(printf '%s\n' "${listing}" | tac)
   if [ "${#members[@]}" -eq 0 ] && [ "${#problems[@]}" -eq 0 ]; then
-    add_problem "no container found to archive (service label ${KW_LOG_SERVICE_LABEL}, fixed: ${KW_LOG_FIXED})"
+    add_problem "no container found to archive (labels service=${KW_LOG_SERVICE_LABEL} destination=${KW_LOG_DESTINATION}, fixed: ${KW_LOG_FIXED})"
   fi
 }
 

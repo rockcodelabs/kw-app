@@ -369,8 +369,10 @@ RSpec.describe 'ansible monitoring role' do # rubocop:disable RSpec/DescribeClas
       expect(defaults).to be_a(Hash)
     end
 
-    it 'watches the database and redis containers from day one' do
-      expect(defaults['monitoring_expected_containers']).to include('kw-app-postgres', 'kw-app-redis')
+    it 'watches the database, redis, the three app roles and the proxy' do
+      expect(defaults['monitoring_expected_containers']).to match_array(
+        %w[kw-app-postgres kw-app-redis kw-app-web kw-app-job kw-app-cron kamal-proxy]
+      )
     end
 
     it 'uses the host-health check slug and conservative limits' do
@@ -379,8 +381,8 @@ RSpec.describe 'ansible monitoring role' do # rubocop:disable RSpec/DescribeClas
       expect(defaults['monitoring_swap_max_pct']).to eq(50)
     end
 
-    it 'keeps the certificate check off until the flip, with a 21 day limit once it is switched on' do
-      expect(defaults['monitoring_tls_check_host']).to eq('')
+    it 'checks the certificate of the production host, alerting under 21 days' do
+      expect(defaults['monitoring_tls_check_host']).to eq('panel.kw.krakow.pl')
       expect(defaults['monitoring_tls_min_days']).to eq(21)
       expect(defaults['monitoring_tls_addr']).to eq('127.0.0.1:443')
       expect(templates.fetch('env.j2')).to include('KW_TLS_CHECK_HOST=', 'KW_TLS_MIN_DAYS=', 'KW_TLS_ADDR=')

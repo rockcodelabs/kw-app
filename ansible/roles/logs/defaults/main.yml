@@ -10,8 +10,12 @@ logs_dir: /var/log/kw-app
 # do not raise this without the owner's decision.
 logs_keep_days: 14
 
-# Containers labelled service=<this> are archived, one file per role label (web, job, cron), stopped ones included.
-logs_service_label: kw-app-production
+# Containers labelled service=<logs_service_label> AND destination=<logs_destination> are archived, one file per
+# role label (web, job, cron), stopped ones included. These are Kamal's labels: service is the `service:` of
+# config/deploy.yml (kw-app), destination is the `-d` name (production). Both are needed so that a staging
+# container or another app on the same host is never mixed in.
+logs_service_label: kw-app
+logs_destination: production
 
 # Fixed containers: file name -> container name (the proxy and the accessories have no role label).
 logs_fixed_containers:

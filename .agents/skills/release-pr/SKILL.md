@@ -12,6 +12,10 @@ Repo: `rockcodelabs/kw-app` (always pass `--repo rockcodelabs/kw-app` to `gh`). 
 
 `gh` prints an "upgrade available" banner on stderr; ignore it (or filter with `grep -v -i "new release\|brew upgrade\|releases/tag"`).
 
+## Scope of a release
+
+The release is **every commit on `origin/develop` that is not on `origin/main`** (`git log origin/main..origin/develop`), always computed fresh after `git fetch`. Not "what I worked on in this session", not the commits an older PR listed. The summary, title, risk check and CI check all cover that whole range and the exact current head of `origin/develop`.
+
 ## Hard rules
 
 1. **Never merge the PR, never push to `main`, never force-push.** Only create (or reuse) the PR and return the link.
@@ -108,8 +112,23 @@ Look for an existing one first:
 gh pr list --repo rockcodelabs/kw-app --base main --head develop --state open --json number,url,title
 ```
 
-- Exists: reuse it. Update its body only if the user asked; return the URL.
 - None: write the body to a temp file (avoids shell quoting problems), create the PR, delete the file.
+- Exists: **reuse it, but always refresh it** so it describes the release as it is *now*. A PR opened earlier goes stale when more commits land on `develop` (the PR follows the branch head, but title/body and the CI line do not). Compare:
+
+  ```bash
+  gh pr view <n> --repo rockcodelabs/kw-app --json headRefOid,commits --jq '{head: .headRefOid, commits: (.commits|length)}'
+  git rev-parse origin/develop                       # must equal PR head
+  git rev-list --count origin/main..origin/develop   # must equal PR commits count
+  ```
+
+  Then regenerate title and body from the **full** current `git log origin/main..origin/develop` (same template as below, every commit listed, CI line for the current `origin/develop` sha) and apply them, even if the old body looks "close enough":
+
+  ```bash
+  gh pr edit <n> --repo rockcodelabs/kw-app --title "<title>" --body-file tmp/release_pr_body.md
+  rm -f tmp/release_pr_body.md
+  ```
+
+  This only edits PR text (no merge, no push), so it needs no extra approval. In the report say that an existing PR was refreshed and from how many to how many commits.
 
 Write `tmp/release_pr_body.md` with `write_file`:
 
@@ -118,8 +137,8 @@ Write `tmp/release_pr_body.md` with `write_file`:
 
 <2-4 line summary of what changed, grouped by area, from the commit list>
 
-### Commits
-<output of git log --oneline origin/main..origin/develop, one per line, as a list>
+### Commits (<N> commits not on main)
+<COMPLETE output of git log --oneline origin/main..origin/develop, one per line, as a list; never a subset, the count must match N>
 
 ### Risk check
 - Migrations: <none | list, reversible?>

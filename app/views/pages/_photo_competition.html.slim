@@ -1,0 +1,73 @@
+- section = PhotoCompetition::HomeSection.new(user: current_user)
+- if section.visible?
+  - edition = section.edition
+  #photo-competition-home.row
+    .large-12.columns
+      .callout style='padding: 0.75rem 1rem;'
+        h5 style='margin-bottom: 0.25rem;'
+          = link_to edition.name, section.gallery_path
+        p style='margin-bottom: 0.5rem;'
+          small
+            - case section.stage
+            - when :submissions
+              | Zgłaszaj swoje zdjęcia (max #{PhotoCompetition::RequestRecord::MAX_PHOTOS_PER_CATEGORY} w kategorii).
+              - if edition.start_voting_date.present? || edition.end_voting_date.present?
+                |  Głosowanie: #{section.deadline(edition.start_voting_date)} - #{section.deadline(edition.end_voting_date)}.
+            - when :voting
+              | Trwa głosowanie, masz #{PhotoCompetition::HomeSection::MAX_VOTES} głosy w całej edycji.
+              - if edition.end_voting_date.present?
+                |  Do #{section.deadline(edition.end_voting_date)}.
+            - when :results
+              | Głosowanie zakończone. Wyniki (liczba głosów).
+            |  #{link_to 'Regulamin', '/konkurs_kasprzyka/regulamin'}.
+
+        - case section.stage
+        - when :submissions
+          - if section.categories.any?
+            p style='margin-bottom: 0.5rem;'
+              small
+                b Kategorie:
+                |  #{section.categories.map(&:name).to_sentence}
+          = link_to 'Zgłoś zdjęcie', section.submit_path, class: 'button success tiny', style: 'margin-bottom: 0;'
+
+        - when :voting
+          - if section.votes_left.zero?
+            details
+              summary style='cursor: pointer;'
+                b Twoje głosy: #{section.my_votes.size}/#{PhotoCompetition::HomeSection::MAX_VOTES}
+                small  &ndash; wykorzystałeś wszystkie głosy, kliknij, aby zobaczyć lub zmienić
+              .row.small-up-3.medium-up-6.large-up-8 style='margin-top: 0.5rem;'
+                - section.my_votes.each do |photo|
+                  .column.column-block
+                    = render 'pages/photo_competition_tile', section: section, photo: photo, kind: :voted
+              = link_to 'Przeglądaj wszystkie zdjęcia', section.gallery_path, class: 'button tiny', style: 'margin-bottom: 0;'
+          - else
+            h6 style='margin-bottom: 0.25rem;'
+              | Twoje głosy: #{section.my_votes.size}/#{PhotoCompetition::HomeSection::MAX_VOTES}
+            - if section.my_votes.any?
+              .row.small-up-3.medium-up-6.large-up-8
+                - section.my_votes.each do |photo|
+                  .column.column-block
+                    = render 'pages/photo_competition_tile', section: section, photo: photo, kind: :voted
+
+            - if section.daily_picks.any?
+              h6 style='margin: 0.5rem 0 0.1rem;' Losowe zdjęcia na dziś
+              p style='margin-bottom: 0.25rem;'
+                small Codziennie losujemy inne. Wszystkie zgłoszone zdjęcia znajdziesz na stronie głosowania.
+              .row.small-up-2.medium-up-4
+                - section.daily_picks.each do |photo|
+                  .column.column-block
+                    = render 'pages/photo_competition_tile', section: section, photo: photo, kind: :pick
+
+            = link_to 'Zobacz wszystkie zdjęcia i głosuj', section.gallery_path, class: 'button tiny', style: 'margin-bottom: 0;'
+            - unless edition.finished?
+              |  
+              = link_to 'Zgłoś zdjęcie', section.submit_path, class: 'button secondary tiny', style: 'margin-bottom: 0;'
+
+        - when :results
+          .row.small-up-1.medium-up-2.large-up-4
+            - section.results.each do |group|
+              .column.column-block
+                h6 style='margin-bottom: 0.25rem;'= group.category.name
+                - group.entries.each do |entry|
+                  = render 'pages/photo_competition_tile', section: section, photo: entry.photo, kind: :result, rank: entry.rank

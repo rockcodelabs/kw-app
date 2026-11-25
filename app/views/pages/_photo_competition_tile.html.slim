@@ -1,0 +1,29 @@
+- title = photo.title.presence || 'Bez tytułu'
+- show_image = ->(url, style) { url.present? ? image_tag(url, alt: title, style: style) : nil }
+.photo-competition-tile style='margin-bottom: 0.25rem;'
+  - case kind
+  - when :voted
+    = link_to section.photo_path(photo) do
+      = show_image.call(photo.file.thumb.url, 'width: 100%; aspect-ratio: 1 / 1; object-fit: cover;')
+      small= title
+    = render partial: 'likes/button', locals: { likeable: photo, button_text_like: 'Głosuj', button_text_unlike: 'Cofnij głos', button_size_class: 'tiny', button_style: 'margin: 0.25rem 0 0;' }
+  - when :pick
+    = link_to section.photo_path(photo) do
+      = show_image.call(photo.file.preview.url, 'width: 100%; height: 140px; object-fit: cover;')
+      small
+        b= title
+        - if photo.category.present?
+          |  &ndash; #{photo.category.name}
+    = render partial: 'likes/button', locals: { likeable: photo, button_text_like: 'Głosuj', button_text_unlike: 'Cofnij głos', button_size_class: 'tiny', button_style: 'margin: 0.25rem 0 0;' }
+  - when :result
+    div style='display: flex; gap: 0.5rem; align-items: center; padding: 0.2rem 0; border-top: 1px solid #e6e6e6;'
+      = link_to section.photo_path(photo), style: 'flex: 0 0 50px;' do
+        = show_image.call(photo.file.thumb.url, 'width: 50px; height: 50px; object-fit: cover;')
+      small
+        b= "#{rank}."
+        |  
+        = link_to title, section.photo_path(photo)
+        br
+        = photo.user.display_name
+        |  &ndash; 
+        span.photo-competition-votes= section.votes_label(photo.likes_count)

@@ -8,7 +8,8 @@ module YearlyPrize
   #
   # Stages: :hidden, :submissions, :voting, :voted, :results
   class HomeSection
-    TIME_ZONE = 'Warsaw'
+    include HomeSections::Formatting
+
     SUMMARY_LENGTH = 100
     VOTE_TYPE = 'Db::YearlyPrizeRequest'
 
@@ -67,19 +68,6 @@ module YearlyPrize
 
     def nominees(request)
       request.users.map(&:display_name).to_sentence
-    end
-
-    def votes_label(count)
-      noun =
-        if count == 1 then 'głos'
-        elsif (2..4).cover?(count % 10) && !(12..14).cover?(count % 100) then 'głosy'
-        else 'głosów'
-        end
-      "#{count} #{noun}"
-    end
-
-    def deadline(time)
-      time&.in_time_zone(TIME_ZONE)&.strftime('%-d.%m.%Y %H:%M')
     end
 
     private

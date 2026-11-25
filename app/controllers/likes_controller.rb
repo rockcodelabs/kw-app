@@ -4,7 +4,7 @@ class LikesController < ApplicationController
     when  "PhotoCompetition::RequestRecord"
       edition = PhotoCompetition::RequestRecord.find(like_params[:likeable_id]).edition
 
-      if edition.closed || (edition.end_voting_date.present? && edition.end_voting_date < Time.now)
+      if edition.finished?
         return redirect_back(fallback_location: root_path, alert: 'Głosowanie w tej edycji zakończyło się!')
       end
 

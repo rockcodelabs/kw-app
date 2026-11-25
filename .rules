@@ -225,7 +225,7 @@ When generating new components, use templates from: `templates/`
 |-------------|------|--------|
 | Production (LIVE) | `51.255.38.227`, Ubuntu 26.04, Kamal + Docker: containers `kw-app-web-production-<sha>`, `-job-`, `-cron-`, `kamal-proxy`; accessories `kw-app-postgres` (PG 16, DB `kw_app_production`, user `production_user`) and `kw-app-redis`. `deploy` is in the `docker` group, **no sudo** | The real production. Nightly backups (03:15 Warsaw) in `/var/backups/kw-app` (root-only) plus restic on OVH Object Storage |
 | Old production (PANEL REMOVED 2026-11-25) | `51.68.141.247`, native (no Docker), Ubuntu 20.04 | The panel is gone: app, the `kw_app_production` and `ismf_hq_production` DBs, dumps, Sidekiq, Redis (stopped, disabled), the `panel` vhost and its Certbot cert were removed on 2026-11-25 (owner decision, **no archive kept**). Only the other developer's, non-kw-app sites (e.g. the szkolaalpinizmu.pl WordPress, MariaDB, PostgreSQL 12) still run there |
-| Staging | `pi5main.local` (`rege`), Kamal + Docker, container `kw-app-staging-postgres` | Staging for `develop` |
+| Staging | `pi5main.local` (`rege`), Kamal + Docker, container `kw-app-staging-postgres` | Staging, deployed from the `staging` branch (`develop` does NOT deploy) |
 
 You MUST:
 - Treat `51.255.38.227` as production for every task (data checks, logs, diagnostics, "prod" in any request). Use the `console` skill (`docker exec ... rails runner`) for read-only checks.

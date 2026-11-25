@@ -158,7 +158,7 @@
           - "   - Docker Hub login configured"
           - ""
           - "ℹ️  IMPORTANT: Secrets are managed via GitHub Actions"
-          - "   Deploy using: git push origin develop"
+          - "   Deploy using: git push origin staging"
           - ""
           - "Server ready for accessory deployment."
     

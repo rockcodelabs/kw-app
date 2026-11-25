@@ -141,10 +141,10 @@ RSpec.describe YearlyPrize::HomeSection do
   end
 
   describe '#summary' do
-    it 'prefers the jury description and truncates it to 200 characters' do
+    it 'prefers the jury description and truncates it to 100 characters' do
       request = nomination(category: category_a, author_description: 'autor', prize_jury_description: 'a' * 300)
 
-      expect(section.summary(request).length).to eq(200)
+      expect(section.summary(request).length).to eq(100)
       expect(section.summary(request)).to start_with('aaa')
     end
 

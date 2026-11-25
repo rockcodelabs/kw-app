@@ -1,6 +1,9 @@
-.callout
-  h6= section.nominees(request).presence || 'Zgłoszenie'
-  p= section.summary(request)
-  p= link_to 'więcej', "/osemka/#{edition.year}/zgloszenie/#{request.id}"
+.yearly-prize-card style='padding: 0.4rem 0; border-top: 1px solid #e6e6e6;'
+  b= section.nominees(request).presence || 'Zgłoszenie'
+  br
+  small
+    = section.summary(request)
+    |  
+    = link_to 'więcej', "/osemka/#{edition.year}/zgloszenie/#{request.id}"
   - if voting
-    = render partial: 'likes/button', locals: { likeable: request, button_text_like: 'Zagłosuj za przyznaniem 8semki!', button_text_unlike: 'Cofnij swój głos za przyznaniem 8semki!' }
+    = render partial: 'likes/button', locals: { likeable: request, button_text_like: 'Głosuj', button_text_unlike: 'Cofnij głos', button_size_class: 'tiny', button_style: 'margin: 0.25rem 0 0;' }

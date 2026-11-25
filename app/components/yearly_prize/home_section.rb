@@ -9,7 +9,7 @@ module YearlyPrize
   # Stages: :hidden, :submissions, :voting, :voted, :results
   class HomeSection
     TIME_ZONE = 'Warsaw'
-    SUMMARY_LENGTH = 200
+    SUMMARY_LENGTH = 100
     VOTE_TYPE = 'Db::YearlyPrizeRequest'
 
     CategoryGroup = Struct.new(:category, :requests)

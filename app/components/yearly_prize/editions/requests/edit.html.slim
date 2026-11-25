@@ -33,7 +33,7 @@
         .row
           .large-12.columns
             .callout
-              = simple_format @request.author_description
+              = simple_format_with_links @request.author_description
 
         .row
           .large-12.columns

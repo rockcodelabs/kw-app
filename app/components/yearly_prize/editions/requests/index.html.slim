@@ -37,10 +37,10 @@
             h8.subheader = request.yearly_prize_category.name
             - if request.prize_jury_description.present?
               p
-                = simple_format request.prize_jury_description
+                = simple_format_with_links request.prize_jury_description
             - else
               p
-                = simple_format request.author_description
+                = simple_format_with_links request.author_description
             p
               b= request.author.display_name
           .large-4.columns

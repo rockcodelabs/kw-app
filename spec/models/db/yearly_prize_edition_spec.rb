@@ -18,6 +18,16 @@ RSpec.describe Db::YearlyPrizeEdition, type: :model do
     end
   end
 
+  describe '.create_with_categories' do
+    it 'creates the edition with the three categories (Klubowa Ósemka is not a category)' do
+      described_class.create_with_categories(2027)
+
+      edition = described_class.for_year(2027)
+      expect(edition.name).to eq('Klubowa Ósemka')
+      expect(edition.yearly_prize_categories.order(:id).map(&:name)).to eq(['Ósemka STJ', 'Ósemka SNW', 'Ósemka SWW'])
+    end
+  end
+
   describe '#voting_started?' do
     it 'is false without a start date' do
       expect(build(:yearly_prize_edition).voting_started?(now)).to be(false)

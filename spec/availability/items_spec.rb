@@ -61,4 +61,49 @@ RSpec.describe Availability::Items do
     # item_instructors (instructors owned), item_sww (reserved)
     expect(subject).to match_array([item_snw])
   end
+
+  context 'item given out in an earlier week and not returned yet' do
+    let!(:holder) { create(:user) }
+    let(:earlier_start) { '2016-08-18' }
+    let!(:held_reservation) do
+      create(:reservation, user: holder, state: 'holding', start_date: earlier_start,
+                           end_date: earlier_start.to_date + 7).tap { |r| r.items << item_snw }
+    end
+
+    it 'stays unavailable in later weeks' do
+      expect(subject).to eq([])
+    end
+
+    it 'is available again once marked as returned (archived)' do
+      held_reservation.archive!
+
+      expect(subject).to match_array([item_snw])
+    end
+
+    it 'is still unavailable when the later reservation already exists' do
+      expect(described_class.new(start_date: '2016-09-01').collect).not_to include(item_snw)
+    end
+  end
+
+  context 'item reserved in an earlier week but never given out' do
+    let!(:reservation) do
+      create(:reservation, user: user1, state: 'reserved', start_date: '2016-08-18',
+                           end_date: '2016-08-25').tap { |r| r.items << item_snw }
+    end
+
+    it 'stays available' do
+      expect(subject).to match_array([item_snw])
+    end
+  end
+
+  context 'item given out in a later week' do
+    let!(:reservation) do
+      create(:reservation, user: user1, state: 'holding', start_date: '2016-09-01',
+                           end_date: '2016-09-08').tap { |r| r.items << item_snw }
+    end
+
+    it 'is not blocked in an earlier week' do
+      expect(subject).to match_array([item_snw])
+    end
+  end
 end

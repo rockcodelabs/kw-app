@@ -1,7 +1,7 @@
 module Admin
   class ReservationReminder
     def self.candidates
-      Db::Reservation.expire_tomorrow
+      Db::Reservation.expire_tomorrow.not_archived
     end
 
     def self.send_reminders

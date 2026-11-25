@@ -6,7 +6,11 @@ FactoryBot.define do
     description { Faker::Lorem.sentence }
     rentable { true }
     owner { 'kw' }
-    
+    # Declared on purpose: FactoryBot treats `<name>_id` as an alias of `<name>`, so without this line
+    # `create(:item, rentable_id: 20)` silently drops the `rentable { true }` default above.
+    # `rentable_id` is a plain catalogue number here, not a foreign key.
+    rentable_id { nil }
+
     trait :not_rentable do
       rentable { false }
     end

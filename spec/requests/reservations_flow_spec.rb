@@ -164,6 +164,21 @@ RSpec.describe 'Reservations module', type: :request do
         expect(reservation.reload.state).to eq('archived')
       end
 
+      it 'offers the "Oddane" action for a given out reservation and marks it as returned' do
+        reservation.give!
+
+        get admin_reservations_path
+        expect(response.body).to include('Oddane')
+        expect(response.body).not_to include('Zarchiwizuj')
+
+        get edit_admin_reservation_path(reservation)
+        expect(response.body).to include('Oddane')
+
+        put archive_admin_reservation_path(reservation)
+        expect(flash[:notice]).to eq('Oznaczono jako oddane')
+        expect(reservation.reload.state).to eq('archived')
+      end
+
       it 'marks the payment as paid in cash' do
         put charge_admin_reservation_path(reservation)
 

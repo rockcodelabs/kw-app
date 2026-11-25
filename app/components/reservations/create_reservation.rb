@@ -31,7 +31,10 @@ module Reservations
       end
 
       def items_reserved_in_period(start_date)
-        Db::Reservation.where(start_date: start_date).map(&:item_ids).flatten.uniq
+        reserved = Db::Reservation.where(start_date: start_date).map(&:item_ids).flatten
+        not_returned = Db::Reservation.holding_until(start_date).map(&:item_ids).flatten
+
+        (reserved + not_returned).uniq
       end
     end
   end

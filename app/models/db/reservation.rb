@@ -35,6 +35,8 @@ class Db::Reservation < ActiveRecord::Base
   scope :expire_tomorrow, -> { where(end_date: 1.day.ago.to_date) }
   scope :reserved, -> { where(state: :reserved) }
   scope :holding, -> { where(state: :holding) }
+  # Wydany (holding) i niezwrócony (niezarchiwizowany) sprzęt blokuje przedmioty także w kolejnych tygodniach
+  scope :holding_until, ->(date) { holding.where('reservations.start_date <= ?', date) }
   
   delegate :kw_id, to: :user
 

@@ -16,7 +16,7 @@
       - if params[:archived]
         = link_to 'Pokaż tylko aktywne', admin_reservations_path
       - else
-        = link_to 'Pokaż tylko archiwizowane', admin_reservations_path(archived: true)
+        = link_to 'Pokaż tylko oddane', admin_reservations_path(archived: true)
       table.stack
         thead
           tr
@@ -67,10 +67,10 @@
                     | w posiadaniu
                 - if reservation.archived?
                   span class='label secondary'
-                    | zarchiwizowane
+                    | oddane
               td
                 - if reservation.holding? && !reservation.archived?
-                  = link_to 'Zarchiwizuj ', archive_admin_reservation_path(reservation.id), method: :put
+                  = link_to 'Oddane ', archive_admin_reservation_path(reservation.id), method: :put, data: { confirm: 'Przedmioty zostały oddane?' }
                 - if (reservation.payment.present? && reservation.payment.paid?) && !reservation.holding? && !reservation.archived?
                   = link_to ' Przekaż', give_admin_reservation_path(reservation), method: :put, data: { confirm: 'Jesteś pewien?' }
                 - if reservation.holding? && !reservation.archived?

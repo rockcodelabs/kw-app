@@ -43,7 +43,10 @@ module Availability
     private
 
     def not_available_items
-      Db::Reservation.where(start_date: @start_date, canceled: false).map(&:items).flatten.uniq
+      reserved = Db::Reservation.where(start_date: @start_date, canceled: false).map(&:items).flatten
+      not_returned = Db::Reservation.holding_until(@start_date).map(&:items).flatten
+
+      (reserved + not_returned).uniq
     end
   end
 end

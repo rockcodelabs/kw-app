@@ -47,15 +47,19 @@ module Admin
     def archive
       authorize! :archive, Db::Reservation
       reservation = Db::Reservation.find(params[:id])
+      return redirect_to admin_reservations_path, alert: 'Rezerwacja jest już oddana' unless reservation.can_archive?
+
       reservation.archive!
 
-      redirect_to admin_reservations_path, notice: 'Zarchiwizowano rezerwację'
+      redirect_to admin_reservations_path, notice: 'Oznaczono jako oddane'
     end
 
     def give
       authorize! :give, Db::Reservation
 
       reservation = Db::Reservation.find(params[:id])
+      return redirect_to admin_reservations_path, alert: 'Rezerwacja jest już przekazana lub oddana' unless reservation.can_give?
+
       reservation.give!
 
       redirect_to admin_reservations_path, notice: "Oznaczono jako w posiadaniu."

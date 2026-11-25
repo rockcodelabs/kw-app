@@ -73,6 +73,30 @@ describe Reservations::CreateReservation do
     end
   end
 
+  context 'item given out earlier and not returned yet' do
+    let!(:holder) { create(:user) }
+    let!(:held_reservation) do
+      create(:reservation, user: holder, state: 'holding', start_date: '2016-08-11', end_date: '2016-08-18')
+        .tap { |r| r.items << item }
+    end
+
+    it 'fails' do
+      form = build(:reservation_form, item_ids: [item.id])
+      result = Reservations::CreateReservation.create(form: form, user: user)
+
+      expect(result.item_already_reserved?).to eq(true)
+      expect(Db::Reservation.count).to eq(1)
+    end
+
+    it 'succeeds after the item is marked as returned' do
+      held_reservation.archive!
+      form = build(:reservation_form, item_ids: [item.id])
+      result = Reservations::CreateReservation.create(form: form, user: user)
+
+      expect(result.success?).to eq(true)
+    end
+  end
+
   context 'start_date is thursday in the future' do
     it 'creates reservation successfully' do
       form = build(:reservation_form, item_ids: [item.id])

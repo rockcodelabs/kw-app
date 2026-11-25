@@ -76,7 +76,7 @@
             - if @reservation.payment.present? && @reservation.payment.prepaid?
               - if @reservation.archived?
                 span class='label warning'
-                  | Zarchiwizowano
+                  | Oddane
               - else
                 - if @reservation.payment.present? && @reservation.payment.prepaid?
                   span class='label success'
@@ -92,7 +92,7 @@
           .large-12.columns
             = f.submit 'Zaktualizuj rezerwacje', class: 'button'
             - if @reservation.holding? && !@reservation.archived?
-              = link_to 'Zarchiwizuj', archive_admin_reservation_path(@reservation), method: :put, class: 'button warning'
+              = link_to 'Oddane', archive_admin_reservation_path(@reservation), method: :put, class: 'button warning', data: { confirm: 'Przedmioty zostały oddane?' }
             - if (@reservation.payment.present? && @reservation.payment.paid?) && !@reservation.holding? && !@reservation.archived?
               = link_to 'Przekaż', give_admin_reservation_path(@reservation), method: :put, class: 'button info'
             - if @reservation.payment.present? && @reservation.payment.unpaid? && !@reservation.payment.cash?

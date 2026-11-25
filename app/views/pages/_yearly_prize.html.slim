@@ -1,0 +1,59 @@
+- section = YearlyPrize::HomeSection.new(user: current_user)
+- if section.visible?
+  - edition = section.edition
+  #yearly-prize-home.row
+    .large-12.columns
+      .callout style='padding: 0.75rem 1rem;'
+        h5 style='margin-bottom: 0.25rem;'
+          = link_to "Klubowa Ósemka #{edition.year}", "/osemka/#{edition.year}"
+        p style='margin-bottom: 0.5rem;'
+          small
+            - case section.stage
+            - when :submissions
+              | Zgłaszaj najlepsze przejścia i osiągnięcia klubowiczów.
+              - if edition.start_voting_date.present? || edition.end_voting_date.present?
+                |  Głosowanie: #{section.deadline(edition.start_voting_date)} - #{section.deadline(edition.end_voting_date)}.
+            - when :voting
+              | Trwa głosowanie, masz jeden głos w całej edycji.
+              - if edition.end_voting_date.present?
+                |  Do #{section.deadline(edition.end_voting_date)}.
+            - when :voted
+              | Twój głos został oddany, możesz go cofnąć do końca głosowania. Wyniki po zakończeniu.
+            - when :results
+              | Głosowanie zakończone. Wyniki (liczba głosów).
+            |  #{link_to 'Regulamin', '/osemka/regulamin'}.
+
+        - case section.stage
+        - when :submissions
+          - if edition.yearly_prize_categories.any?
+            p style='margin-bottom: 0.5rem;'
+              small
+                b Kategorie:
+                |  #{edition.yearly_prize_categories.order(:id).map(&:name).to_sentence}
+          = link_to 'Zgłoś tegoroczną Ósemkę!', "/osemka/#{edition.year}/zgloszenie", class: 'button success tiny', style: 'margin-bottom: 0;'
+
+        - when :voting
+          .row.small-up-1.medium-up-2.large-up-4
+            - section.categories.each do |group|
+              .column.column-block
+                h6 style='margin-bottom: 0.25rem;'= group.category.name
+                - group.requests.each do |request|
+                  = render 'pages/yearly_prize_card', section: section, request: request, edition: edition, voting: true
+
+        - when :voted
+          h6 style='margin-bottom: 0.25rem;'= section.my_vote.yearly_prize_category.name
+          = render 'pages/yearly_prize_card', section: section, request: section.my_vote, edition: edition, voting: true
+
+        - when :results
+          .row.small-up-1.medium-up-2.large-up-4
+            - section.results.each do |group|
+              .column.column-block
+                h6 style='margin-bottom: 0.25rem;'= group.category.name
+                - group.entries.each do |entry|
+                  div style='padding: 0.2rem 0; border-top: 1px solid #e6e6e6;'
+                    small
+                      b= "#{entry.rank}."
+                      |  
+                      = link_to section.nominees(entry.request).presence || 'Zgłoszenie', "/osemka/#{edition.year}/zgloszenie/#{entry.request.id}"
+                      |  &ndash; 
+                      span.yearly-prize-votes= section.votes_label(entry.request.likes_count)

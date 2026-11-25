@@ -15,6 +15,9 @@
       = image_tag asset_path('kw-bg-home.jpg')
   br
 
+  = render 'pages/yearly_prize'
+  = render 'pages/photo_competition'
+
   - if false
     .row
       .large-12.columns
@@ -49,7 +52,7 @@
           = link_to activities_mountain_routes_path(q: { s: "hearts_count desc" }) do
             h4 Najlepsze przejścia
             - Db::Activities::MountainRoute.includes(:photos).where(hidden: false).order(hearts_count: :desc).limit(10).each do |record|
-              - if record.photos.any?
+              - if record.photos.any? && record.primary_photo.file.thumb.url.present?
                 = link_to activities_mountain_route_path(record) do
                   = image_tag record.primary_photo.file.thumb.url, class: 'thumbnail'
 

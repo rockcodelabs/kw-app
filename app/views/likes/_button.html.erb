@@ -1,11 +1,13 @@
 <% like = current_user.likes.find_by(likeable: likeable) %>
+<% size_class = local_assigns.fetch(:button_size_class, "") %>
+<% button_style = local_assigns[:button_style] %>
 
 <% if like.nil? %>
-  <%=button_to(button_text_like, likes_path,  class:"button success expanded",
+  <%=button_to(button_text_like, likes_path,  class:"button success expanded #{size_class}".strip, style: button_style,
   params:{ like: {likeable_id: likeable.id,
   likeable_type: likeable.class.to_s}})%>
 <% else %>
   <%=button_to(button_text_unlike, like_path(like),
-  class:"button alert expanded",
+  class:"button alert expanded #{size_class}".strip, style: button_style,
   method: :delete)%>
 <% end %>

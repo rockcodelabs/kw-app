@@ -8,7 +8,7 @@ allowed-tools: Read, Bash
 
 Builds on `scp-transfer` (fetch + verify the dump) and `bws-secrets`. Scripts live in `.agents/skills/prod-db-restore/scripts/`. Tested end to end on 2026-11-17 against a scratch DB on staging; the final swap was rehearsed on throwaway databases only.
 
-> Current state (2026-11-25): production is `51.255.38.227` (live since the 2026-11-20 cutover). `51.68.141.247` is the frozen old prod: the fetch script below still reads from it, so its dump is **stale** (last data 2026-11-20). For staging with current data, take a read-only `pg_dump` from new prod instead (`scp-transfer` skill, "Current data from new prod"); `restore.sh` expects the old-prod dump format (manifest, `OWNER TO deploy`), so test that path on a scratch DB first. The old-prod -> new-prod migration section below is historical. `146.59.44.70` no longer exists. See `.rules` section 14.
+> Current state (2026-11-25): production is `51.255.38.227` (live since the 2026-11-20 cutover). On `51.68.141.247` (old prod) the panel DB and all dumps were **deleted on 2026-11-25**, so the fetch script below no longer works. For staging with current data, take a read-only `pg_dump` from new prod instead (`scp-transfer` skill, "Current data from new prod"); `restore.sh` expects the old-prod dump format (manifest, `OWNER TO deploy`), so test that path on a scratch DB first. The old-prod -> new-prod migration section below is historical. `146.59.44.70` no longer exists. See `.rules` section 14.
 
 ## What "1:1" means here
 

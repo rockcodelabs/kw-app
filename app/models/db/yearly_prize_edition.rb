@@ -34,11 +34,11 @@ class Db::YearlyPrizeEdition < ApplicationRecord
     closed || (end_voting_date.present? && end_voting_date < now)
   end
 
+  # Klubowa Ósemka is not a category: it goes to the nomination with the most votes across the three categories.
   def self.create_with_categories(year)
     edition = Db::YearlyPrizeEdition.create(name: "Klubowa Ósemka", year: year)
     edition.yearly_prize_categories.create(name: 'Ósemka STJ')
     edition.yearly_prize_categories.create(name: 'Ósemka SNW')
     edition.yearly_prize_categories.create(name: 'Ósemka SWW')
-    edition.yearly_prize_categories.create(name: 'Ósemka od Klubowiczów')
   end
 end

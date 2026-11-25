@@ -15,12 +15,12 @@
         - if @request.author_description.present?
           .large-12.columns
             .callout
-              = simple_format @request.author_description
+              = simple_format_with_links @request.author_description
 
         - if @request.prize_jury_description.present?
           .large-12.columns
             .callout
-              = simple_format @request.prize_jury_description
+              = simple_format_with_links @request.prize_jury_description
 
         .large-12.columns
           - if @request.attachments.any?

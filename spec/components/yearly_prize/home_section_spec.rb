@@ -116,7 +116,7 @@ RSpec.describe YearlyPrize::HomeSection do
   end
 
   describe '#results' do
-    it 'ranks nominations by vote count within each category' do
+    it 'ranks all nominations by vote count in one overall ranking, regardless of category' do
       low = nomination(category: category_a, likes: 1)
       high = nomination(category: category_a, likes: 3)
       other = nomination(category: category_b, likes: 2)
@@ -124,19 +124,17 @@ RSpec.describe YearlyPrize::HomeSection do
 
       results = section.results
 
-      expect(results.map { |group| group.category.name }).to eq(['Ósemka STJ', 'Ósemka SNW'])
-      expect(results.first.entries.map(&:request)).to eq([high, low])
-      expect(results.first.entries.map(&:rank)).to eq([1, 2])
-      expect(results.last.entries.map(&:request)).to eq([other])
+      expect(results.map(&:request)).to eq([high, other, low])
+      expect(results.map(&:rank)).to eq([1, 2, 3])
     end
 
     it 'gives tied nominations the same rank' do
       nomination(category: category_a, likes: 2)
-      nomination(category: category_a, likes: 2)
+      nomination(category: category_b, likes: 2)
       nomination(category: category_a, likes: 1)
       edition.update!(closed: true)
 
-      expect(section.results.first.entries.map(&:rank)).to eq([1, 1, 3])
+      expect(section.results.map(&:rank)).to eq([1, 1, 3])
     end
   end
 

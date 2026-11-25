@@ -110,9 +110,10 @@ RSpec.describe 'Homepage Klubowa Ósemka section', type: :request do
       visit_home_at(end_at + 1.hour)
     end
 
-    it 'shows the ranking with vote counts and no vote buttons' do
-      expect(section.text).to include('Wyniki', 'Jan Kowalski')
-      expect(section.css('.yearly-prize-votes').map { |node| node.text.strip }).to contain_exactly('2 głosy', '1 głos')
+    it 'shows one ranking of all nominations with vote counts, the winner as Klubowa Ósemka, and no vote buttons' do
+      expect(section.text).to include('Wyniki', 'Jan Kowalski', 'Klubowa Ósemka')
+      expect(section.css('.yearly-prize-votes').map { |node| node.text.strip }).to eq(['2 głosy', '1 głos'])
+      expect(section.css('.label.success').size).to eq(1)
       expect(section.css('form')).to be_empty
     end
   end
@@ -123,6 +124,7 @@ RSpec.describe 'Homepage Klubowa Ósemka section', type: :request do
       visit_home_at(start_at + 1.day)
 
       expect(section.text).to include('Wyniki')
+      expect(section.css('.label.success')).to be_empty
       expect(section.css('form')).to be_empty
     end
   end

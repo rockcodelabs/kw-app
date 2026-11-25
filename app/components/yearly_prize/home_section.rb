@@ -14,7 +14,6 @@ module YearlyPrize
     VOTE_TYPE = 'Db::YearlyPrizeRequest'
 
     CategoryGroup = Struct.new(:category, :requests)
-    RankedGroup = Struct.new(:category, :entries)
     RankedEntry = Struct.new(:rank, :request)
 
     def initialize(user:, now: Time.current)
@@ -48,11 +47,10 @@ module YearlyPrize
                               .map { |category, list| CategoryGroup.new(category, list) }
     end
 
+    # Klubowa Ósemka goes to the nomination with the most votes across all categories,
+    # so results are one ranking of every nomination (ties share a rank).
     def results
-      @results ||= categories.map do |group|
-        sorted = group.requests.sort_by.with_index { |request, index| [-request.likes_count, index] }
-        RankedGroup.new(group.category, rank(sorted))
-      end
+      @results ||= rank(requests.sort_by.with_index { |request, index| [-request.likes_count, index] })
     end
 
     def my_vote

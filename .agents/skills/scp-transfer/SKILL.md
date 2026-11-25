@@ -1,32 +1,33 @@
 ---
 name: scp-transfer
-description: Safely copy files between kw-app hosts with scp/ssh - fetch the latest nightly DB dump from LIVE production (51.68.141.247) to this machine, verify it against its manifest, and push files to the staging Pi (pi5main.local). Use whenever a task needs a file moved from prod, to staging, or between them (DB dumps, logs, exports). Includes a tested fetch-and-verify script.
+description: Safely copy files between kw-app hosts with scp/ssh - move files from production (new prod 51.255.38.227, live since 2026-11-20) or from the frozen old prod (51.68.141.247, stale DB dumps up to 2026-11-20) to this machine, verify DB dumps, and push files to the staging Pi (pi5main.local). Use whenever a task needs a file moved from prod, to staging, or between them (DB dumps, logs, exports). Includes a tested fetch-and-verify script for the old-prod dumps.
 allowed-tools: Read, Bash
 ---
 
 # scp Transfers (kw-app)
 
-How to move files between **live production**, **this machine (the hub)** and **staging (Pi)** without leaking data or touching production state. Everything here was tested on 2026-11-17.
+How to move files between **production**, **this machine (the hub)** and **staging (Pi)** without leaking data or touching production state. Old-prod parts were tested on 2026-11-17, new-prod parts on 2026-11-25.
 
-> Current state: production is `51.68.141.247`. `51.255.38.227` (new OVH VPS) is the future prod and is NOT live; `146.59.44.70` is obsolete. See `.rules` section 14. Update this skill when the migration happens.
+> Current state (2026-11-25): **production is `51.255.38.227`** (cutover 2026-11-20, `panel.kw.krakow.pl`). The old server `51.68.141.247` is frozen and no longer serves the panel; its `kw_app_production` DB and nightly dumps stop at the cutover (last data 2026-11-20 evening), so **do not use the old-prod dump for current data**. `146.59.44.70` no longer exists. See `.rules` section 14.
 
 ## Hosts
 
 | Name | Login | OS / SSH | Notes |
 |------|-------|----------|-------|
-| **Production (LIVE)** | `deploy@51.68.141.247` | Ubuntu 20.04, OpenSSH 8.2, native (no Docker) | **Source only.** No `jq` installed, so parse JSON locally |
+| **Production (LIVE)** | `deploy@51.255.38.227` | Ubuntu 26.04, Docker + Kamal | **Source only.** `deploy` is in the `docker` group, has **no sudo**. Postgres is the container `kw-app-postgres` (PG 16, user `production_user`, DB `kw_app_production`). Nightly backups are in `/var/backups/kw-app` (root-only, not readable by `deploy`) and in restic on OVH Object Storage |
+| Old prod (FROZEN, read-only) | `deploy@51.68.141.247` | Ubuntu 20.04, OpenSSH 8.2, native (no Docker) | Panel retired. Source of the **stale** dumps in `/var/lib/kw-db-backup/dumps/`. Other (non-kw-app) sites still run there. No `jq`, parse JSON locally |
 | **Staging Pi** | `rege@pi5main.local` | Debian 13 aarch64, OpenSSH 10.0 | Docker; `/tmp` is **tmpfs** (8 GB, RAM-backed, wiped on reboot); 100+ GB free on `/` |
 | **This machine (hub)** | local user | macOS, OpenSSH 9.9 | Has `jq`, `shasum`, `gzip`, `python3`, `rsync` |
-| New prod (NOT LIVE) | `51.255.38.227` (user unknown) | Port 22 open; our key refused for ubuntu/debian/root/deploy/admin | Do not use until access is set up |
+
 
 ## Topology: everything goes through this machine
 
 ```
-prod (deploy@51) ──scp──►  laptop /tmp/kw-prod-dump.XXXX (0700)  ──scp / ssh stream──►  Pi (rege@pi5main.local)
+prod (deploy@...) ──scp──►  laptop /tmp/kw-prod-dump.XXXX (0700)  ──scp / ssh stream──►  Pi (rege@pi5main.local)
         ▲ read-only                  verify here                         ▲ staging only
 ```
 
-The Pi **cannot** reach prod: `ssh deploy@51.68.141.247` from the Pi fails with `Permission denied (publickey)`. Do not add a prod key to the Pi (security change, ask first). Hop through the laptop instead.
+The Pi **cannot** reach (old) prod: `ssh deploy@51.68.141.247` from the Pi fails with `Permission denied (publickey)`. Do not add a prod key to the Pi (security change, ask first). Hop through the laptop instead.
 
 ## Rules (MUST)
 
@@ -39,7 +40,19 @@ The Pi **cannot** reach prod: `ssh deploy@51.68.141.247` from the Pi fails with 
 7. **Strict file names.** Match the dump name against `^kw_app_production-[0-9]{8}T[0-9]{12}Z\.sql\.gz$` before building any path. Do not interpolate user input into remote commands, and do not use remote globs.
 8. **No new files on prod**, and do not leave dumps on prod outside `/var/lib/kw-db-backup/dumps/`. (Prod has only ~3 GB free disk: `/dev/sda1` 20 GB, 84% used.)
 
-## Where the production dumps are
+## Current data from new prod (read-only, tested 2026-11-25)
+
+`deploy` cannot read `/var/backups/kw-app`, so for fresh data stream a plain SQL dump out of the Postgres container (a read-only `pg_dump`; it takes a short consistent snapshot and adds some load, so avoid it during peak hours and ask the user first for a full-DB dump):
+
+```bash
+umask 077; D=$(mktemp -d /tmp/kw-prod-dump.XXXXXX); chmod 700 "$D"
+ssh -o BatchMode=yes -o ConnectTimeout=10 deploy@51.255.38.227 'docker exec kw-app-postgres pg_dump -U production_user --no-owner --no-privileges kw_app_production | gzip' > "$D/kw_app_production-newprod.sql.gz"
+gzip -t "$D/kw_app_production-newprod.sql.gz"   # ~16 MB; a dump with PII, same handling rules as above
+```
+
+This was measured (about 16 MB gzipped) but the output is **not** wired into `fetch-latest-prod-dump.sh` or `prod-db-restore/restore.sh` (they expect the old-prod name pattern, manifest and `OWNER TO deploy`); adapt and test them before relying on it. For a single table or a count, prefer a read-only query with the `console` skill or `docker exec kw-app-postgres psql -U production_user -d kw_app_production -Atc '...'`.
+
+## Where the OLD-prod dumps are (stale since 2026-11-20)
 
 | Item | Value |
 |------|-------|
@@ -51,7 +64,9 @@ The Pi **cannot** reach prod: `ssh deploy@51.68.141.247` from the Pi fails with 
 | Health | `/var/lib/kw-db-backup/status.json`: `local_status` must be `VERIFIED`. `offhost_status` has been `ERROR` (`native_deadline`), so the **local copy is the only copy**: do not delete or modify anything there |
 | Legacy | `/home/deploy/baza_dump/sql/` has only a stale October dump from the old weekly job. Ignore it |
 
-## Quick path: fetch and verify (script)
+## Quick path: fetch and verify (script, old prod only)
+
+The script reads from the frozen old prod, so the dump is **only useful as a historical archive** (data up to the cutover on 2026-11-20); the age warning will fire.
 
 ```bash
 DUMP=$(.agents/skills/scp-transfer/scripts/fetch-latest-prod-dump.sh | tail -n1)
@@ -66,7 +81,7 @@ Cleanup when finished: `rm -rf "$(dirname "$DUMP")"`.
 
 ## Manual commands (tested)
 
-Variables: `PROD=deploy@51.68.141.247`, `PI=rege@pi5main.local`, `SRC=/var/lib/kw-db-backup/dumps`, `OPTS="-o BatchMode=yes -o ConnectTimeout=10"`.
+Variables (old prod, for the dump examples): `PROD=deploy@51.68.141.247` (use `deploy@51.255.38.227` for new prod), `PI=rege@pi5main.local`, `SRC=/var/lib/kw-db-backup/dumps`, `OPTS="-o BatchMode=yes -o ConnectTimeout=10"`.
 
 ```bash
 # List / find newest (strict match, not a remote glob)
@@ -125,7 +140,8 @@ stat -f %z "$D/$NAME"                              # macOS; Linux: stat -c %s. M
 | Symptom | Cause / action |
 |---------|----------------|
 | `Permission denied (publickey)` from the Pi to prod | Expected: the Pi has no prod key. Route via the laptop |
-| `Permission denied` on `51.255.38.227` / `Connection refused` on `146.59.44.70` | Those are the not-live new / obsolete hosts. Production is `51.68.141.247` |
+| `Connection refused` on `146.59.44.70` | That VPS was deleted. Production is `51.255.38.227` |
+| `Permission denied` reading `/var/backups/kw-app` on new prod | Expected: root-only and `deploy` has no sudo. Use the `pg_dump` stream above, or the restic copy (needs bws + the restic password) |
 | `local_status` is not `VERIFIED` | Last nightly backup failed local verification. Do not use the dump; read `/var/lib/kw-db-backup/last-cron.log` (read-only) and tell the user |
 | `offhost_status: ERROR` | Known (`native_deadline`), informational. Mention it, do not fix it from here |
 | Hash mismatch | Truncated/corrupted transfer. Re-fetch once; if it repeats, stop and report |
@@ -137,4 +153,5 @@ stat -f %z "$D/$NAME"                              # macOS; Linux: stat -c %s. M
 - `kamal-deployment`: deploy / console / logs for staging
 - `staging-logs-appsignal`: read-only diagnostics on the Pi and prod
 - `.rules` section 14: which host is live production
+- `console` / `scp` skills: running Ruby on the new prod web container
 - `config/deploy.staging.yml`: staging Postgres container (`kw-app-staging-postgres`, PG 16, user `staging_user`, db `kw_app_staging`)

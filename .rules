@@ -219,21 +219,21 @@ When generating new components, use templates from: `templates/`
 
 ## 14. Environments and Hosts (CURRENT STATE)
 
-**Live production is `51.68.141.247`** (user `deploy`). We have NOT yet migrated to the new production server.
+**Live production is `51.255.38.227`** (user `deploy`, OVH VPS, Kamal + Docker, `https://panel.kw.krakow.pl`). The cutover from the old server happened on 2026-11-20.
 
 | Environment | Host | Status |
 |-------------|------|--------|
-| Production (LIVE) | `51.68.141.247`, native (no Docker), Postgres 10 cluster `main` on :5432, DB `kw_app_production`, user `deploy` | The real production. Daily dumps in `/var/lib/kw-db-backup/dumps/` |
-| New production (NOT LIVE) | `51.255.38.227` (OVH VPS, created 2026-11-17), Kamal + Docker planned | Target of the planned migration. No real traffic. Fresh VPS: SSH login user/key not yet known (our 1Password key is refused for `ubuntu`/`debian`/`root`/`deploy`/`admin`). Replaces the old `146.59.44.70` candidate |
+| Production (LIVE) | `51.255.38.227`, Ubuntu 26.04, Kamal + Docker: containers `kw-app-web-production-<sha>`, `-job-`, `-cron-`, `kamal-proxy`; accessories `kw-app-postgres` (PG 16, DB `kw_app_production`, user `production_user`) and `kw-app-redis`. `deploy` is in the `docker` group, **no sudo** | The real production. Nightly backups (03:15 Warsaw) in `/var/backups/kw-app` (root-only) plus restic on OVH Object Storage |
+| Old production (FROZEN) | `51.68.141.247`, native (no Docker), Postgres 10 `main`, DB `kw_app_production` | No longer serves the panel; its DB is stale since the cutover (data up to 2026-11-20). Other, non-kw-app sites (e.g. the szkolaalpinizmu.pl WordPress) still run there and belong to another developer |
 | Staging | `pi5main.local` (`rege`), Kamal + Docker, container `kw-app-staging-postgres` | Staging for `develop` |
 
 You MUST:
-- Treat `51.68.141.247` as production for every task (dumps, logs, diagnostics, "prod" in any request).
-- Treat `51.255.38.227` as NOT production until the user says the migration is done. `146.59.44.70` is obsolete.
-- Keep production access read-only unless the user explicitly approves a write.
-- **Old prod is frozen (owner decision 2026-11-18):** do NOT deploy to it, do NOT change anything on `51.68.141.247`, and do NOT commit to or push `master`. Only the read-only fetch of the nightly DB dump (`scp-transfer` skill) is allowed. No more `master` -> `develop` syncs; `master` was merged into `develop` once (commit `1e48243a`) and is the final state.
+- Treat `51.255.38.227` as production for every task (data checks, logs, diagnostics, "prod" in any request). Use the `console` skill (`docker exec ... rails runner`) for read-only checks.
+- Never use `51.68.141.247` to answer questions about current app data: it is stale. `146.59.44.70` no longer exists.
+- Keep production access read-only unless the user explicitly approves a write. Production is live: no mail/notification sending, no Dotpay/Strava calls from ad-hoc scripts.
+- **Old prod is frozen (owner decision 2026-11-18):** do NOT deploy to it, do NOT change anything on `51.68.141.247`, and do NOT commit to or push `master`. Only read-only access is allowed there (archive dumps via the `scp-transfer` skill), plus the documented WordPress edits of `szkolaalpinizmu.pl` (`szkolaalpinizmu-edit` skill). No more `master` -> `develop` syncs; `master` was merged into `develop` once (commit `1e48243a`) and is the final state. Old prod is decommissioned only after the T+14 go/no-go (`docs/NEW_PRODUCTION_PLAN.md` P9.4).
 
-Note: `config/deploy.production.yml` and `.github/workflows/deploy-production.yml` now point at new prod `51.255.38.227` (user `deploy`, host `panel.kw.krakow.pl`, whose DNS still points at old prod until the cutover; no `nowypanel` rehearsal name); `146.59.44.70` no longer exists. `bin/migrate-database-to-new-prod`, `bin/verify-migration`, `ansible/` and `README.md` still mention it and are cleaned in plan P4.1. `main` is protected (PR required, `test` check required) and deploys to new prod only through the `production` Environment (reviewer approval); never push to `main` directly. The `Deploy Production` workflow is DISABLED until the P7 rehearsal (`gh workflow enable deploy-production.yml`). Update this section when the migration happens.
+Note: `config/deploy.production.yml` and `.github/workflows/deploy-production.yml` point at `51.255.38.227` (user `deploy`, host `panel.kw.krakow.pl`). `main` is protected (PR required, `test` check required) and deploys to production through the `production` Environment, which has **no required reviewer** (removed by the owner 2026-11-25: merging the PR is the approval, the deploy starts automatically after the `test` job); never push to `main` directly, and a hand `kamal deploy -d production` is an emergency path only. Remaining stale mentions of the old setup are tracked in plan P9.
 
 ---
 

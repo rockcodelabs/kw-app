@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Fetch the latest VERIFIED nightly dump (+ manifest) from LIVE production
-# (51.68.141.247) to a private temp dir on this machine and verify it.
+# Fetch the latest VERIFIED nightly dump (+ manifest) from the OLD, FROZEN
+# production (51.68.141.247) to a private temp dir on this machine and verify it.
+# NOTE: since the cutover on 2026-11-20 the panel runs on 51.255.38.227 and this
+# host's kw_app_production is stale (historical archive only). See the
+# scp-transfer skill for how to get current data from new prod.
 #
 # READ-ONLY on production: only `ls`, `grep` and `scp` *from* prod are used.
 # Prints the path of the verified dump on the LAST line of stdout (and nothing

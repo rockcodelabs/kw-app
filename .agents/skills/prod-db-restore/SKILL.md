@@ -1,6 +1,6 @@
 ---
 name: prod-db-restore
-description: Fetch the latest LIVE prod database dump (51.68.141.247), restore it 1:1 onto a target Postgres (staging Pi now, new prod later), verify row-by-row against the dump, rehearse migrations, swap it in with rollback. Use when asked to refresh staging with production data, "restore prod DB on staging", or to run/rehearse the old-prod -> new-prod DB migration. Includes tested scripts.
+description: Restore a prod database dump 1:1 onto a target Postgres (staging Pi, or new prod 51.255.38.227), verify row-by-row against the dump, rehearse migrations, swap it in with rollback. The bundled fetch script reads the FROZEN old prod (51.68.141.247, data only up to the 2026-11-20 cutover); for current data dump from new prod (see scp-transfer). Use when asked to refresh staging with production data or to restore a dump. Includes tested scripts.
 allowed-tools: Read, Bash
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Read, Bash
 
 Builds on `scp-transfer` (fetch + verify the dump) and `bws-secrets`. Scripts live in `.agents/skills/prod-db-restore/scripts/`. Tested end to end on 2026-11-17 against a scratch DB on staging; the final swap was rehearsed on throwaway databases only.
 
-> Production is `51.68.141.247` (live, read-only source). `51.255.38.227` (new OVH VPS) is the future prod and is NOT live; `146.59.44.70` is obsolete. See `.rules` section 14.
+> Current state (2026-11-25): production is `51.255.38.227` (live since the 2026-11-20 cutover). `51.68.141.247` is the frozen old prod: the fetch script below still reads from it, so its dump is **stale** (last data 2026-11-20). For staging with current data, take a read-only `pg_dump` from new prod instead (`scp-transfer` skill, "Current data from new prod"); `restore.sh` expects the old-prod dump format (manifest, `OWNER TO deploy`), so test that path on a scratch DB first. The old-prod -> new-prod migration section below is historical. `146.59.44.70` no longer exists. See `.rules` section 14.
 
 ## What "1:1" means here
 
@@ -55,7 +55,7 @@ $S drop --db "$PREV" --yes
 rm -rf "$(dirname "$DUMP")"
 ```
 
-`-t new-prod` selects the other profile (placed before the command): `$S -t new-prod preflight "$DUMP"`. Profiles: `scripts/profiles/{staging,new-prod}.env`. **`new-prod.env` is UNTESTED** (SSH to the new VPS 51.255.38.227 was refused on 2026-11-17); confirm every value before first use.
+`-t new-prod` selects the other profile (placed before the command): `$S -t new-prod preflight "$DUMP"`. Profiles: `scripts/profiles/{staging,new-prod}.env`. `new-prod.env` was proven during the migration (P5.2 restore + `verify`, 2026-11-18). Now that new prod is live, **never run `swap`/`rollback`/`drop` against it** without explicit owner approval: `swap` would replace live production data.
 
 ## What each step does and why
 
@@ -86,7 +86,7 @@ The web image entrypoint runs `db:prepare` on every boot, so any migrations stil
 
 Run strict `verify` **before** `migrate`; that is the pure 1:1 proof. After migrating the strict check must fail (new row in `schema_migrations`, changed `ar_internal_metadata`), so use `--after-migrate` there.
 
-## Using this for the old-prod -> new-prod migration
+## Using this for the old-prod -> new-prod migration (HISTORICAL, done 2026-11-20)
 
 1. Keep prod as the source; do not stop it. For a final cut-over a human must decide on a write freeze and a fresh dump (a new dump on prod is a write: ask first; the nightly 03:15 dump is up to ~24 h old).
 2. `bin/migrate-database-to-new-prod` was a broken stub and is deleted; use this skill's scripts. `bin/verify-migration` (row counts on new prod, host from `NEW_PROD_SSH`, default `deploy@51.255.38.227`) can serve as an extra check.

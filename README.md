@@ -8,7 +8,8 @@ Rails monolith with Sidekiq, PostgreSQL, Redis. Deployed via Docker + Kamal.
 
 - **Development**: Local (Docker Compose)
 - **Staging**: Raspberry Pi (`pi5main.local`) - ARM64, manual deploy
-- **Production**: VPS (`51.255.38.227`, OVH, Ubuntu 26.04) - x86_64, deploy via GitHub Actions (PR `develop` -> `main`, approval in the `production` Environment). Not live until the cutover, see `docs/NEW_PRODUCTION_PLAN.md`
+- **Production** (live since 2026-11-20): VPS `51.255.38.227` (OVH, Ubuntu 26.04) - x86_64, `https://panel.kw.krakow.pl`, deploy via GitHub Actions (PR `develop` -> `main`; merging deploys automatically after the tests pass, no manual approval), see `docs/NEW_PRODUCTION_PLAN.md`
+- **Old production** (`51.68.141.247`): frozen, no longer serves the panel (its database is stale since the cutover). Read-only; other sites still run there
 
 ---
 
@@ -60,8 +61,11 @@ docker-compose exec app bundle exec rails console
 # Staging (SSH first: ssh rege@pi5main.local)
 kamal app exec --reuse -d staging "bundle exec rails console"
 
-# Production (SSH first: ssh deploy@51.255.38.227)
-kamal app exec --reuse -d production "bundle exec rails console"
+# Production (live data, read-only habits)
+kamal app exec -d production -i --reuse "bin/rails console"
+
+# Production, one-off script without Kamal (non-interactive)
+echo 'puts Db::User.count' | ssh deploy@51.255.38.227 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -'
 ```
 
 ---

@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Edit, Bash
 
 kw-app uses Kamal for zero-downtime deployments to:
 - **Staging**: Raspberry Pi 4 (ARM64, ~4GB RAM)
-- **Production**: VPS (x86_64)
+- **Production**: OVH VPS `51.255.38.227` (x86_64, Ubuntu 26.04, `https://panel.kw.krakow.pl`), live since 2026-11-20. Deploys come from CI (merge to `main` deploys automatically once the `test` job is green; the `production` Environment has no required reviewer since 2026-11-25, only the `main` branch restriction); a hand `kamal deploy -d production` is an emergency path. The old server `51.68.141.247` is frozen and does not run the panel any more
 
 **Key Features:**
 - Rolling restarts (zero downtime)
@@ -67,7 +67,7 @@ config/
 - Branch: `develop`
 
 **Production (deploy.production.yml):**
-- Server: VPS
+- Server: OVH VPS `51.255.38.227`, SSH user `deploy` (docker group, no sudo)
 - Architecture: x86_64
 - Branch: `main`
 
@@ -108,6 +108,12 @@ zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d stagin
 ```bash
 zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d production -i --reuse "bin/rails console"'
 ```
+
+**Non-interactive production runner (what agents use, tested 2026-11-25):**
+```bash
+echo 'puts Db::User.count' | ssh -o BatchMode=yes deploy@51.255.38.227 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -'
+```
+See the `console` and `scp` skills for the full procedure and safety rules.
 
 **Flag Meanings:**
 - `-d staging/production` - Destination environment

@@ -20,7 +20,8 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    # Required reviewer + branch restriction (main) are configured on this Environment.
+    # Branch restriction (main only) is configured on this Environment; there is no
+    # required reviewer, a merge to main deploys automatically (removed 2026-11-25).
     # It also holds PRODUCTION_KNOWN_HOSTS (variable). The CI SSH key comes from bws.
     environment: production
     env:

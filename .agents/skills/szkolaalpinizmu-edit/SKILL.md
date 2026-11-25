@@ -5,13 +5,15 @@ description: Edit text on the production WordPress site https://szkolaalpinizmu.
 
 # Editing szkolaalpinizmu.pl (WordPress over SSH + WP-CLI)
 
-The site is a WordPress install on the same server as kw-app. We edit it with
+The site is a WordPress install on the old server (`51.68.141.247`, not the new kw-app prod). We edit it with
 WP-CLI over SSH. There are **no WP credentials in this repo** and the REST API
 is read-only without auth.
 
 ## Access
 
-- SSH: `deploy@51.68.141.247` (same as the `scp` skill).
+- SSH: `deploy@51.68.141.247` (the **old, frozen** server; the kw-app panel itself
+  moved to `51.255.38.227` on 2026-11-20, but this WordPress site is a separate
+  site that still runs here, so these edits stay on the old host).
 - WP root: `/home/kwkrakow/webs/alp` (nginx site `sa`, owned by `www-data`).
 - `deploy` may run WP-CLI as `www-data` without a password via
   `/etc/sudoers.d/deploy-wp`:

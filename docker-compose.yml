@@ -6,6 +6,7 @@ services:
       - DB_HOST=postgres
       - DB_USER=dev-user
       - DB_PASSWORD=dev-password
+      - USE_LOCAL_STORAGE=true
       - REDIS_URL_SIDEKIQ=redis://redis:6379/1
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
@@ -51,6 +52,7 @@ services:
       - DB_HOST=postgres
       - DB_USER=dev-user
       - DB_PASSWORD=dev-password
+      - USE_LOCAL_STORAGE=true
       - REDIS_URL_SIDEKIQ=redis://redis:6379/1
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     stdin_open: true

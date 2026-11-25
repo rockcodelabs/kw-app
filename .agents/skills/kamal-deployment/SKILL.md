@@ -64,7 +64,7 @@ config/
 - Server: Raspberry Pi 4
 - Architecture: ARM64
 - Memory: ~4GB (use batches for large operations)
-- Branch: `develop`
+- Branch: `staging` (`develop` does not deploy; promote with PR `develop` -> `staging` or `git push origin develop:staging`)
 
 **Production (deploy.production.yml):**
 - Server: OVH VPS `51.255.38.227`, SSH user `deploy` (docker group, no sudo)
@@ -268,12 +268,12 @@ zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d stagin
 
 ### GitHub Actions (Automated)
 
-**Staging deploys automatically on push to `develop`:**
+**Staging deploys automatically on push to `staging`** (branch flow: `develop` -> `staging` -> `main`):
 ```yaml
 name: Deploy to Staging
 on:
   push:
-    branches: [develop]
+    branches: [staging]
 jobs:
   deploy:
     runs-on: self-hosted  # Runs on Pi

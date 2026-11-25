@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - develop
+      - staging
   # PRs to main run the same check (required status check `test`); a push to main
   # runs it through deploy-production.yml (workflow_call), so main is not in `push`.
   pull_request:
     branches:
       - develop
+      - staging
       - main
   workflow_call:
   workflow_dispatch:

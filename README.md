@@ -8,7 +8,7 @@ Rails monolith with Sidekiq, PostgreSQL, Redis. Deployed via Docker + Kamal.
 
 - **Development**: Local (Docker Compose)
 - **Staging**: Raspberry Pi (`pi5main.local`) - ARM64, manual deploy
-- **Production** (live since 2026-11-20): VPS `51.255.38.227` (OVH, Ubuntu 26.04) - x86_64, `https://panel.kw.krakow.pl`, deploy via GitHub Actions (PR `develop` -> `main`; merging deploys automatically after the tests pass, no manual approval), see `docs/NEW_PRODUCTION_PLAN.md`
+- **Production** (live since 2026-11-20): VPS `51.255.38.227` (OVH, Ubuntu 26.04) - x86_64, `https://panel.kw.krakow.pl`, deploy via GitHub Actions (PR `staging` -> `main`; merging deploys automatically after the tests pass, no manual approval), see `docs/NEW_PRODUCTION_PLAN.md`
 - **Old production** (`51.68.141.247`): frozen, no longer serves the panel (its database is stale since the cutover). Read-only; other sites still run there
 
 ---
@@ -75,7 +75,7 @@ echo 'puts Db::User.count' | ssh deploy@51.255.38.227 'docker exec -i $(docker p
 ### Staging (Manual)
 ```bash
 ssh rege@pi5main.local
-cd ~/kw-app && git pull origin develop
+cd ~/kw-app && git pull origin staging
 kamal deploy -d staging
 ```
 
@@ -112,7 +112,10 @@ See [docs/RAILS_ENCRYPTED_CREDENTIALS.md](docs/RAILS_ENCRYPTED_CREDENTIALS.md)
 ## 🤝 Contributing
 
 **Where to commit:**
-- Features/fixes: `develop` branch (staging)
-- Production deploy: `main` branch (triggers CI/CD)
+Branch flow: `develop` -> `staging` -> `main`.
+
+- Features/fixes: `develop` branch (development; CI tests only, no deploy)
+- Staging deploy: push or merge to `staging` branch (triggers `Deploy Staging`)
+- Production deploy: PR `staging` -> `main` (merging triggers `Deploy Production`)
 
 **Never commit:** Master keys, secrets, or `config/credentials/*.key` files.

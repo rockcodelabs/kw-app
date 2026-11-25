@@ -13,7 +13,7 @@ Single source of truth for deploy-time secrets. Read/write access verified on 20
 1. **Never print a secret value** - not in tool output, logs, commits or docs. Report names, UUIDs, lengths, or a hash prefix.
 2. `bws secret create` and `bws secret edit` **echo the value** in their JSON. Always post-process (see below).
 3. Never decrypt `config/credentials/*.yml.enc` in a snippet that can raise with the config in the message. Print key *names* only.
-4. Do not commit, push or deploy without asking (`.rules` section 8). A push to `develop` redeploys staging; a push to `main` targets the NOT-live new prod.
+4. Do not commit, push or deploy without asking (`.rules` section 8). A push to `staging` redeploys staging (`develop` does not deploy); a push to `main` targets the NOT-live new prod.
 5. Prod is read-only unless the user approves a write.
 
 ## Where things live
@@ -105,7 +105,7 @@ A literal value on the command line is briefly visible in shell history and `ps`
 
 1. Issue the new credential at the provider (Mailgun, OpenStack, Dotpay, Strava, Google, AppSignal, Redis ...).
 2. `bws secret edit <uuid> --value ... >/dev/null`.
-3. Redeploy the environment (push to `develop` for staging; production per its own process) so Kamal re-injects it. A value that lives in `credentials/<env>.yml.enc` instead must be re-encrypted with that environment's key in a throw-away shell (`bin/rails credentials:edit --environment <env>`).
+3. Redeploy the environment (push to `staging` for staging; production per its own process) so Kamal re-injects it. A value that lives in `credentials/<env>.yml.enc` instead must be re-encrypted with that environment's key in a throw-away shell (`bin/rails credentials:edit --environment <env>`).
 4. Verify without printing: `docker exec <container> sh -c 'printf %s "$NAME" | wc -c'`, then a functional check.
 5. Revoke the old credential at the provider.
 6. Rotating `secret_key_base` logs every user out but does not break stored passwords (Devise `secret_key`/`pepper` are not set).

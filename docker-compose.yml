@@ -4,6 +4,8 @@ services:
     build: .
     environment:
       - DB_HOST=postgres
+      - DB_USER=dev-user
+      - DB_PASSWORD=dev-password
       - REDIS_URL_SIDEKIQ=redis://redis:6379/1
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
@@ -47,6 +49,8 @@ services:
       - kw-app-tmp:/rails/tmp
     environment:
       - DB_HOST=postgres
+      - DB_USER=dev-user
+      - DB_PASSWORD=dev-password
       - REDIS_URL_SIDEKIQ=redis://redis:6379/1
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     stdin_open: true

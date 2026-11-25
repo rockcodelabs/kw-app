@@ -22,6 +22,18 @@ class Db::YearlyPrizeEdition < ApplicationRecord
   validates :name, presence: true
   validates :year, presence: true, uniqueness: true
 
+  def self.for_year(year)
+    find_by(year: year)
+  end
+
+  def voting_started?(now = Time.current)
+    start_voting_date.present? && now >= start_voting_date
+  end
+
+  def finished?(now = Time.current)
+    closed || (end_voting_date.present? && end_voting_date < now)
+  end
+
   def self.create_with_categories(year)
     edition = Db::YearlyPrizeEdition.create(name: "Klubowa Ósemka", year: year)
     edition.yearly_prize_categories.create(name: 'Ósemka STJ')

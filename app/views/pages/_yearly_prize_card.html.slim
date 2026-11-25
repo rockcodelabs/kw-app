@@ -1,0 +1,6 @@
+.callout
+  h6= section.nominees(request).presence || 'Zgłoszenie'
+  p= section.summary(request)
+  p= link_to 'więcej', "/osemka/#{edition.year}/zgloszenie/#{request.id}"
+  - if voting
+    = render partial: 'likes/button', locals: { likeable: request, button_text_like: 'Zagłosuj za przyznaniem 8semki!', button_text_unlike: 'Cofnij swój głos za przyznaniem 8semki!' }

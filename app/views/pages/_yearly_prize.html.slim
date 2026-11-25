@@ -1,0 +1,59 @@
+- section = YearlyPrize::HomeSection.new(user: current_user)
+- if section.visible?
+  - edition = section.edition
+  #yearly-prize-home.row
+    .large-12.columns
+      .callout
+        h4= link_to "Klubowa Ósemka #{edition.year}", "/osemka/#{edition.year}"
+
+        - case section.stage
+        - when :submissions
+          p
+            | Nagroda dla najlepszych przejść i osiągnięć klubowiczów w roku #{edition.year}. Zgłoś swoją Ósemkę, a w terminie głosowania wybierz najlepszą nominację.
+            |  Szczegóły i zasady w #{link_to 'regulaminie', '/osemka/regulamin'}.
+          - if edition.yearly_prize_categories.any?
+            p
+              b Kategorie:
+              |  #{edition.yearly_prize_categories.order(:id).map(&:name).to_sentence}
+          - if edition.start_voting_date.present? || edition.end_voting_date.present?
+            p
+              b Głosowanie:
+              |  od #{section.deadline(edition.start_voting_date)} do #{section.deadline(edition.end_voting_date)}
+          = link_to 'Zgłoś tegoroczną Ósemkę!', "/osemka/#{edition.year}/zgloszenie", class: 'button success'
+
+        - when :voting
+          p
+            | Trwa głosowanie! Masz jeden głos w całej edycji – wybierz jedną nominację.
+            |  Zasady w #{link_to 'regulaminie', '/osemka/regulamin'}.
+          - if edition.end_voting_date.present?
+            p
+              b Głosowanie trwa do:
+              |  #{section.deadline(edition.end_voting_date)}
+          - section.categories.each do |group|
+            h5= group.category.name
+            - group.requests.each do |request|
+              = render 'pages/yearly_prize_card', section: section, request: request, edition: edition, voting: true
+
+        - when :voted
+          p
+            | Twój głos został oddany. Możesz go cofnąć do końca głosowania. Wyniki pojawią się po zakończeniu głosowania.
+            |  Zasady w #{link_to 'regulaminie', '/osemka/regulamin'}.
+          h5= section.my_vote.yearly_prize_category.name
+          = render 'pages/yearly_prize_card', section: section, request: section.my_vote, edition: edition, voting: true
+
+        - when :results
+          p
+            | Głosowanie zakończone. Wyniki (liczba głosów) w poszczególnych kategoriach.
+            |  Zasady w #{link_to 'regulaminie', '/osemka/regulamin'}.
+          - section.results.each do |group|
+            h5= group.category.name
+            table.stack
+              tbody
+                - group.entries.each do |entry|
+                  tr
+                    td width='8%'
+                      b= "#{entry.rank}."
+                    td
+                      = link_to section.nominees(entry.request).presence || 'Zgłoszenie', "/osemka/#{edition.year}/zgloszenie/#{entry.request.id}"
+                    td.text-right width='20%'
+                      span.yearly-prize-votes= section.votes_label(entry.request.likes_count)

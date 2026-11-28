@@ -29,7 +29,7 @@ Kontener web: `W=$(docker ps -q -f name=kw-app-web-production)`
 1. **Napisz skrypt lokalnie** do `tmp/<opisowa_nazwa>.rb` (użyj `write_file`).
    Nadaj unikalną, opisową nazwę (np. `tmp/july_gorskie_dziki.rb`).
 
-2. **Sprawdź połączenie** (raz na sesję):
+2. **Sprawdź połączenie** (raz na sesję). Uwaga: zwykły `ssh`/`scp` do prod daje `Too many authentication failures` na tym laptopie. Użyj skilla **`ssh-access`**: `OPTS="$(.agents/skills/ssh-access/scripts/kw-ssh.sh prod-opts)"` i dodaj `$OPTS` do każdego `ssh`/`scp` poniżej:
 
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes deploy@51.255.38.227 "echo ok"

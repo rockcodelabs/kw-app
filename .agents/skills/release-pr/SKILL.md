@@ -232,7 +232,7 @@ gh run watch <databaseId> --repo rockcodelabs/kw-app --exit-status
 curl -s -o /dev/null -w '%{http_code}\n' https://panel.kw.krakow.pl/up     # expect 200
 ```
 
-Optional read-only version check: `ssh deploy@51.255.38.227 "docker ps --format '{{.Names}}'"` shows the new `kw-app-web-production-<sha>` (see the `console` skill). If the deploy fails, report the failing step and do not retry blindly; rollback is `kamal rollback -d production` and needs the owner's approval (`kamal-deployment` skill).
+Optional read-only version check (use the `ssh-access` wrapper, plain ssh fails on this Mac with `Too many authentication failures`): `.agents/skills/ssh-access/scripts/kw-ssh.sh prod "docker ps --format '{{.Names}}'"` shows the new `kw-app-web-production-<sha>` (see the `console` skill). If the deploy fails, report the failing step and do not retry blindly; rollback is `kamal rollback -d production` and needs the owner's approval (`kamal-deployment` skill).
 
 ## Staging route (only when the owner explicitly asks)
 

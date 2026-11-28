@@ -16,6 +16,13 @@ wyrażenia przez `rails runner` czytając skrypt ze stdin.
 > `51.68.141.247` jest zamrożony i nie obsługuje już panelu — nie używaj go do
 > sprawdzania danych aplikacji (jego baza jest nieaktualna od 2026-11-20).
 
+> **Dostęp SSH:** na laptopie właściciela zwykły `ssh deploy@51.255.38.227`
+> kończy się błędem `Too many authentication failures` (agent 1Password podsuwa
+> za dużo kluczy). Wszystkie komendy poniżej idą przez wrapper z skilla
+> **`ssh-access`**: `S=.agents/skills/ssh-access/scripts/kw-ssh.sh`, a potem
+> `$S prod "<komenda zdalna>"` (stdin jest przekazywany). Zasady (max 2 próby,
+> prod tylko do odczytu, troubleshooting) są w `ssh-access`.
+
 ## Dane serwera
 
 - Host: `51.255.38.227` (OVH VPS, Ubuntu 26.04, Docker + Kamal)
@@ -40,20 +47,20 @@ dwa ID. Sprawdź `docker ps` i poczekaj na koniec deployu.
 1. **Najpierw sprawdź połączenie** (raz na sesję):
 
    ```
-   ssh -o ConnectTimeout=10 -o BatchMode=yes deploy@51.255.38.227 "hostname; docker ps --format '{{.Names}}\t{{.Status}}'"
+   $S prod "hostname; docker ps --format '{{.Names}}\t{{.Status}}'"
    ```
 
 2. **Krótki snippet** — przekaż przez stdin (`-i` jest wymagane, `-` = czytaj ze stdin):
 
    ```
-   echo 'puts Db::User.count' | ssh -o ConnectTimeout=10 -o BatchMode=yes deploy@51.255.38.227 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -'
+   echo 'puts Db::User.count' | $S prod 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -'
    ```
 
 3. **Dłuższy skrypt** — zapisz go lokalnie do `tmp/<opisowa_nazwa>.rb`, a potem
    uruchom na prodzie czytając ze stdin (unikasz piekła cudzysłowów):
 
    ```
-   ssh -o ConnectTimeout=10 -o BatchMode=yes deploy@51.255.38.227 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -' < tmp/<opisowa_nazwa>.rb
+   $S prod 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -' < tmp/<opisowa_nazwa>.rb
    ```
 
    Jeśli skrypt trzeba fizycznie wgrać na serwer, użyj skilla **scp**.

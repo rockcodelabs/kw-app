@@ -83,6 +83,8 @@ Cleanup when finished: `rm -rf "$(dirname "$DUMP")"`.
 
 Variables (old prod, for the dump examples): `PROD=deploy@51.68.141.247` (use `deploy@51.255.38.227` for new prod), `PI=rege@pi5main.local`, `SRC=/var/lib/kw-db-backup/dumps`, `OPTS="-o BatchMode=yes -o ConnectTimeout=10"`.
 
+> **New prod (`51.255.38.227`) from this Mac:** plain options fail with `Too many authentication failures` (1Password agent offers too many keys). Set `OPTS="$(.agents/skills/ssh-access/scripts/kw-ssh.sh prod-opts)"` instead (pins the one authorized key, see the `ssh-access` skill) and use it for every `ssh`/`scp` to prod. Staging (`PI`) needs no pinning.
+
 ```bash
 # List / find newest (strict match, not a remote glob)
 ssh $OPTS $PROD "ls -1 $SRC" | grep -E '^kw_app_production-[0-9]{8}T[0-9]{12}Z\.sql\.gz$' | sort | tail -n1

@@ -110,6 +110,8 @@ zsh -c 'source ~/.zshrc && chruby 3.2.11 && bundle exec kamal app exec -d produc
 ```
 
 **Non-interactive production runner (what agents use, tested 2026-11-25):**
+> On the owner's Mac plain `ssh deploy@51.255.38.227` fails with `Too many authentication failures` (1Password agent). Use the `ssh-access` skill wrapper: `$S prod '...'` with `S=.agents/skills/ssh-access/scripts/kw-ssh.sh`.
+
 ```bash
 echo 'puts Db::User.count' | ssh -o BatchMode=yes deploy@51.255.38.227 'docker exec -i $(docker ps -q -f name=kw-app-web-production) bin/rails runner -e production -'
 ```

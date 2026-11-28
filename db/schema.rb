@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_02_28_110735) do
+ActiveRecord::Schema.define(version: 2026_11_28_130100) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -444,6 +444,28 @@ ActiveRecord::Schema.define(version: 2025_02_28_110735) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "library_inventories", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "state", default: 0, null: false
+    t.datetime "started_at", null: false
+    t.datetime "closed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["state"], name: "index_library_inventories_one_open", unique: true, where: "(state = 0)"
+  end
+
+  create_table "library_inventory_checks", force: :cascade do |t|
+    t.bigint "inventory_id", null: false
+    t.bigint "item_id", null: false
+    t.datetime "checked_at", null: false
+    t.text "note"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inventory_id", "item_id"], name: "index_library_inventory_checks_on_inventory_and_item", unique: true
+    t.index ["inventory_id"], name: "index_library_inventory_checks_on_inventory_id"
+    t.index ["item_id"], name: "index_library_inventory_checks_on_item_id"
+  end
+
   create_table "library_item_authors", force: :cascade do |t|
     t.integer "item_id"
     t.integer "author_id"
@@ -463,6 +485,18 @@ ActiveRecord::Schema.define(version: 2025_02_28_110735) do
     t.integer "back_by"
   end
 
+  create_table "library_item_scans", force: :cascade do |t|
+    t.bigint "item_id", null: false
+    t.integer "kind", default: 3, null: false
+    t.integer "position", default: 0, null: false
+    t.string "image", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["item_id", "position"], name: "index_library_item_scans_on_item_and_position"
+    t.index ["item_id"], name: "index_library_item_scans_on_item_id"
+    t.index ["item_id"], name: "index_library_item_scans_one_cover_per_item", unique: true, where: "(kind = 0)"
+  end
+
   create_table "library_item_tags", force: :cascade do |t|
     t.integer "item_id"
     t.integer "tag_id"
@@ -479,11 +513,18 @@ ActiveRecord::Schema.define(version: 2025_02_28_110735) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "item_id"
-    t.boolean "reading_room"
+    t.boolean "reading_room", default: false, null: false
     t.string "autors"
     t.date "publishment_at"
     t.string "number"
     t.string "slug", null: false
+    t.string "original_title"
+    t.string "edition_info"
+    t.string "publisher"
+    t.text "disciplines", default: [], null: false, array: true
+    t.text "countries", default: [], null: false, array: true
+    t.string "region"
+    t.datetime "label_printed_at"
   end
 
   create_table "library_tags", force: :cascade do |t|
@@ -1352,6 +1393,9 @@ ActiveRecord::Schema.define(version: 2025_02_28_110735) do
   end
 
   add_foreign_key "club_meetings_ideas", "users"
+  add_foreign_key "library_inventory_checks", "library_inventories", column: "inventory_id"
+  add_foreign_key "library_inventory_checks", "library_items", column: "item_id"
+  add_foreign_key "library_item_scans", "library_items", column: "item_id"
   add_foreign_key "likes", "users"
   add_foreign_key "mailboxer_conversation_opt_outs", "mailboxer_conversations", column: "conversation_id", name: "mb_opt_outs_on_conversations_id"
   add_foreign_key "mailboxer_notifications", "mailboxer_conversations", column: "conversation_id", name: "notifications_on_conversation_id"

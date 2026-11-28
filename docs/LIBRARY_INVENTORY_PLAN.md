@@ -6,7 +6,7 @@ Goal: a librarian walks along the shelves with a phone and inventories every phy
 
 ### Start here (handoff for the next session)
 
-1. **Step 0, printer spike**: needs the NIIMBOT D110_M, and the label roll size (printed on the roll or box, e.g. 12x40 mm). No code.
+1. **Step 0, printer spike: done.** Roll 12x40 mm, connection from Bluefy on the iPhone works with `acceptAllDevices`; actual printing is proven in step 20.
 2. **Step 1, test baseline**: factory + spec for `Library::ItemRecord`, Docker only.
 3. **Step 2, migration**: needs the user's explicit go (Ask-First). Production was re-checked read-only on 2026-11-25 (see section 1, "Production check"): `reading_room` has 0 nulls, so `NOT NULL DEFAULT false` is safe. **SSH to production**: use the `ssh-access` skill (`.agents/skills/ssh-access/scripts/kw-ssh.sh prod "..."`); plain ssh fails here with "Too many authentication failures" because of the 1Password agent. Read-only commands only.
 4. **Before step 3**: the user confirms or edits the fixed lists of rodzaje and kraje (4.0). **Before step 9**: the AI vendor and API key (via `bws-secrets`) and the vendor's data-use terms.
@@ -100,6 +100,26 @@ Options:
 1. **Phase 1 (this plan)**: the app serves each label as a PNG at the exact pixel size of the roll (big number, optional short title; size configurable) and a "Labels to print" queue page. From there the user prints either via the official NIIMBOT app (works on iPhone and Android: download or share the PNG) or in batch on a computer through `niim.blue` (CSV batch import, QR/Code 128 supported). No reverse-engineered protocol, no new gems.
 2. **Later, optional**: a "Print" button using `niimbluelib` over Web Bluetooth for Android and desktop Chrome, after the D110_M spike confirms the model works.
 3. P3 (A4 sheets) and P4 (print agent) are out of scope.
+
+**iPhone options researched 2026-11-28** (question: is there an iPhone way to print from the app?):
+
+| iPhone route | Status | Verdict |
+|--------------|--------|---------|
+| **Bluefy** (free App Store browser by PNN SOFT, 4.8 stars, 1.3K ratings, iOS 12+, adds Web Bluetooth) **[V]** | Our page must be opened in Bluefy instead of Safari. Same `niimbluelib` code as for Android, HTTPS required (we have it) | Best "print from the app" route for an iPhone. Cost: the librarian uses Bluefy as a second browser. Untested with the D110_M |
+| Safari extension that adds Web Bluetooth (named in the niimblue README) **[V]** | Third-party, setup is on the niimblue wiki | Fragile, skip |
+| `niim.blue` standalone iOS app (Capacitor, merged Jan 2025, listed as experimental) **[V]** | No App Store release found in the README, needs a self build / TestFlight by the community | Skip |
+| Open `niim.blue` in Safari | No Web Bluetooth, cannot reach the printer | Not possible |
+| Official NIIMBOT iOS app | No documented URL scheme or API found | Manual: save the PNG, share it into the app (P2) |
+
+Useful detail **[V]**: `niim.blue` accepts a whole label in the URL (`https://niim.blue/#load=<base64 gzipped label JSON>` or `#uload=<base64 label JSON>`). So a "Print in niim.blue" link from our label page is possible in Bluefy, Android Chrome and desktop Chrome, with the label prefilled and no own Bluetooth code. The label JSON format still has to be checked in the niimblue source before building it. The D110 is named in the niimblue / niimbluelib topics; the exact **D110_M** is not listed anywhere I could read, so step 0 stays the deciding test.
+
+**Spike result so far (2026-11-28, user's iPhone) [V]**: official NIIMBOT app shows `D110_M-I310021021`, firmware 4.31, hardware 4.01. In **Bluefy**, a plain Web Bluetooth page with `acceptAllDevices: true` found and connected to the printer and listed the NIIMBOT service `E7810A71-73AE-499D-8C15-FAA9AEF0C3F2` with characteristic `BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F` [NOTIFY, WRITE, WRITE_WITHOUT_RESPONSE]. So Web Bluetooth to the D110_M works on the iPhone in Bluefy. `niim.blue` itself did not show the printer in the picker (its filter: name prefix of model first letters + the service UUID; one failed attempt was in Brave, which has Web Bluetooth off, so it does not count). Still to test: `niim.blue` in Bluefy after the NIIMBOT app is disconnected, then an actual test print.
+
+Implication for step 20: in our own page do `requestDevice({ acceptAllDevices: true, optionalServices: [service uuid] })` and pass the result to `niimbluelib` `client.connect({ authorizedDevice })`, so we do not depend on niim.blue's device filter. Downside: the picker lists all nearby Bluetooth devices.
+
+Decision input for step 20: the cheapest direct-print path is the `#uload` link (open in Bluefy on the iPhone), before writing own `niimbluelib` code.
+
+**D110_M support checked in the source (2026-11-28) [V]**: `niimbluelib` `src/printer_models.ts` has an explicit `D110_M` entry (Bluetooth model id 2320, 203 dpi, print head 96 px, so a 12 mm wide print area at about 8 px/mm, gap and transparent label types, density 1-5, default 3) and a dedicated `D110MV4PrintTask` (protocol v4, also supports grayscale). So the model is known to the library. What is still unproven is only the real connection from Bluefy on your iPhone; that is the step 0 test. Label size implication for step 16: the PNG must be at most 96 px wide on the print-head axis (e.g. a 12x40 mm roll is 96 x 320 px at 203 dpi).
 
 QR codes are not needed in the number-first flow (the number is typed), so no QR gem is added. A QR can be added later if scanning is wanted.
 
@@ -209,10 +229,10 @@ Out of scope for now: public (non-member) access, reservations by members themse
 
 ## 5. Checklist
 
-Legend for steps: `[ASK]` = on the `.rules` Ask-First list (your "go" on that step counts as the approval, I will state it before starting). Each step ends with specs in Docker and RuboCop green, and leaves the app working.
+Legend for steps: `[ASK]` = on the `.rules` Ask-First list (your "go" on that step counts as the approval, I will state it before starting). Each step ends with specs in Docker green (RuboCop is not available in this repo, see step 1) and leaves the app working.
 
-- [ ] 0. **Printer spike** (no repo changes): print one test label on the D110_M from `niim.blue` (desktop Chrome, or the NIIMBOT app on the iPhone) to confirm the roll size and that the printer works. Result decides the label PNG size.
-- [ ] 1. **Test baseline**: factory + spec for `Library::ItemRecord` (none exist today). Docker rspec.
+- [x] 0. **Printer spike** (done 2026-11-28, partial by design): roll is **12x40 mm** (label PNG 96 x 320 px at 203 dpi, 96 px = print head width). The D110_M `D110_M-I310021021` (firmware 4.31) is connectable from **Bluefy on the iPhone** with an unfiltered Web Bluetooth request (`acceptAllDevices` + NIIMBOT service UUID, see section 3.2). `niim.blue` itself does not list the printer in Bluefy (its device filter), so a test print from `niim.blue` was not possible on the iPhone. **A real test print succeeded from `niim.blue` in Brave on macOS over Web Bluetooth** (Shields down for the site, Web Bluetooth enabled in Brave; note that Chrome-based browsers need the service UUID in `optionalServices`, Bluefy does not). An actual print from our own page on the iPhone is proven only in step 20; fallback if that fails is the NIIMBOT app with the PNG from step 16.
+- [x] 1. **Test baseline** (done 2026-11-28): `spec/factories/library.rb` (`:library_item` with `:book`/`:guide`/`:magazine` traits, `:library_tag`, `:library_author`, `:library_item_reservation`; the name `:item` is taken by gear) and `spec/components/library/item_record_spec.rb` (18 examples: associations, doc_type, slug, non-unique number, `on_place?`, authors, tags). Docker rspec green. RuboCop is not installed (no gem in the Gemfile, no `.rubocop.yml`; `docs/DEV_COMMANDS.md` is stale on this), so the lint gate cannot run, files follow `# frozen_string_literal: true` by hand.
 - [ ] 2. **Migration** `[ASK]`: create `library_inventories`, `library_inventory_checks`, `library_item_scans`; add to `library_items`: `original_title`, `edition_info`, `publisher`, `disciplines` (text[]), `countries` (text[]), `region`, `label_printed_at`; set `reading_room` NOT NULL default false (0 nulls on staging, re-check on prod). Reversible, no unique index on `item_id` yet, `autors` untouched.
 - [ ] 3. **Models + specs** `[ASK: touches associations/validations]`: `InventoryRecord`, `InventoryCheckRecord`, `ScanRecord` (max 5, one cover), `Library::Catalog` lists, `ItemRecord` (validations against the lists, `has_many :scans`, `duplicated_numbers`, `next_number`).
 - [ ] 4. **Backfill `edition_info` from `autors`** `[ASK: production data]` (decision 12 is confirmed): reviewed task with dry-run counts, run on staging first, `autors` kept.
@@ -231,7 +251,7 @@ Legend for steps: `[ASK]` = on the `.rules` Ask-First list (your "go" on that st
 - [ ] 17. **Inventory report page + CSV export** (found / lent out / missing / duplicates / added this round).
 - [ ] 18. **Duplicate numbers data fix** `[ASK: production data]`: resolve 302-305 and 1071 against the physical books (re-check counts on prod read-only first), then add a unique index on `library_items.item_id`.
 - [ ] 19. **(Optional) Tag cleanup** `[ASK: production data]`: merge bilingual duplicates and typos (3.1), move country-like tags into `countries`, via a reviewed rake task with dry-run output.
-- [ ] 20. **(Optional) Direct Bluetooth printing** for Android / desktop Chrome via `niimbluelib`, after step 0 confirms the model.
+- [ ] 20. **Direct printing from the phone browser (a goal since 2026-11-28; do it right after step 16, before 17-19)**: first a "Print in niim.blue" link (`#uload` label URL, section 3.2) that works in Bluefy on iPhone, Android Chrome and desktop Chrome; own `niimbluelib` Bluetooth code only if that is not enough. Needs step 0 to confirm the D110_M works.
 - [ ] 21. **Wrap-up**: full relevant specs, RuboCop, manual run on staging (`staging-controller-testing` skill), then release via the `release-pr` skill if you want.
 
 ## 6. Risks and open questions

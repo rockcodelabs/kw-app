@@ -101,4 +101,114 @@ RSpec.describe Library::ItemRecord, type: :model do
       expect(item.reload.tags).to contain_exactly(tag)
     end
   end
+
+  describe 'new associations' do
+    it { is_expected.to have_many(:scans) }
+    it { is_expected.to have_many(:inventory_checks) }
+
+    it 'returns scans ordered by position' do
+      item = create(:library_item)
+      second = create(:library_scan, item: item, position: 2)
+      first = create(:library_scan, item: item, position: 1)
+
+      expect(item.scans).to eq([first, second])
+    end
+
+    it 'deletes scans and checks together with the item' do
+      item = create(:library_item)
+      create(:library_scan, item: item)
+      create(:library_inventory_check, item: item)
+
+      expect { item.destroy }
+        .to change(Library::ScanRecord, :count).by(-1)
+        .and change(Library::InventoryCheckRecord, :count).by(-1)
+    end
+  end
+
+  describe 'catalog defaults' do
+    subject(:item) { described_class.new }
+
+    it { expect(item.disciplines).to eq([]) }
+    it { expect(item.countries).to eq([]) }
+    it { expect(item.reading_room).to be(false) }
+  end
+
+  describe 'validations' do
+    it 'requires a title' do
+      item = build(:library_item, title: nil)
+
+      expect(item).not_to be_valid
+      expect(item.errors[:title]).to be_present
+    end
+
+    it 'accepts disciplines and countries from the catalog' do
+      item = build(:library_item, :guide, disciplines: %w[wspinaczkowy skiturowy], countries: %w[Polska Słowacja])
+
+      expect(item).to be_valid
+    end
+
+    it 'rejects a discipline outside the catalog' do
+      item = build(:library_item, disciplines: ['wspinaczkowy', 'curling'])
+
+      expect(item).not_to be_valid
+      expect(item.errors[:disciplines].first).to include('curling')
+    end
+
+    it 'rejects a country outside the catalog' do
+      item = build(:library_item, countries: ['Spain'])
+
+      expect(item).not_to be_valid
+      expect(item.errors[:countries].first).to include('Spain')
+    end
+
+    it 'drops blank values submitted by multi-selects' do
+      item = build(:library_item, disciplines: ['', 'skiturowy'], countries: [''])
+
+      expect(item).to be_valid
+      expect(item.disciplines).to eq(['skiturowy'])
+      expect(item.countries).to eq([])
+    end
+
+    it 'persists the arrays' do
+      item = create(:library_item, disciplines: %w[trekkingowy], countries: %w[Nepal])
+
+      expect(item.reload).to have_attributes(disciplines: %w[trekkingowy], countries: %w[Nepal])
+    end
+  end
+
+  describe '.duplicated_numbers' do
+    it 'returns every item that shares its number with another item' do
+      first = create(:library_item, item_id: 302)
+      second = create(:library_item, item_id: 302)
+      create(:library_item, item_id: 303)
+
+      expect(described_class.duplicated_numbers).to contain_exactly(first, second)
+    end
+
+    it 'ignores items without a number' do
+      create_list(:library_item, 2, item_id: nil)
+
+      expect(described_class.duplicated_numbers).to be_empty
+    end
+
+    it 'is empty when every number is unique' do
+      create(:library_item, item_id: 1)
+      create(:library_item, item_id: 2)
+
+      expect(described_class.duplicated_numbers).to be_empty
+    end
+  end
+
+  describe '.next_number' do
+    it 'is 1 when the library is empty' do
+      expect(described_class.next_number).to eq(1)
+    end
+
+    it 'is the highest number plus one' do
+      create(:library_item, item_id: 10)
+      create(:library_item, item_id: 1134)
+
+      expect(described_class.next_number).to eq(1135)
+    end
+  end
 end

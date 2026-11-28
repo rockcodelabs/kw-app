@@ -35,4 +35,29 @@ FactoryBot.define do
     received_at { Date.current }
     back_at { nil }
   end
+
+  factory :library_scan, class: 'Library::ScanRecord' do
+    association :item, factory: :library_item
+    sequence(:image) { |n| "scan-#{n}.jpg" }
+    kind { :other }
+
+    trait :cover do
+      kind { :cover }
+    end
+  end
+
+  factory :library_inventory, class: 'Library::InventoryRecord' do
+    sequence(:name) { |n| "Inwentaryzacja #{n}" }
+    state { :in_progress }
+
+    trait :closed do
+      state { :closed }
+      closed_at { Time.current }
+    end
+  end
+
+  factory :library_inventory_check, class: 'Library::InventoryCheckRecord' do
+    association :inventory, factory: :library_inventory
+    association :item, factory: :library_item
+  end
 end
